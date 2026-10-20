@@ -9,6 +9,7 @@ import type { SyncEngine } from './engine';
 import { kvGet } from './db';
 import { buildPublicState, type PublicMatch } from './publicView';
 import { pushConfigured, subscribe, unsubscribe } from './push';
+import { buildOverview } from './adminView';
 import { importPlayersCsv } from './importCsv';
 import { createPlayer, deletePlayer, listPlayers, updatePlayer, ValidationError, type PlayerInput } from './roster';
 
@@ -210,6 +211,8 @@ export function createApp(db: Db, engine: SyncEngine | undefined, hub: Hub) {
           for (const id of ids) engine.track(guid, id);
           return send(res, 201, { tracking: guid });
         }
+
+        if (rest === 'overview' && req.method === 'GET') return send(res, 200, buildOverview(db));
 
         if (rest === 'candidates' && req.method === 'GET') {
           // Personas con el club de la UVA en clasificaciones o cuadros que NO están en la lista: se muestran solo aquí.

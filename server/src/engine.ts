@@ -8,7 +8,7 @@ import type { OfficialSource } from './source';
 import { transformCalendar } from './calendar';
 import { estimate, type Slot } from './estimate';
 import type { ParsedRow } from '@/lib/ts/parse/common';
-import { buildStoredMatch, diffMatch, findClubEntrants, matchFingerprint, type EntrantLike, type StoredMatch } from './uva';
+import { buildStoredMatch, type ClubEntrants, diffMatch, findClubEntrants, matchFingerprint, type EntrantLike, type StoredMatch } from './uva';
 
 const DEFAULT_TZ = 'Europe/Madrid';
 
@@ -222,14 +222,13 @@ export class SyncEngine {
     const guid = job.guid!;
     const t = this.db.prepare('select tz from tournaments where guid = ?').get(guid) as unknown as { tz: string };
     const rows = await this.src.day(guid, job.date!, t.tz || DEFAULT_TZ, priorityFor(job.phase, 'day'));
-    const roster = listPlayers(this.db);
-    const uvaTsIds = new Set(
-      (this.db.prepare('select ts_player_id from entrants where tournament_guid = ?').all(guid) as unknown as { ts_player_id: number }[]).map((r) => r.ts_player_id),
+    const entrants: ClubEntrants = new Map(
+      (this.db.prepare('select ts_player_id, player_id from entrants where tournament_guid = ?').all(guid) as unknown as { ts_player_id: number; player_id: number | null }[]).map((r) => [r.ts_player_id, r.player_id ?? undefined]),
     );
     const prevRead = kvGet<{ at: string }>(this.db, `ok:${job.key}`)?.at;
     for (const row of rows) {
       this.upsertSlot(guid, job.date!, row, now, prevRead);
-      const m = buildStoredMatch(row, { tournamentGuid: guid, uvaTsIds, roster });
+      const m = buildStoredMatch(row, { tournamentGuid: guid, entrants });
       if (m) this.ingest(m, now);
     }
     kvSet(this.db, `ok:${job.key}`, { at: now.toISOString() });

@@ -4,17 +4,12 @@ import { settings } from '../src/config';
 import { SyncEngine } from '../src/engine';
 import { createPlayer } from '../src/roster';
 import { buildStoredMatch } from '../src/uva';
-import { listPlayers } from '../src/roster';
 import { FakeSource, GUID, info, memDb, PROFILE, row } from './helpers/fakes';
 
 const NOW = new Date('2026-11-07T10:00:00+01:00');
 const min = (n: number) => new Date(NOW.getTime() + n * 60_000);
 
-const stored = (o = {}) => {
-  const d = memDb();
-  createPlayer(d, { name: 'Ana Prueba' });
-  return buildStoredMatch(row(o), { tournamentGuid: GUID, uvaTsIds: new Set([1]), roster: listPlayers(d) })!;
-};
+const stored = (o = {}) => buildStoredMatch(row(o), { tournamentGuid: GUID, entrants: new Map([[1, 1]]) })!;
 
 describe('confirmación de cambios', () => {
   it('un cambio necesita dos lecturas idénticas seguidas', () => {

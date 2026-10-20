@@ -127,3 +127,19 @@ describe('compartir un partido', () => {
     expect(html).not.toContain('<x>');
   });
 });
+
+describe('vista de seguimiento para la administración', () => {
+  it('incluye a jugadores ocultos y los nombres de los rivales, que la API pública nunca expone', async () => {
+    const { buildOverview } = await import('../src/adminView');
+    const db = memDb();
+    const src = new FakeSource();
+    createPlayer(db, { name: 'Ana Prueba', profile: PROFILE }); // oculta
+    src.dayRows = [row({ status: 'finished', winner: 1, sets: [[21, 10], [21, 12]] })];
+    const engine = new SyncEngine(db, src, () => NOW);
+    for (let i = 0; i < 8; i++) await engine.tick(new Date(NOW.getTime() + i * 1000));
+    const [o] = buildOverview(db);
+    expect(o).toMatchObject({ name: 'Ana Prueba', public: false, profileLinked: true });
+    expect(o.tournaments[0].matches[0]).toMatchObject({ sides: ['Ana Prueba', 'Rival Uno'], state: 'finished', outcome: 'win', score: '21-10 21-12' });
+    expect(JSON.stringify(buildPublicState(db, NOW))).not.toMatch(/Ana Prueba|Rival Uno/);
+  });
+});

@@ -62,7 +62,9 @@ export function findClubEntrants(entrants: EntrantLike[], roster: Player[]): Fou
     e.ids.forEach((tsPlayerId, i) => {
       const name = e.names[i];
       if (!tsPlayerId || !name) return;
-      const rostered = findByName(roster, name);
+      // Apellidos muy comunes tienen homónimos en otros clubes: un nombre de la lista solo vale si el club publicado
+      // es el de la UVA o no se publica ninguno. Con otro club, es otra persona.
+      const rostered = !e.club || isUvaClub(e.club) ? findByName(roster, name) : undefined;
       const uva = isUvaClub(e.club) || !!rostered;
       if (uva) out.push({ tsPlayerId, name, club: e.club, rosterId: rostered?.id, uva });
     });
@@ -70,21 +72,23 @@ export function findClubEntrants(entrants: EntrantLike[], roster: Player[]): Fou
   return out;
 }
 
-const sideOf = (team: Match['team1'], uvaTsIds: Set<number>, roster: Player[]): Side => ({
+/** Número de jugador en el torneo → id en la lista del club (`undefined` si es del club pero no está en la lista). */
+export type ClubEntrants = Map<number, number | undefined>;
+
+/**
+ * Un jugador es del club solo si su número en el torneo figura entre los participantes verificados por el club
+ * publicado (clasificaciones y cuadros). Coincidir solo en el nombre no basta: hay homónimos en otros clubes.
+ */
+const sideOf = (team: Match['team1'], entrants: ClubEntrants): Side => ({
   placeholder: team.placeholder,
   players: team.players.map((p) => {
-    const rostered = findByName(roster, p.name);
-    return {
-      name: p.name,
-      tsPlayerId: p.tsPlayerId,
-      uva: (p.tsPlayerId !== undefined && uvaTsIds.has(p.tsPlayerId)) || !!rostered,
-      rosterId: rostered?.id,
-    };
+    const known = p.tsPlayerId !== undefined && entrants.has(p.tsPlayerId);
+    return { name: p.name, tsPlayerId: p.tsPlayerId, uva: known, rosterId: known ? entrants.get(p.tsPlayerId!) ?? undefined : undefined };
   }),
 });
 
-export function buildStoredMatch(row: ParsedRow, ctx: { tournamentGuid: string; uvaTsIds: Set<number>; roster: Player[] }): StoredMatch | undefined {
-  const sides: [Side, Side] = [sideOf(row.team1, ctx.uvaTsIds, ctx.roster), sideOf(row.team2, ctx.uvaTsIds, ctx.roster)];
+export function buildStoredMatch(row: ParsedRow, ctx: { tournamentGuid: string; entrants: ClubEntrants }): StoredMatch | undefined {
+  const sides: [Side, Side] = [sideOf(row.team1, ctx.entrants), sideOf(row.team2, ctx.entrants)];
   if (!sides.some((s) => s.players.some((p) => p.uva))) return undefined;
   return {
     key: row.key,

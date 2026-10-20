@@ -1,20 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import { createPlayer, listPlayers } from '../src/roster';
-import { buildStoredMatch, diffMatch, findClubEntrants, isUvaClub, matchFingerprint } from '../src/uva';
+import { buildStoredMatch, type ClubEntrants, diffMatch, findClubEntrants, isUvaClub, matchFingerprint } from '../src/uva';
 import { memDb, row } from './helpers/fakes';
 
 describe('identificar al club', () => {
   it.each(['UNIVERSIDAD DE VALLADOLID', 'Universidad de Valladolid', 'UVA', 'Univ. Valladolid'])('reconoce «%s»', (c) => expect(isUvaClub(c)).toBe(true));
   it.each(['CIUDAD DE VILLALBA', 'VALLADOLID BADMINTON', '', undefined, 'UNIVERSIDAD DE BURGOS'])('no reconoce «%s»', (c) => expect(isUvaClub(c)).toBe(false));
 
-  it('un participante es del club por el club publicado o por estar en la lista', () => {
+  it('un participante es del club por el club publicado o por estar en la lista (sin club en contra)', () => {
     const db = memDb();
     createPlayer(db, { name: 'Carla Prueba' });
     const found = findClubEntrants(
       [
         { names: ['Ana Prueba'], ids: [1], club: 'UNIVERSIDAD DE VALLADOLID' },
         { names: ['Pedro Otro'], ids: [2], club: 'OTRO CLUB' },
-        { names: ['Prueba Carla'], ids: [3], club: 'OTRO CLUB' }, // en la lista, con el apellido primero
+        { names: ['Prueba Carla'], ids: [3] }, // en la lista (apellido primero) y sin club publicado
       ],
       listPlayers(db),
     );
@@ -24,17 +24,17 @@ describe('identificar al club', () => {
 });
 
 describe('partidos del club', () => {
-  const roster = () => listPlayers((() => { const d = memDb(); createPlayer(d, { name: 'Ana Prueba' }); return d; })());
+  const entrants = (): ClubEntrants => new Map([[1, 7]]); // el jugador 1 del torneo es el 7 de la lista
 
   it('se guarda solo si juega alguien del club', () => {
-    expect(buildStoredMatch(row({ names1: [['Pedro Otro', 8]], names2: [['Rival Uno', 9]] }), { tournamentGuid: 'G', uvaTsIds: new Set(), roster: roster() })).toBeUndefined();
-    const m = buildStoredMatch(row(), { tournamentGuid: 'G', uvaTsIds: new Set([1]), roster: roster() });
+    expect(buildStoredMatch(row({ names1: [['Pedro Otro', 8]], names2: [['Rival Uno', 9]] }), { tournamentGuid: 'G', entrants: entrants() })).toBeUndefined();
+    const m = buildStoredMatch(row(), { tournamentGuid: 'G', entrants: entrants() });
     expect(m?.sides[0].players[0]).toMatchObject({ uva: true });
     expect(m?.sides[1].players[0]).toMatchObject({ uva: false });
   });
 
   it('la huella cambia con hora, pista o resultado, y el diff no lleva nombres', () => {
-    const ctx = { tournamentGuid: 'G', uvaTsIds: new Set([1]), roster: roster() };
+    const ctx = { tournamentGuid: 'G', entrants: entrants() };
     const a = buildStoredMatch(row(), ctx)!;
     const b = buildStoredMatch(row({ clock: '11:30', court: '4', status: 'finished', winner: 1, sets: [[21, 10], [21, 12]] }), ctx)!;
     expect(matchFingerprint(a)).not.toBe(matchFingerprint(b));
@@ -42,5 +42,28 @@ describe('partidos del club', () => {
     const diff = diffMatch(a, b);
     expect(diff.map((d) => d.field).sort()).toEqual(['court', 'plannedClock', 'sets', 'status', 'winner']);
     expect(JSON.stringify(diff)).not.toMatch(/Prueba|Rival/);
+  });
+
+  it('un homónimo de otro club no cuenta como del club, aunque coincida el nombre', () => {
+    // Mismo nombre que alguien de la lista, pero otro jugador (número 55) que figura con otro club: no está entre los verificados.
+    const m = buildStoredMatch(row({ names1: [['Ana Prueba', 55]] }), { tournamentGuid: 'G', entrants: entrants() });
+    expect(m).toBeUndefined();
+  });
+});
+
+describe('homónimos entre participantes', () => {
+  it('un nombre de la lista con el club de otro equipo se descarta; con el de la UVA o sin club, se acepta', () => {
+    const db = memDb();
+    createPlayer(db, { name: 'Ana Prueba' });
+    const roster = listPlayers(db);
+    const found = findClubEntrants(
+      [
+        { names: ['Ana Prueba'], ids: [1], club: 'OTRO CLUB' },
+        { names: ['Ana Prueba'], ids: [2], club: 'UNIVERSIDAD DE VALLADOLID' },
+        { names: ['Ana Prueba'], ids: [3] },
+      ],
+      roster,
+    );
+    expect(found.map((f) => f.tsPlayerId)).toEqual([2, 3]);
   });
 });
