@@ -1,12 +1,13 @@
 import { Link } from 'react-router-dom';
 import { club, nav } from '../config/site';
+import { asset } from '../lib/asset';
 
 export function Footer() {
   return (
     <footer className="site-footer">
       <div className="container site-footer__grid">
         <div className="site-footer__brand">
-          <img src="/images/logo-uva.png" alt="Universidad de Valladolid" width="64" height="64" />
+          <img src={asset('/images/logo-uva.png')} alt="Universidad de Valladolid" width="64" height="64" />
           <p className="site-footer__name">{club.name}</p>
           <p className="site-footer__uni">{club.university}</p>
         </div>

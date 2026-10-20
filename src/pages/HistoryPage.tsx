@@ -2,6 +2,7 @@ import historyJson from '../data/history.json';
 import { Notice, PageHeader, PendingTag } from '../components/ui';
 import { usePageTitle } from '../hooks/usePageTitle';
 import type { HistoryData } from '../types';
+import { asset } from '../lib/asset';
 
 const history = historyJson as HistoryData;
 
@@ -78,7 +79,7 @@ export function HistoryPage() {
                 {history.photos.map((p) => (
                   <li key={p.id}>
                     <figure>
-                      <img src={p.src} alt={p.alt} loading="lazy" />
+                      <img src={asset(p.src)} alt={p.alt} loading="lazy" />
                       <figcaption>
                         {p.caption}
                         {p.year && ` (${p.year})`}

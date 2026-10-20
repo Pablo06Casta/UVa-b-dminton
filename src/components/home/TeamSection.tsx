@@ -1,6 +1,7 @@
 import playersJson from '../../data/players.json';
 import type { Player } from '../../types';
 import { Notice, SectionHeading } from '../ui';
+import { asset } from '../../lib/asset';
 
 const players = playersJson as Player[];
 
@@ -18,7 +19,7 @@ function PlayerCard({ player }: { player?: Player }) {
     <li className={`player${player ? '' : ' player--placeholder'}`}>
       <div className="player__photo">
         {player?.photo ? (
-          <img src={player.photo} alt={`Fotografía de ${player.name}`} loading="lazy" width="400" height="500" />
+          <img src={asset(player.photo)} alt={`Fotografía de ${player.name}`} loading="lazy" width="400" height="500" />
         ) : (
           <Silhouette />
         )}

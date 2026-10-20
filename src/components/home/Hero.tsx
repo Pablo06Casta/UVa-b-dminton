@@ -1,17 +1,18 @@
 import { club } from '../../config/site';
 import { ButtonLink } from '../ui';
+import { asset } from '../../lib/asset';
 
 export function Hero() {
   const { hero } = club.images;
   return (
     <section className="hero" aria-labelledby="hero-title">
-      <img className="hero__img" src={hero.src} alt={hero.alt} fetchPriority="high" />
+      <img className="hero__img" src={asset(hero.src)} alt={hero.alt} fetchPriority="high" />
       <div className="hero__overlay" aria-hidden="true" />
 
       <div className="container hero__content">
         <img
           className="hero__logo"
-          src="/images/logo-uva.png"
+          src={asset('/images/logo-uva.png')}
           alt="Universidad de Valladolid"
           width="96"
           height="96"

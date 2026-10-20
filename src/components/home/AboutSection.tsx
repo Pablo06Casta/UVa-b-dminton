@@ -1,5 +1,6 @@
 import { club } from '../../config/site';
 import { ButtonLink, PendingTag } from '../ui';
+import { asset } from '../../lib/asset';
 
 /** Bloque de presentación: imagen + panel de texto (composición de referencia de portales deportivos). */
 export function AboutSection() {
@@ -10,7 +11,7 @@ export function AboutSection() {
       <div className="container">
         <div className="feature">
           <figure className="feature__media">
-            <img src={img.src} alt={img.alt} loading="lazy" width="1200" height="900" />
+            <img src={asset(img.src)} alt={img.alt} loading="lazy" width="1200" height="900" />
             {img.provisional && <figcaption className="media-tag">Imagen provisional</figcaption>}
           </figure>
           <div className="feature__panel">
