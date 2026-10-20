@@ -87,6 +87,8 @@ export interface BracketMatch {
   winner?: 1 | 2;
   sets: [number, number][];
   when?: string;
+  /** `when` en formato `YYYY-MM-DDTHH:MM`, si se pudo interpretar. */
+  whenIso?: string;
   court?: string;
   note?: string;
 }
