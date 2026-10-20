@@ -1,6 +1,8 @@
 import officialJson from '../data/calendario-oficial.json';
 import uvaJson from '../data/uva-torneos.json';
-import type { Tournament, UvaTournamentsFile } from '../types';
+import type { LiveState, Tournament, UvaTournamentsFile } from '../types';
+import { fetchCalendar, fetchLiveState, hasApi } from './api';
+import { mergeLive } from './live';
 import { mergeUva } from './tournaments';
 
 export interface TournamentData {
@@ -9,6 +11,10 @@ export interface TournamentData {
   checkedAt?: string;
   sourceLabel?: string;
   note?: string;
+  /** Estado del servidor en directo (jugadores públicos, avisos disponibles…). Ausente si no hay servidor. */
+  live?: LiveState;
+  /** `true` si hay servidor configurado pero no responde: se muestran los últimos datos incluidos en la web. */
+  liveError?: boolean;
 }
 
 /**
@@ -39,4 +45,26 @@ export const localSource: TournamentSource = {
   }),
 };
 
-export const tournamentSource: TournamentSource = localSource;
+/**
+ * Con servidor (VITE_API_URL): calendario oficial y datos en directo vienen de él; si no responde, se usan los datos
+ * incluidos en la web y se avisa. Sin servidor, solo los datos incluidos.
+ */
+export const apiSource: TournamentSource = {
+  load: async () => {
+    const [cal, live] = await Promise.allSettled([fetchCalendar(), fetchLiveState()]);
+    const fallback = await localSource.load();
+    const calendar = cal.status === 'fulfilled' ? cal.value : undefined;
+    const base = calendar ? mergeUva(calendar.tournaments, uva.entradas, uva.torneosPropios) : fallback.tournaments;
+    const tournaments = live.status === 'fulfilled' ? mergeLive(base, live.value) : base;
+    return {
+      tournaments,
+      checkedAt: calendar?.meta.comprobadoEl ?? fallback.checkedAt,
+      sourceLabel: calendar?.meta.fuente ?? fallback.sourceLabel,
+      note: calendar?.meta.nota ?? fallback.note,
+      live: live.status === 'fulfilled' ? live.value : undefined,
+      liveError: live.status === 'rejected',
+    };
+  },
+};
+
+export const tournamentSource: TournamentSource = hasApi ? apiSource : localSource;

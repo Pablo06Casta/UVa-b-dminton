@@ -98,6 +98,11 @@ implementación de `TournamentSource` ahí. **No se ha implementado ni asumido n
 
 Estado del proyecto y datos pendientes: ver [`docs/ESTADO.md`](docs/ESTADO.md).
 
+## Servidor en directo
+
+La carpeta [`server/`](server/README.md) contiene el servidor (lista de jugadores, directo, estimación de fin de torneo,
+avisos y calendario). La web lo usa si se define `VITE_API_URL`; sin él, funciona solo con los datos incluidos.
+
 ## Publicación en GitHub Pages
 
 El flujo `.github/workflows/pages.yml` compila y publica la web en `https://<usuario>.github.io/UVa-b-dminton/`

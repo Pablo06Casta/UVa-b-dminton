@@ -97,8 +97,16 @@ export interface Tournament {
   externalUrl?: string;
   /** Resultados en texto, para torneos finalizados. */
   results?: string;
-  /** Partidos de jugadores de la UVa (los registra el club). */
+  /** Partidos de jugadores de la UVa (los registra el club, o llegan del servidor en directo). */
   matches?: UvaMatch[];
+  /** Identificador del torneo en el servidor en directo (GUID oficial). */
+  liveId?: string;
+  progress?: LiveProgress;
+  draws?: LiveDraw[];
+  /** Última lectura correcta de la fuente para este torneo (ISO) y si ya es antigua. */
+  checkedAt?: string;
+  stale?: boolean;
+  officialUrl?: string;
   /** `true` = dato de ejemplo, no real. Se muestra con la etiqueta "Provisional". */
   provisional?: boolean;
   /**
@@ -146,4 +154,56 @@ export interface UvaMatch {
   score?: string;
   /** Resultado para la UVa; solo si el partido ha terminado y se conoce. */
   outcome?: 'win' | 'loss';
+  /** Hora programada y hora estimada de inicio según el ritmo real del torneo (ISO). */
+  plannedStart?: string;
+  estimatedStart?: string;
+}
+
+/** Estimación estadística del avance del torneo (la calcula el servidor con el ritmo real de los partidos). */
+export interface LiveProgress {
+  date: string;
+  asOf: string;
+  total: number;
+  finished: number;
+  live: number;
+  remaining: number;
+  avgDurationMin?: number;
+  plannedSlotMin?: number;
+  delayMin?: number;
+  courts: number;
+  basis: 'observed' | 'default';
+  done: boolean;
+  estimatedEnd?: string;
+  estimatedEndLow?: string;
+  estimatedEndHigh?: string;
+}
+
+export interface LiveEntrant {
+  label: string;
+  uva: boolean;
+  club?: string;
+  bye?: boolean;
+  placeholder?: string;
+}
+
+export interface LiveDraw {
+  id: number;
+  name: string;
+  type: 'knockout' | 'roundrobin';
+  standings?: { rank: number; entrant: LiveEntrant; played: number; won: number; lost: number; matches: string; games: string; points: string; pts: number }[];
+  rounds?: { title: string; matches: { a: LiveEntrant; b: LiveEntrant; winner?: 1 | 2; sets: [number, number][]; when?: string; court?: string; note?: string }[] }[];
+}
+
+/** Lo que devuelve /api/public/state del servidor. */
+export interface LiveState {
+  generatedAt: string;
+  officialReadEnabled: boolean;
+  lastErrorAt?: string;
+  version: string;
+  players: { id: number; name: string; category?: string }[];
+  pushEnabled: boolean;
+  tournaments: {
+    id: string; name: string; startDate?: string; endDate?: string; city?: string; venue?: string; level?: string;
+    officialUrl: string; uvaPlayers: string[]; matches: UvaMatch[]; progress?: LiveProgress; draws: LiveDraw[]; checkedAt?: string; stale: boolean;
+  }[];
 }

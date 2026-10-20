@@ -1,0 +1,11 @@
+{
+  "name": "Club Bádminton Universidad de Valladolid",
+  "short_name": "Bádminton UVa",
+  "description": "Calendario, resultados y avisos de los torneos del Club Bádminton UVa",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#2f2c64",
+  "theme_color": "#2f2c64",
+  "icons": [{ "src": "images/logo-uva.png", "sizes": "554x554", "type": "image/png", "purpose": "any" }]
+}

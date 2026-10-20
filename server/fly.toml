@@ -1,0 +1,33 @@
+# Plantilla para Fly.io (https://fly.io). Cambia `app` por un nombre único.
+#   fly launch --no-deploy --copy-config   ·   fly volumes create club_data --size 1 --region mad
+#   fly secrets set ADMIN_TOKEN=... VAPID_PUBLIC_KEY=... VAPID_PRIVATE_KEY=... VAPID_SUBJECT=... SITE_URL=... CORS_ORIGINS=...
+#   fly deploy
+app = "club-badminton-uva"
+primary_region = "mad"
+
+[build]
+
+[env]
+  DATA_DIR = "/data"
+  PORT = "8787"
+  OFFICIAL_READ_ENABLED = "false"
+  CALENDAR_REFRESH_ENABLED = "true"
+
+[mounts]
+  source = "club_data"
+  destination = "/data"
+
+[http_service]
+  internal_port = 8787
+  force_https = true
+  # El motor de sincronización debe estar siempre encendido.
+  auto_stop_machines = "off"
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    grace_period = "10s"
+    interval = "30s"
+    method = "GET"
+    path = "/api/health"
+    timeout = "5s"

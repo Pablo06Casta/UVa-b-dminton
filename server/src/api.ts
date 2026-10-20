@@ -1,0 +1,257 @@
+import { createHash, timingSafeEqual } from 'node:crypto';
+import fs from 'node:fs';
+import http from 'node:http';
+import path from 'node:path';
+import { extractGuid } from '@/lib/util/text';
+import { settings } from './config';
+import { type Db, nowIso } from './db';
+import type { SyncEngine } from './engine';
+import { kvGet } from './db';
+import { buildPublicState, type PublicMatch } from './publicView';
+import { pushConfigured, subscribe, unsubscribe } from './push';
+import { createPlayer, deletePlayer, listPlayers, updatePlayer, ValidationError, type PlayerInput } from './roster';
+
+const MAX_BODY = 64 * 1024;
+
+const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
+
+/** Página que se ve al compartir un partido: etiquetas Open Graph para la vista previa y redirección a la web del club. */
+export function shareHtml(tournament: string, m: PublicMatch, id: string): string {
+  const when = [m.date, m.time].filter(Boolean).join(' ');
+  const title = `${m.players.join(' / ')} · ${m.event ?? tournament}`;
+  const state = m.state === 'finished' ? `${m.outcome === 'win' ? 'Victoria' : m.outcome === 'loss' ? 'Derrota' : 'Finalizado'} ${m.score ?? ''}`.trim() : m.state === 'live' ? 'En juego' : `Programado ${when}`.trim();
+  const desc = `${tournament} · ${state}${m.court ? ` · Pista ${m.court}` : ''}`;
+  const target = settings.siteUrl ? `${settings.siteUrl}/directo?partido=${encodeURIComponent(id)}` : '';
+  return `<!doctype html><html lang="es"><head><meta charset="utf-8"><title>${esc(title)}</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"><meta property="og:type" content="website">
+<meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}"><meta name="twitter:card" content="summary">
+${target ? `<meta property="og:url" content="${esc(target)}"><meta http-equiv="refresh" content="0; url=${esc(target)}">` : ''}</head>
+<body><p>${esc(title)}</p><p>${esc(desc)}</p>${target ? `<p><a href="${esc(target)}">Ver en la web del club</a></p>` : ''}</body></html>`;
+}
+
+class HttpFail extends Error {
+  constructor(public status: number, message: string) {
+    super(message);
+  }
+}
+
+/** Avisos al navegador por SSE: solo dicen «hay datos nuevos»; el navegador vuelve a pedir el estado a este servidor. */
+export class Hub {
+  private clients = new Set<http.ServerResponse>();
+  private last = '';
+  constructor(private db: Db) {}
+
+  add(res: http.ServerResponse) {
+    this.clients.add(res);
+    res.on('close', () => this.clients.delete(res));
+  }
+  get size() {
+    return this.clients.size;
+  }
+  /** Llamar tras cada lectura o cambio de la lista: avisa solo si cambió algo publicable. */
+  check() {
+    const v = buildPublicState(this.db).version;
+    if (v === this.last) return;
+    this.last = v;
+    for (const c of this.clients) c.write(`event: update\ndata: ${JSON.stringify({ version: v, at: nowIso() })}\n\n`);
+  }
+  heartbeat() {
+    for (const c of this.clients) c.write(': ping\n\n');
+  }
+}
+
+const safeEqual = (a: string, b: string) => {
+  const ha = createHash('sha256').update(a).digest();
+  const hb = createHash('sha256').update(b).digest();
+  return timingSafeEqual(ha, hb);
+};
+
+async function readJson(req: http.IncomingMessage): Promise<Record<string, unknown>> {
+  let size = 0;
+  const chunks: Buffer[] = [];
+  for await (const c of req) {
+    size += (c as Buffer).length;
+    if (size > MAX_BODY) throw new HttpFail(413, 'Cuerpo demasiado grande.');
+    chunks.push(c as Buffer);
+  }
+  if (chunks.length === 0) return {};
+  try {
+    return JSON.parse(Buffer.concat(chunks).toString('utf8'));
+  } catch {
+    throw new HttpFail(400, 'JSON no válido.');
+  }
+}
+
+export function createApp(db: Db, engine: SyncEngine | undefined, hub: Hub) {
+  const hits = new Map<string, { n: number; reset: number }>();
+  const adminHtml = () => fs.readFileSync(path.join(import.meta.dirname, 'admin.html'), 'utf8');
+
+  const send = (res: http.ServerResponse, status: number, body: unknown, headers: Record<string, string> = {}) => {
+    res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'X-Content-Type-Options': 'nosniff', ...headers });
+    res.end(JSON.stringify(body));
+  };
+
+  const cors = (req: http.IncomingMessage): Record<string, string> => {
+    const origin = req.headers.origin;
+    if (origin && (settings.corsOrigins.includes('*') || settings.corsOrigins.includes(origin))) {
+      return { 'Access-Control-Allow-Origin': origin, Vary: 'Origin' };
+    }
+    return {};
+  };
+
+  const limited = (req: http.IncomingMessage) => {
+    const ip = req.socket.remoteAddress ?? '?';
+    const now = Date.now();
+    const h = hits.get(ip);
+    if (!h || h.reset < now) {
+      hits.set(ip, { n: 1, reset: now + 60_000 });
+      return false;
+    }
+    return ++h.n > settings.publicRatePerMinute;
+  };
+
+  const requireAdmin = (req: http.IncomingMessage) => {
+    if (!settings.adminToken) throw new HttpFail(403, 'La administración está desactivada: define ADMIN_TOKEN.');
+    const m = /^Bearer (.+)$/.exec(String(req.headers.authorization ?? ''));
+    if (!m || !safeEqual(m[1], settings.adminToken)) throw new HttpFail(401, 'No autorizado.');
+  };
+
+  return async (req: http.IncomingMessage, res: http.ServerResponse) => {
+    const url = new URL(req.url ?? '/', 'http://localhost');
+    const route = `${req.method} ${url.pathname}`;
+    try {
+      if (req.method === 'OPTIONS') {
+        res.writeHead(204, { ...cors(req), 'Access-Control-Allow-Methods': 'GET', 'Access-Control-Allow-Headers': 'Content-Type' });
+        return res.end();
+      }
+
+      if (route === 'GET /api/health') {
+        return send(res, 200, { ok: true, officialReadEnabled: settings.officialReadEnabled, time: nowIso() });
+      }
+
+      if (route === 'GET /api/public/state') {
+        if (limited(req)) throw new HttpFail(429, 'Demasiadas consultas.');
+        return send(res, 200, buildPublicState(db), { ...cors(req), 'Cache-Control': 'public, max-age=15' });
+      }
+
+      if (route === 'GET /api/public/stream') {
+        if (limited(req)) throw new HttpFail(429, 'Demasiadas consultas.');
+        res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive', ...cors(req) });
+        res.write(`event: hello\ndata: ${JSON.stringify({ version: buildPublicState(db).version })}\n\n`);
+        hub.add(res);
+        return;
+      }
+
+      if (route === 'GET /api/public/calendar') {
+        if (limited(req)) throw new HttpFail(429, 'Demasiadas consultas.');
+        const cal = kvGet<{ meta: unknown; tournaments: unknown[] }>(db, 'calendar');
+        return send(res, cal ? 200 : 404, cal ?? { error: 'Calendario aún no disponible.' }, { ...cors(req), 'Cache-Control': 'public, max-age=300' });
+      }
+
+      if (route === 'GET /api/public/push/key') {
+        return send(res, 200, { enabled: pushConfigured(), publicKey: pushConfigured() ? settings.vapid.publicKey : null }, cors(req));
+      }
+      if (route === 'POST /api/public/push/subscribe') {
+        if (limited(req) || !pushConfigured()) throw new HttpFail(pushConfigured() ? 429 : 409, pushConfigured() ? 'Demasiadas consultas.' : 'Los avisos no están activados.');
+        subscribe(db, (await readJson(req)) as Parameters<typeof subscribe>[1]);
+        return send(res, 201, { ok: true }, cors(req));
+      }
+      if (route === 'POST /api/public/push/unsubscribe') {
+        if (limited(req)) throw new HttpFail(429, 'Demasiadas consultas.');
+        const b = (await readJson(req)) as { endpoint?: string; playerId?: number };
+        if (b.endpoint) unsubscribe(db, b.endpoint, b.playerId);
+        return send(res, 200, { ok: true }, cors(req));
+      }
+
+      const share = /^\/compartir\/(.+)$/.exec(url.pathname);
+      if (req.method === 'GET' && share) {
+        if (limited(req)) throw new HttpFail(429, 'Demasiadas consultas.');
+        const id = decodeURIComponent(share[1]);
+        const hit = buildPublicState(db).tournaments.flatMap((t) => t.matches.map((m) => ({ t, m }))).find((x) => x.m.id === id);
+        if (!hit) throw new HttpFail(404, 'Partido no disponible.');
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'public, max-age=60' });
+        return res.end(shareHtml(hit.t.name, hit.m, id));
+      }
+
+      if (route === 'GET /admin') {
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'X-Frame-Options': 'DENY', 'Content-Security-Policy': "default-src 'self' 'unsafe-inline'; connect-src 'self'" });
+        return res.end(adminHtml());
+      }
+
+      if (url.pathname.startsWith('/api/admin/')) {
+        requireAdmin(req);
+        const rest = url.pathname.slice('/api/admin/'.length);
+
+        if (rest === 'players' && req.method === 'GET') return send(res, 200, listPlayers(db));
+        if (rest === 'players' && req.method === 'POST') {
+          const p = createPlayer(db, (await readJson(req)) as unknown as PlayerInput);
+          hub.check();
+          return send(res, 201, p);
+        }
+        const m = /^players\/(\d+)$/.exec(rest);
+        if (m && req.method === 'PATCH') {
+          const p = updatePlayer(db, Number(m[1]), (await readJson(req)) as Partial<PlayerInput>);
+          hub.check();
+          return send(res, 200, p);
+        }
+        if (m && req.method === 'DELETE') {
+          if (!deletePlayer(db, Number(m[1]))) throw new HttpFail(404, 'No existe ese jugador.');
+          hub.check();
+          return send(res, 200, { deleted: true });
+        }
+
+        if (rest === 'tournaments' && req.method === 'POST') {
+          if (!engine) throw new HttpFail(409, 'La lectura automática está desactivada.');
+          const body = await readJson(req);
+          const guid = extractGuid(String(body.guid ?? body.url ?? ''))?.toUpperCase();
+          if (!guid) throw new HttpFail(400, 'Indica el GUID o el enlace oficial del torneo.');
+          const ids = Array.isArray(body.playerIds) ? (body.playerIds as number[]) : [undefined];
+          for (const id of ids) engine.track(guid, id);
+          return send(res, 201, { tracking: guid });
+        }
+
+        if (rest === 'candidates' && req.method === 'GET') {
+          // Personas con el club de la UVA en clasificaciones o cuadros que NO están en la lista: se muestran solo aquí.
+          const rows = db
+            .prepare(`select e.name, e.club, t.name as tournament, t.start_date as date from entrants e join tournaments t on t.guid = e.tournament_guid where e.player_id is null order by t.start_date desc`)
+            .all();
+          return send(res, 200, rows);
+        }
+
+        if (rest === 'status' && req.method === 'GET') {
+          const count = (sql: string) => (db.prepare(sql).get() as { n: number }).n;
+          return send(res, 200, {
+            officialReadEnabled: settings.officialReadEnabled,
+            lastJob: engine?.lastJob ?? null,
+            tournaments: count('select count(*) n from tournaments'),
+            matches: count('select count(*) n from matches'),
+            players: count('select count(*) n from players'),
+            publicPlayers: count('select count(*) n from players where public = 1'),
+            sseClients: hub.size,
+            recentChanges: db.prepare('select at, kind, field, old_value, new_value from changes order by id desc limit 30').all(),
+            recentRequests: db.prepare('select at, url, status, ms from fetch_log order by id desc limit 30').all(),
+          });
+        }
+
+        if (rest === 'export' && req.method === 'GET') return send(res, 200, { exportedAt: nowIso(), players: listPlayers(db) });
+        if (rest === 'import' && req.method === 'POST') {
+          const body = await readJson(req);
+          const list = Array.isArray(body.players) ? (body.players as PlayerInput[]) : [];
+          for (const p of list) createPlayer(db, { ...p, profile: (p as { profileGuid?: string }).profileGuid ?? p.profile });
+          hub.check();
+          return send(res, 201, { imported: list.length });
+        }
+        throw new HttpFail(404, 'No encontrado.');
+      }
+
+      throw new HttpFail(404, 'No encontrado.');
+    } catch (e) {
+      if (e instanceof HttpFail) return send(res, e.status, { error: e.message });
+      if (e instanceof ValidationError) return send(res, 400, { error: e.message });
+      const message = String((e as Error).message);
+      if (/UNIQUE|constraint/i.test(message)) return send(res, 400, { error: 'No se puede guardar: ' + message });
+      console.error(e);
+      return send(res, 500, { error: 'Error interno.' });
+    }
+  };
+}

@@ -16,13 +16,22 @@
 - Calendario oficial absoluto (136 torneos, nacionales y territoriales) con fecha de última comprobación, y filtro
   «Solo con jugadores de la UVa» activo por defecto. Script `npm run calendario:actualizar` (solo rutas permitidas).
 
-## No incluido y por qué
+## Servidor en directo (`server/`)
 
-- **Partidos próximos, directo, cuadros y resultados de jugadores de la UVa:** salen de `/sport/`, `/tournament/` y
-  `/profile/`, rutas que el `robots.txt` de badminton.es excluye para clientes automáticos. Hace falta autorización de
-  la FESBA / Federación de Castilla y León y un servidor (la web actual es estática).
-- **Localizar en badminton.es a las personas de la UVa:** la búsqueda de jugadores también está excluida, y publicar
-  nombres sin su autorización (hay menores) incumple el RGPD. El club debe facilitar la lista y las autorizaciones.
+Hecho y probado (73 pruebas, incluida una jornada oficial real de 129 partidos):
+
+- Lista de jugadores con consentimiento + panel `/admin`; descubrimiento de torneos desde el perfil oficial.
+- Lectura de una vez por torneo, frecuencias por fase (orden de juego cada 5 min en jornada), confirmación de cambios con
+  2 lecturas, registro de cambios, antigüedad de los datos.
+- Estimación de la hora de fin del torneo y de cada partido; cuadros; avisos push N min antes; enlaces para compartir.
+- Web: página **Directo** (en juego / próximos / resultados, hora de fin en grande, cuadros, avisos, compartir).
+
+Importante:
+
+- **La lectura en directo está DESACTIVADA por defecto** (`OFFICIAL_READ_ENABLED=false`): las rutas de inscritos, cuadros,
+  partidos y perfiles están excluidas por el `robots.txt` de badminton.es. Activarla es decisión del club; se recomienda
+  autorización de la FESBA / Federación de Castilla y León. **No se ha ejecutado contra badminton.es** más que el calendario.
+- Requiere alojar el servidor (ver `server/README.md`) y definir `VITE_API_URL` en la web.
 
 ## Pendiente
 
@@ -37,7 +46,8 @@
 | Correo y redes | `club.json › email` y `socials`. Mientras estén vacíos no se muestran. |
 | Formulario | Servicio de envío (`VITE_CONTACT_ENDPOINT`), correo de destino y captcha. Hoy no envía. |
 | Textos legales | Aviso legal y política de privacidad (responsable, finalidad, derechos…) en `LegalPage.tsx`. |
-| Integración oficial | Estudiar una fuente de datos autorizada (no se ha asumido que exista ninguna API). |
+| Servidor | Alojarlo (Fly.io/VPS con disco), `ADMIN_TOKEN`, claves VAPID, `VITE_API_URL` en la web. |
+| Autorización | Permiso de la FESBA / Federación de Castilla y León para activar la lectura en directo. |
 
 ## Antes de publicar
 
