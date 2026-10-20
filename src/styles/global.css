@@ -2141,3 +2141,472 @@ textarea:focus-visible {
 .estimate__time {
   overflow-wrap: anywhere;
 }
+
+/* ==========================================================================
+   Estética deportiva: torneos, partidos, calendario y directo
+   Tipografía condensada, formas inclinadas, marcadores y líneas de pista.
+   ========================================================================== */
+
+:root {
+  --font-sport: 'Barlow Condensed', 'Arial Narrow', 'Roboto Condensed', Impact, sans-serif;
+  --court-lines: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='320' viewBox='0 0 640 320' fill='none' stroke='white' stroke-opacity='.1' stroke-width='3'%3E%3Crect x='20' y='20' width='600' height='280'/%3E%3Cpath d='M20 62h600M20 258h600M320 20v280M150 62v196M490 62v196M150 160h340'/%3E%3C/svg%3E");
+}
+
+/* Cabeceras de página */
+.page-header--sport {
+  position: relative;
+  padding-bottom: clamp(72px, 10vw, 120px);
+  border-bottom: 0;
+  background-color: var(--uva);
+  background-image:
+    linear-gradient(115deg, transparent 0 58%, rgba(255, 255, 255, 0.05) 58% 70%, transparent 70% 74%, rgba(35, 103, 160, 0.35) 74% 77%, transparent 77%),
+    var(--court-lines);
+  background-repeat: no-repeat;
+  background-size: 100% 100%, min(900px, 90%) auto;
+  background-position: center, right -60px bottom -20px;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 34px), 0 100%);
+}
+.page-header--sport h1 {
+  font-family: var(--font-sport);
+  font-weight: 800;
+  font-size: clamp(3.8rem, 12vw, 8.5rem);
+  line-height: 0.88;
+  letter-spacing: 0.01em;
+  transform: skewX(-8deg);
+  transform-origin: left bottom;
+}
+.page-header--sport .eyebrow {
+  display: inline-block;
+  padding: 4px 14px;
+  color: var(--white);
+  background: var(--blue);
+  transform: skewX(-12deg);
+}
+.page-header--sport .lead {
+  max-width: 52ch;
+}
+.page-header--sport + .section {
+  margin-top: -34px;
+  padding-top: clamp(80px, 9vw, 116px);
+}
+
+/* Títulos de sección */
+.section-heading--sport .eyebrow {
+  display: inline-block;
+  padding: 4px 14px;
+  color: var(--white);
+  background: var(--uva);
+  transform: skewX(-12deg);
+}
+.section-heading--sport h2 {
+  font-family: var(--font-sport);
+  font-weight: 800;
+  font-size: clamp(2.6rem, 7vw, 4.6rem);
+  line-height: 0.92;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+}
+.section-heading--sport h2::after {
+  content: '';
+  display: block;
+  width: 96px;
+  height: 7px;
+  margin-top: 16px;
+  background: var(--blue);
+  transform: skewX(-24deg);
+}
+
+/* Etiquetas de estado: paralelogramos */
+.status,
+.uva-tag,
+.count-pill {
+  border-radius: 0;
+  font-family: var(--font-sport);
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 2px 14px;
+  transform: skewX(-12deg);
+}
+.status--ongoing::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 8px;
+  vertical-align: 1px;
+  border-radius: 50%;
+  background: var(--white);
+  animation: pulse 1.4s ease-in-out infinite;
+}
+@keyframes pulse {
+  50% {
+    opacity: 0.25;
+  }
+}
+.pending-tag {
+  border-radius: 0;
+  font-family: var(--font-sport);
+  font-size: 0.85rem;
+}
+
+/* Tarjetas de torneo */
+.t-card {
+  border: 0;
+  border-radius: 0;
+  box-shadow: 0 0 0 1px var(--gray-200);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.t-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: -10px;
+  z-index: 1;
+  width: 72px;
+  height: 6px;
+  background: var(--blue);
+  transform: skewX(-30deg);
+}
+.t-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 0 1px var(--blue), 0 10px 24px rgba(20, 19, 47, 0.14);
+}
+.t-card__date {
+  width: 118px;
+  padding: 18px 26px 18px 10px;
+  background: linear-gradient(160deg, var(--uva) 0 68%, var(--uva-deep));
+  clip-path: polygon(0 0, 100% 0, calc(100% - 20px) 100%, 0 100%);
+}
+.t-card__day {
+  font-family: var(--font-sport);
+  font-size: 3.6rem;
+  font-weight: 800;
+  line-height: 0.85;
+}
+.t-card__day-end {
+  font-size: 1.6rem;
+}
+.t-card__month {
+  margin-top: 8px;
+  font-family: var(--font-sport);
+  font-size: 1.25rem;
+  letter-spacing: 0.14em;
+}
+.t-card__year {
+  font-family: var(--font-sport);
+  font-size: 0.95rem;
+  letter-spacing: 0.1em;
+}
+.t-card__title {
+  font-family: var(--font-sport);
+  font-size: 1.65rem;
+  font-weight: 800;
+  line-height: 1.02;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+}
+.t-card__body {
+  padding-left: 8px;
+}
+@media (max-width: 719px) {
+  .t-card__date {
+    width: 98px;
+  }
+  .t-card__day {
+    font-size: 3rem;
+  }
+}
+
+/* Calendario */
+.segmented {
+  border-radius: 0;
+  transform: skewX(-10deg);
+}
+.segmented button {
+  font-family: var(--font-sport);
+  font-size: 1.05rem;
+  letter-spacing: 0.1em;
+}
+.segmented button > * {
+  transform: skewX(10deg);
+}
+.month-head h2 {
+  font-family: var(--font-sport);
+  font-size: clamp(2.2rem, 6vw, 3.4rem);
+  font-weight: 800;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.icon-btn,
+.btn--small {
+  border-radius: 0;
+}
+.month__table th {
+  padding: 10px 4px;
+  font-family: var(--font-sport);
+  font-size: 1rem;
+  letter-spacing: 0.16em;
+  color: var(--white);
+  background: var(--uva);
+  border-color: var(--uva);
+}
+.month__num {
+  font-family: var(--font-sport);
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+.month__cell.is-today {
+  background: var(--blue-light);
+  box-shadow: inset 0 4px 0 var(--blue);
+}
+.month__cell.is-today .month__num {
+  border-radius: 0;
+  transform: skewX(-10deg);
+}
+.chip {
+  border-radius: 0;
+  border-left: 4px solid rgba(255, 255, 255, 0.55);
+  font-weight: 700;
+}
+.chip--finished {
+  border-left-color: var(--gray-500);
+}
+
+/* Ficha de torneo */
+.dialog {
+  border-radius: 0;
+}
+.dialog__inner {
+  border-top: 10px solid var(--uva);
+}
+.dialog__inner h2 {
+  font-family: var(--font-sport);
+  font-size: clamp(2.2rem, 6vw, 3.2rem);
+  font-weight: 800;
+  line-height: 0.95;
+  text-transform: uppercase;
+}
+.facts dt {
+  font-family: var(--font-sport);
+  font-size: 0.95rem;
+  letter-spacing: 0.14em;
+}
+.facts dd {
+  font-size: 1.05rem;
+}
+
+/* Marcadores de sets */
+.setscores {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.setscores__text {
+  font-family: var(--font-sport);
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.set {
+  display: inline-grid;
+  min-width: 38px;
+  text-align: center;
+  font-family: var(--font-sport);
+  font-weight: 800;
+  line-height: 1;
+  border: 2px solid var(--uva);
+}
+.set b {
+  padding: 5px 8px 3px;
+  font-size: 1.6rem;
+}
+.set i {
+  padding: 3px 8px;
+  font-style: normal;
+  font-size: 1.05rem;
+  color: var(--uva);
+  background: rgba(47, 44, 100, 0.1);
+}
+.set--won b {
+  color: var(--white);
+  background: var(--uva);
+}
+.set--lost b {
+  color: var(--uva);
+  background: var(--white);
+}
+
+/* Partidos */
+.match,
+.mcard {
+  border-radius: 0;
+  border-left-width: 6px;
+}
+.match__players,
+.mcard__players {
+  font-family: var(--font-sport);
+  font-size: 1.55rem;
+  font-weight: 800;
+  line-height: 1.05;
+  text-transform: uppercase;
+}
+.match__players span,
+.mcard__players span {
+  font-family: var(--font-sans, inherit);
+  font-size: 0.95rem;
+  text-transform: none;
+}
+.match__tournament {
+  font-family: var(--font-sport);
+  font-size: 0.95rem;
+}
+.match__outcome,
+.mcard__outcome {
+  font-family: var(--font-sport);
+  font-size: 1.05rem;
+  letter-spacing: 0.14em;
+}
+.mcard__est {
+  font-family: var(--font-sport);
+  font-size: 2.1rem;
+  font-weight: 800;
+  line-height: 1;
+}
+.mcard--live {
+  border-left-color: var(--blue);
+  box-shadow: inset 0 0 0 2px var(--blue);
+}
+.board h3,
+.matches-grid h3 {
+  font-family: var(--font-sport);
+  font-size: 1.9rem;
+  font-weight: 800;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+/* Directo: cabecera del torneo y marcador de fin estimado */
+.live__head h2 {
+  font-family: var(--font-sport);
+  font-size: clamp(2.2rem, 6vw, 4rem);
+  font-weight: 800;
+  line-height: 0.95;
+  text-transform: uppercase;
+}
+.estimate {
+  position: relative;
+  border-radius: 0;
+  background-color: var(--uva);
+  background-image: linear-gradient(115deg, transparent 0 66%, rgba(255, 255, 255, 0.05) 66% 80%, transparent 80%), var(--court-lines);
+  background-repeat: no-repeat;
+  background-size: 100% 100%, min(760px, 100%) auto;
+  background-position: center, right -30px bottom -10px;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 30px), calc(100% - 30px) 100%, 0 100%);
+}
+.estimate::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 46%;
+  max-width: 420px;
+  height: 8px;
+  background: var(--blue);
+  clip-path: polygon(0 0, 100% 0, calc(100% - 16px) 100%, 0 100%);
+}
+.estimate__label {
+  font-family: var(--font-sport);
+  font-size: 1.3rem;
+  letter-spacing: 0.2em;
+}
+.estimate__time {
+  font-family: var(--font-sport);
+  font-size: clamp(6rem, 26vw, 15rem);
+  font-weight: 800;
+  line-height: 0.88;
+  letter-spacing: -0.01em;
+}
+.estimate__range,
+.estimate__count {
+  font-family: var(--font-sport);
+  font-size: 1.35rem;
+  letter-spacing: 0.03em;
+}
+.progress {
+  height: 14px;
+  border-radius: 0;
+  transform: skewX(-20deg);
+}
+.progress__bar {
+  background: linear-gradient(90deg, #a9cdee, var(--white));
+}
+.estimate__facts dt {
+  font-family: var(--font-sport);
+  font-size: 1rem;
+}
+.estimate__facts dd {
+  font-family: var(--font-sport);
+  font-size: 2.4rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+/* Cuadros y clasificaciones */
+.draws h2,
+.notify h2 {
+  font-family: var(--font-sport);
+  font-size: clamp(2.2rem, 5vw, 3.2rem);
+  font-weight: 800;
+  line-height: 1;
+  text-transform: uppercase;
+}
+.draw h3 {
+  font-family: var(--font-sport);
+  font-size: 1.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+.standings thead th {
+  padding: 8px 10px;
+  font-family: var(--font-sport);
+  font-size: 1rem;
+  letter-spacing: 0.1em;
+  color: var(--white);
+  background: var(--uva);
+}
+.bracket__round h4 {
+  padding-bottom: 6px;
+  font-family: var(--font-sport);
+  font-size: 1.15rem;
+  border-bottom: 3px solid var(--blue);
+}
+.bmatch {
+  border-radius: 0;
+  border-left: 5px solid var(--gray-200);
+}
+.bmatch.is-uva {
+  border-left-color: var(--uva);
+}
+
+/* Contenedores de tarjetas */
+.empty {
+  border-radius: 0;
+}
+
+.t-group__title,
+.agenda h3 {
+  font-family: var(--font-sport);
+  font-size: 2.2rem;
+  font-weight: 800;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.t-group__title {
+  border-bottom-width: 4px;
+}

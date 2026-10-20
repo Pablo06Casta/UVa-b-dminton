@@ -1,5 +1,6 @@
 import { clock, lateness } from '../../lib/live';
 import type { UvaMatch } from '../../types';
+import { SetScores } from '../tournaments/SetScores';
 import { ShareButton } from './ShareButton';
 
 const stateLabel = { scheduled: 'Programado', live: 'En juego', finished: 'Finalizado' } as const;
@@ -17,7 +18,7 @@ export function MatchCard({ match: m, tournament, highlight }: { match: UvaMatch
       {m.state === 'finished' && (
         <p className="mcard__result">
           {m.outcome && <strong className="mcard__outcome">{m.outcome === 'win' ? 'Victoria' : 'Derrota'}</strong>}
-          <span className="mcard__score">{m.score ?? 'Resultado pendiente de publicar'}</span>
+          {m.score ? <SetScores score={m.score} /> : <span className="mcard__score">Resultado pendiente de publicar</span>}
         </p>
       )}
 

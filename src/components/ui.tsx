@@ -8,15 +8,18 @@ export function SectionHeading({
   lead,
   id,
   light = false,
+  sport = false,
 }: {
   eyebrow: string;
   title: string;
   lead?: string;
   id: string;
   light?: boolean;
+  /** Estética deportiva (torneos, partidos, directo). */
+  sport?: boolean;
 }) {
   return (
-    <header className={`section-heading${light ? ' section-heading--light' : ''}`}>
+    <header className={`section-heading${light ? ' section-heading--light' : ''}${sport ? ' section-heading--sport' : ''}`}>
       <p className="eyebrow">{eyebrow}</p>
       <h2 id={id}>{title}</h2>
       {lead && <p className="lead">{lead}</p>}
@@ -24,9 +27,9 @@ export function SectionHeading({
   );
 }
 
-export function PageHeader({ title, lead }: { title: string; lead: string }) {
+export function PageHeader({ title, lead, sport = false }: { title: string; lead: string; sport?: boolean }) {
   return (
-    <section className="page-header" aria-labelledby="page-title">
+    <section className={`page-header${sport ? ' page-header--sport' : ''}`} aria-labelledby="page-title">
       <div className="container">
         <p className="eyebrow">Club Bádminton · Universidad de Valladolid</p>
         <h1 id="page-title">{title}</h1>

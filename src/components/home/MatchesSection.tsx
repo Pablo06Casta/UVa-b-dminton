@@ -14,6 +14,7 @@ export function MatchesSection() {
     <section className="section" aria-labelledby="partidos-title">
       <div className="container">
         <SectionHeading
+          sport
           id="partidos-title"
           eyebrow="Competición"
           title="Partidos y resultados"

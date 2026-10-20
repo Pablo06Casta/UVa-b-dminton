@@ -30,7 +30,7 @@ export function LivePage() {
 
   return (
     <>
-      <PageHeader title="Directo" lead="Partidos que se juegan ahora, resultados y próximos partidos de los jugadores de la UVa." />
+      <PageHeader sport title="Directo" lead="Partidos que se juegan ahora, resultados y próximos partidos de los jugadores de la UVa." />
       <div className="section">
         <div className="container live">
           {!hasApi && (

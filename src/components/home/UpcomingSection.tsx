@@ -11,6 +11,7 @@ export function UpcomingSection() {
     <section className="section section--gray" aria-labelledby="torneos-title">
       <div className="container">
         <SectionHeading
+          sport
           id="torneos-title"
           eyebrow="Competición"
           title="Próximas competiciones"

@@ -84,6 +84,7 @@ export function CalendarPage() {
   return (
     <>
       <PageHeader
+        sport
         title="Calendario"
         lead="Competiciones en las que participa el Club Bádminton Universidad de Valladolid."
       />

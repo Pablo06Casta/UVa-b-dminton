@@ -1,5 +1,6 @@
 import { formatDay } from '../../lib/dates';
 import type { UvaMatch } from '../../types';
+import { SetScores } from './SetScores';
 
 const stateLabel: Record<UvaMatch['state'], string> = {
   scheduled: 'Programado',
@@ -24,7 +25,7 @@ export function MatchRow({ match: m, tournamentName }: { match: UvaMatch; tourna
         {m.state === 'finished' ? (
           <>
             {m.outcome && <span className="match__outcome">{m.outcome === 'win' ? 'Victoria' : 'Derrota'}</span>}
-            <span className="match__score">{m.score ?? 'Resultado pendiente de publicar'}</span>
+            {m.score ? <SetScores score={m.score} /> : <span className="match__score">Resultado pendiente de publicar</span>}
           </>
         ) : (
           <span className={`status status--${m.state === 'live' ? 'ongoing' : 'upcoming'}`}>{stateLabel[m.state]}</span>
