@@ -1,0 +1,29 @@
+{
+  "name": "Club Bádminton",
+  "university": "Universidad de Valladolid",
+  "tagline": "Bádminton universitario",
+  "heroMessage": "El espacio digital del club de bádminton de la Universidad de Valladolid: conoce al equipo, consulta el calendario de competiciones y ponte en contacto con nosotros.",
+  "about": {
+    "title": "El club de bádminton de la Universidad de Valladolid",
+    "paragraphs": [
+      "Texto de presentación pendiente. El responsable del club debe facilitar una breve descripción del club: qué es, a quién se dirige y qué actividades desarrolla.",
+      "Mientras tanto, este bloque es un marcador de posición: no contiene información real sobre el club."
+    ],
+    "status": "pending"
+  },
+  "email": null,
+  "socials": [],
+  "address": null,
+  "images": {
+    "hero": {
+      "src": "/images/hero-provisional.svg",
+      "alt": "Ilustración provisional de una pista de bádminton. Se sustituirá por la fotografía de grupo del equipo.",
+      "provisional": true
+    },
+    "about": {
+      "src": "/images/presentacion-provisional.svg",
+      "alt": "Ilustración provisional de una pista de bádminton vista desde arriba.",
+      "provisional": true
+    }
+  }
+}

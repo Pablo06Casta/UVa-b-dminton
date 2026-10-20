@@ -1,0 +1,65 @@
+[
+  {
+    "id": "ejemplo-0",
+    "name": "Torneo de ejemplo 0 (provisional)",
+    "startDate": "2026-10-10",
+    "city": "Localidad por confirmar",
+    "category": "Universitario",
+    "clubParticipants": 6,
+    "results": "Resultados de ejemplo: aquí se mostrarán los resultados reales cuando se incorporen.",
+    "provisional": true,
+    "source": "manual"
+  },
+  {
+    "id": "ejemplo-1",
+    "name": "Torneo de ejemplo 1 (provisional)",
+    "startDate": "2026-10-19",
+    "endDate": "2026-10-21",
+    "city": "Localidad por confirmar",
+    "venue": "Instalación por confirmar",
+    "category": "Universitario",
+    "provisional": true,
+    "source": "manual"
+  },
+  {
+    "id": "ejemplo-2",
+    "name": "Torneo de ejemplo 2 (provisional)",
+    "startDate": "2026-11-07",
+    "city": "Valladolid",
+    "venue": "Instalación por confirmar",
+    "category": "Absoluto",
+    "clubParticipants": 8,
+    "provisional": true,
+    "source": "manual"
+  },
+  {
+    "id": "ejemplo-3",
+    "name": "Torneo de ejemplo 3 (provisional)",
+    "startDate": "2026-11-21",
+    "endDate": "2026-11-22",
+    "city": "Localidad por confirmar",
+    "category": "Universitario",
+    "provisional": true,
+    "source": "manual"
+  },
+  {
+    "id": "ejemplo-4",
+    "name": "Torneo de ejemplo 4 (provisional)",
+    "startDate": "2026-12-12",
+    "city": "Localidad por confirmar",
+    "category": "Absoluto",
+    "clubParticipants": 5,
+    "externalUrl": "https://example.org/",
+    "provisional": true,
+    "source": "manual"
+  },
+  {
+    "id": "ejemplo-5",
+    "name": "Torneo de ejemplo 5 (provisional)",
+    "startDate": "2027-01-16",
+    "endDate": "2027-01-17",
+    "city": "Localidad por confirmar",
+    "provisional": true,
+    "source": "manual"
+  }
+]

@@ -1,0 +1,48 @@
+{
+  "sections": [
+    {
+      "id": "presentacion",
+      "title": "Presentación histórica",
+      "paragraphs": [],
+      "status": "pending",
+      "needed": "Texto introductorio sobre la trayectoria del club y su vinculación con la Universidad de Valladolid."
+    },
+    {
+      "id": "origen",
+      "title": "Origen y fundación",
+      "paragraphs": [],
+      "status": "pending",
+      "needed": "Año y circunstancias de la fundación, personas impulsoras y fuente que lo acredite."
+    },
+    {
+      "id": "evolucion",
+      "title": "Evolución del equipo",
+      "paragraphs": [],
+      "status": "pending",
+      "needed": "Etapas del club, cambios de categoría, relevos de plantilla y hechos relevantes."
+    },
+    {
+      "id": "competiciones",
+      "title": "Participación en competiciones",
+      "paragraphs": [],
+      "status": "pending",
+      "needed": "Competiciones en las que ha participado el club (ligas, campeonatos universitarios, torneos)."
+    },
+    {
+      "id": "logros",
+      "title": "Principales logros",
+      "paragraphs": [],
+      "status": "pending",
+      "needed": "Títulos, podios y premios con fecha y competición."
+    },
+    {
+      "id": "actualidad",
+      "title": "Situación actual del club",
+      "paragraphs": [],
+      "status": "pending",
+      "needed": "Estado actual del club: plantilla, objetivos de la temporada y actividad."
+    }
+  ],
+  "timeline": [],
+  "photos": []
+}
