@@ -52,7 +52,9 @@ create table if not exists tournaments (
   draws_ok_at text,
   last_error text,
   last_error_at text,
-  hidden integer not null default 0
+  hidden integer not null default 0,
+  -- 1 = torneo introducido a mano por el club: el motor no intenta leerlo de la fuente oficial.
+  manual integer not null default 0
 );
 
 -- Qué jugadores de la lista aparecen vinculados a cada torneo (descubrimiento desde su perfil).

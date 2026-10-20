@@ -69,7 +69,7 @@ export async function notifyUpcoming(db: Db, now: Date, sender: PushSender): Pro
       const stored = JSON.parse(r.json) as StoredMatch;
       if (!stored.sides.some((s) => s.players.some((p) => p.rosterId === player.id))) continue;
       const est = kvGet<Estimate>(db, `estimate:${r.tournament_guid}`);
-      const pub = toPublicMatch(stored, publicIds, est?.starts ?? {});
+      const pub = toPublicMatch(stored, publicIds, est ?? { starts: {} });
       if (!pub || pub.state !== 'scheduled') continue;
       const start = pub.estimatedStart ?? pub.plannedStart;
       if (!start) continue;

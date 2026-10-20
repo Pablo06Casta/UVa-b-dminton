@@ -54,7 +54,7 @@ export interface PublicProgress {
   plannedSlotMin?: number;
   delayMin?: number;
   courts: number;
-  basis: 'observed' | 'default';
+  basis: 'observed' | 'default' | 'manual';
   done: boolean;
   estimatedEnd?: string;
   estimatedEndLow?: string;
@@ -69,7 +69,10 @@ export interface PublicTournament {
   city?: string;
   venue?: string;
   level?: string;
-  officialUrl: string;
+  /** Ficha oficial en badminton.es (no existe en torneos introducidos a mano). */
+  officialUrl?: string;
+  /** `true` si lo introduce el club a mano. */
+  manual: boolean;
   uvaPlayers: string[];
   matches: PublicMatch[];
   progress?: PublicProgress;
@@ -93,10 +96,17 @@ export interface PublicState {
   tournaments: PublicTournament[];
 }
 
+/** Con cifras manuales, la hora estimada es la programada más el retraso medio que anota el club. */
+const delayedStart = (m: StoredMatch, h: StartHints): string | undefined =>
+  h.basis === 'manual' && h.delayMin && m.plannedUtc ? new Date(Date.parse(m.plannedUtc) + h.delayMin * 60_000).toISOString() : undefined;
+
 const stateOf = (s: StoredMatch['status']): PublicMatch['state'] => (s === 'on_court' ? 'live' : s === 'scheduled' || s === 'unknown' ? 'scheduled' : 'finished');
 
 /** Traduce un partido guardado a lo que se puede publicar. Devuelve `undefined` si hay alguien sin consentimiento. */
-export function toPublicMatch(m: StoredMatch, publicIds: Set<number>, starts: Record<string, string> = {}): PublicMatch | undefined {
+/** Lo que la estimación aporta a un partido: hora estimada por partido y, en datos manuales, un retraso común. */
+export type StartHints = Pick<Estimate, 'starts'> & Partial<Pick<Estimate, 'delayMin' | 'basis'>>;
+
+export function toPublicMatch(m: StoredMatch, publicIds: Set<number>, hints: StartHints = { starts: {} }): PublicMatch | undefined {
   const uvaOn = m.sides.map((s) => s.players.filter((p) => p.uva));
   const all = uvaOn.flat();
   // Si alguien del club en el partido no es público, no se publica el partido entero.
@@ -125,7 +135,7 @@ export function toPublicMatch(m: StoredMatch, publicIds: Set<number>, starts: Re
     score: stateOf(m.status) === 'finished' ? score : undefined,
     outcome: stateOf(m.status) === 'finished' && !bothSides && m.winner ? (m.winner === uvaSide + 1 ? 'win' : 'loss') : undefined,
     plannedStart: m.plannedUtc,
-    estimatedStart: stateOf(m.status) === 'scheduled' ? starts[m.key] : undefined,
+    estimatedStart: stateOf(m.status) === 'scheduled' ? hints.starts[m.key] ?? delayedStart(m, hints) : undefined,
   };
 }
 
@@ -201,7 +211,7 @@ function toProgress(e: Estimate & { date: string }): PublicProgress {
 
 interface TRow {
   guid: string; name: string; start_date: string | null; end_date: string | null; city: string | null;
-  venue: string | null; level: string | null; info_ok_at: string | null; draws_ok_at: string | null;
+  venue: string | null; level: string | null; info_ok_at: string | null; draws_ok_at: string | null; manual: number;
 }
 
 export function buildPublicState(db: Db, now = new Date()): PublicState {
@@ -218,7 +228,7 @@ export function buildPublicState(db: Db, now = new Date()): PublicState {
 
     const est = kvGet<Estimate & { date: string }>(db, `estimate:${t.guid}`);
     const matches = (db.prepare('select json from matches where tournament_guid = ?').all(t.guid) as unknown as { json: string }[])
-      .map((r) => toPublicMatch(JSON.parse(r.json) as StoredMatch, publicIds, est?.starts ?? {}))
+      .map((r) => toPublicMatch(JSON.parse(r.json) as StoredMatch, publicIds, est ?? { starts: {} }))
       .filter((m): m is PublicMatch => !!m)
       .sort((a, b) => `${a.date ?? ''} ${a.time ?? ''}`.localeCompare(`${b.date ?? ''} ${b.time ?? ''}`));
 
@@ -228,7 +238,7 @@ export function buildPublicState(db: Db, now = new Date()): PublicState {
     const checkedAt = [t.info_ok_at, t.draws_ok_at, ...dayOks].filter((x): x is string => !!x).sort().at(-1);
     const phase = tournamentPhase({ startDate: t.start_date, endDate: t.end_date }, today);
     const watching = phase === 'live' || phase === 'imminent' || phase === 'recent';
-    const stale = settings.officialReadEnabled && watching && (!checkedAt || now.getTime() - Date.parse(checkedAt) > settings.staleAfterMs);
+    const stale = !t.manual && settings.officialReadEnabled && watching && (!checkedAt || now.getTime() - Date.parse(checkedAt) > settings.staleAfterMs);
 
     tournaments.push({
       id: t.guid,
@@ -238,7 +248,8 @@ export function buildPublicState(db: Db, now = new Date()): PublicState {
       city: t.city ?? undefined,
       venue: t.venue ?? undefined,
       level: t.level ?? undefined,
-      officialUrl: `https://www.badminton.es/sport/tournament.aspx?id=${t.guid}`,
+      officialUrl: t.manual ? undefined : `https://www.badminton.es/sport/tournament.aspx?id=${t.guid}`,
+      manual: !!t.manual,
       uvaPlayers: [...new Set([...linked.map((p) => p.name), ...matches.flatMap((m) => m.players)])].sort((a, b) => a.localeCompare(b, 'es')),
       matches,
       progress: est ? toProgress(est) : undefined,

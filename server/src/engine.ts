@@ -77,7 +77,7 @@ export class SyncEngine {
       jobs.push({ key: 'discover', kind: 'discover', phase: 'far', due: last + settings.intervals.discovery, rank: 4 });
     }
 
-    const rows = this.db.prepare('select * from tournaments where hidden = 0').all() as unknown as TournamentRow[];
+    const rows = this.db.prepare('select * from tournaments where hidden = 0 and manual = 0').all() as unknown as TournamentRow[];
     for (const t of rows) {
       const phase = tournamentPhase({ startDate: t.start_date, endDate: t.end_date }, today);
       const iv = intervalsFor(phase);

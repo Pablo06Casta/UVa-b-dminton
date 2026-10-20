@@ -43,6 +43,21 @@
       <div id="overview"></div>
     </section>
     <section>
+      <h2>Directo: torneos, partidos y resultados <small>(los introduce el club)</small></h2>
+      <p><small>Todo lo que anotes aquí aparece en la web (Directo, Calendario, Inicio) y alimenta los avisos y la hora estimada de fin. Solo se publican jugadores con consentimiento registrado.</small></p>
+      <h3 style="margin:10px 0 6px">Nuevo torneo</h3>
+      <form id="mt">
+        <label>Nombre<input name="name" required></label>
+        <label>Inicio<input name="startDate" type="date" required></label>
+        <label>Fin (opcional)<input name="endDate" type="date"></label>
+        <label>Ciudad<input name="city"></label>
+        <label>Sede<input name="venue"></label>
+        <div style="grid-column:1/-1"><strong style="font-size:.85rem">Jugadores de la UVa que juegan</strong><div id="mtPlayers" style="display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:4px"></div></div>
+        <button>Crear torneo</button>
+      </form>
+      <div id="manualList"></div>
+    </section>
+    <section>
       <h2>Jugadores del club</h2>
       <table><thead><tr><th>Nombre</th><th>Categoría</th><th>Perfil oficial</th><th>Menor</th><th>Consentimiento</th><th>Público</th><th></th></tr></thead><tbody id="players"></tbody></table>
     </section>
@@ -91,9 +106,50 @@ async function api(path, method = 'GET', body) {
   return j;
 }
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const chk = (players, name) => players.map((p) => `<label class="chk" style="font-weight:400"><input type="checkbox" name="${name}" value="${p.id}"> ${esc(p.name)}</label>`).join('');
+const num = (v) => v === '' || v == null ? undefined : Number(v);
+function renderManual(players, manual) {
+  $('#mtPlayers').innerHTML = chk(players, 'playerIds');
+  const st = { scheduled: 'programado', live: 'EN JUEGO', finished: 'finalizado' };
+  $('#manualList').innerHTML = manual.map((t) => {
+    const p = t.progress || {};
+    return `<div style="border-top:2px solid var(--line);margin-top:16px;padding-top:10px">
+      <h3 style="margin:0 0 2px">${esc(t.name)} <small>${esc(t.startDate)}${t.endDate && t.endDate !== t.startDate ? ' – ' + esc(t.endDate) : ''} · ${esc(t.city)}</small> <button class="danger" data-deltour="${esc(t.guid)}">Borrar torneo</button></h3>
+      <h4 style="margin:10px 0 4px">Cifras de la jornada <small>(de ellas sale la hora estimada de fin; actualízalas cada rato)</small></h4>
+      <form class="fp" data-g="${esc(t.guid)}">
+        <label>Partidos del día<input name="total" type="number" min="1" value="${p.total ?? ''}" required></label>
+        <label>Terminados<input name="finished" type="number" min="0" value="${p.finished ?? ''}" required></label>
+        <label>En juego ahora<input name="live" type="number" min="0" value="${p.live ?? 0}"></label>
+        <label>Pistas<input name="courts" type="number" min="1" value="${p.courts ?? ''}" required></label>
+        <label>Duración media (min)<input name="avgDurationMin" type="number" min="5" value="${p.avgDurationMin ?? ''}" placeholder="35"></label>
+        <label>Retraso medio (min)<input name="delayMin" type="number" value="${p.delayMin ?? ''}" placeholder="0"></label>
+        <button>Actualizar hora de fin</button>
+      </form>
+      ${p.estimatedEnd ? `<p><strong>Fin estimado: ${new Date(p.estimatedEnd).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}</strong></p>` : ''}
+      <h4 style="margin:10px 0 4px">Añadir partido</h4>
+      <form class="fm" data-g="${esc(t.guid)}">
+        <div style="grid-column:1/-1">${chk(players, 'pid')}</div>
+        <label>Rival (opcional)<input name="opponent"></label>
+        <label>Prueba<input name="event" placeholder="IM, DM, DX…"></label>
+        <label>Ronda<input name="round" placeholder="Octavos"></label>
+        <label>Fecha<input name="date" type="date" value="${esc(t.startDate)}" required></label>
+        <label>Hora<input name="time" type="time"></label>
+        <label>Pista<input name="court"></label>
+        <label>Estado<select name="state"><option value="scheduled">Programado</option><option value="live">En juego</option><option value="finished">Finalizado</option></select></label>
+        <label>Sets (21-15 18-21 21-17)<input name="score"></label>
+        <label>Resultado<select name="outcome"><option value="">—</option><option value="win">Victoria</option><option value="loss">Derrota</option><option value="walkover">W.O. a favor</option></select></label>
+        <button>Añadir partido</button>
+      </form>
+      <ul style="margin:10px 0 0;padding-left:0;list-style:none">${t.matches.map((m) => `<li style="padding:6px 0;border-bottom:1px solid var(--line)">
+        <strong>${esc(m.players.join(' / '))}</strong>${m.opponent ? ' vs ' + esc(m.opponent) : ''} · ${esc([m.event, m.round].filter(Boolean).join(' · '))} · ${esc(m.date)} ${esc(m.time)}${m.court ? ' · pista ' + esc(m.court) : ''} · <span class="tag ${m.state === 'finished' ? 'no' : ''}">${st[m.state]}</span>${m.score ? ' ' + esc(m.score) : ''}${m.outcome ? ' (' + { win: 'victoria', loss: 'derrota', walkover: 'W.O.' }[m.outcome] + ')' : ''}
+        <span style="white-space:nowrap">${m.state !== 'live' ? `<button class="sec" data-act="live" data-k="${esc(m.key)}">En juego</button> ` : ''}<button class="sec" data-act="fin" data-k="${esc(m.key)}">Finalizar…</button> <button class="danger" data-act="del" data-k="${esc(m.key)}">Borrar</button></span></li>`).join('') || '<li><small>Sin partidos todavía.</small></li>'}</ul>
+    </div>`;
+  }).join('') || '<p><small>Aún no hay torneos manuales.</small></p>';
+}
 async function load() {
   try {
-    const [players, status, cands, overview] = await Promise.all([api('players'), api('status'), api('candidates'), api('overview')]);
+    const [players, status, cands, overview, manual] = await Promise.all([api('players'), api('status'), api('candidates'), api('overview'), api('manual')]);
+    renderManual(players, manual);
     $('#app').hidden = false; msg('');
     $('#status').textContent = JSON.stringify({ lecturaOficial: status.officialReadEnabled, ultimoTrabajo: status.lastJob, torneos: status.tournaments, partidos: status.matches, jugadores: status.players, publicos: status.publicPlayers }, null, 2);
     window.__players = players;
@@ -110,6 +166,39 @@ $('#add').addEventListener('submit', async (e) => {
   for (const [k, v] of f.entries()) b[k] = v === 'on' ? true : v || null;
   for (const k of ['isMinor', 'guardianConsent', 'public']) b[k] = !!b[k];
   try { await api('players', 'POST', b); e.target.reset(); await load(); msg('Guardado.'); } catch (err) { msg(err.message, true); }
+});
+$('#mt').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const f = new FormData(e.target);
+  const body = { name: f.get('name'), startDate: f.get('startDate'), endDate: f.get('endDate') || null, city: f.get('city') || null, venue: f.get('venue') || null, playerIds: f.getAll('playerIds').map(Number) };
+  try { await api('manual/tournaments', 'POST', body); e.target.reset(); await load(); msg('Torneo creado.'); } catch (err) { msg(err.message, true); }
+});
+document.addEventListener('submit', async (e) => {
+  const form = e.target;
+  if (form.classList.contains('fp')) {
+    e.preventDefault();
+    const f = new FormData(form);
+    try { const r = await api('manual/progress/' + encodeURIComponent(form.dataset.g), 'PUT', { total: num(f.get('total')), finished: num(f.get('finished')), live: num(f.get('live')) ?? 0, courts: num(f.get('courts')), avgDurationMin: num(f.get('avgDurationMin')), delayMin: num(f.get('delayMin')) }); await load(); msg('Hora de fin actualizada.'); } catch (err) { msg(err.message, true); }
+  } else if (form.classList.contains('fm')) {
+    e.preventDefault();
+    const f = new FormData(form);
+    const body = { tournamentId: form.dataset.g, playerIds: f.getAll('pid').map(Number), opponent: f.get('opponent') || null, event: f.get('event') || null, round: f.get('round') || null, date: f.get('date'), time: f.get('time') || null, court: f.get('court') || null, state: f.get('state'), score: f.get('score') || null, outcome: f.get('outcome') || null };
+    try { await api('manual/matches', 'POST', body); await load(); msg('Partido añadido.'); } catch (err) { msg(err.message, true); }
+  }
+});
+document.addEventListener('click', async (e) => {
+  const b = e.target.closest('button'); if (!b) return;
+  try {
+    if (b.dataset.deltour) { if (!confirm('¿Borrar el torneo y todos sus partidos?')) return; await api('manual/tournaments/' + encodeURIComponent(b.dataset.deltour), 'DELETE'); await load(); }
+    else if (b.dataset.act === 'live') { await api('manual/matches/' + encodeURIComponent(b.dataset.k), 'PATCH', { state: 'live' }); await load(); }
+    else if (b.dataset.act === 'del') { if (!confirm('¿Borrar este partido?')) return; await api('manual/matches/' + encodeURIComponent(b.dataset.k), 'DELETE'); await load(); }
+    else if (b.dataset.act === 'fin') {
+      const score = prompt('Sets desde la UVa, p. ej. 21-15 18-21 21-17 (vacío si fue W.O.)', '');
+      if (score === null) return;
+      const outcome = score.trim() ? '' : 'walkover';
+      await api('manual/matches/' + encodeURIComponent(b.dataset.k), 'PATCH', { state: 'finished', score: score.trim() || null, outcome: outcome || null }); await load(); msg('Resultado guardado.');
+    }
+  } catch (err) { msg(err.message, true); }
 });
 $('#csv').addEventListener('submit', async (e) => {
   e.preventDefault();

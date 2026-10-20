@@ -171,7 +171,7 @@ export interface LiveProgress {
   plannedSlotMin?: number;
   delayMin?: number;
   courts: number;
-  basis: 'observed' | 'default';
+  basis: 'observed' | 'default' | 'manual';
   done: boolean;
   estimatedEnd?: string;
   estimatedEndLow?: string;
@@ -204,6 +204,6 @@ export interface LiveState {
   pushEnabled: boolean;
   tournaments: {
     id: string; name: string; startDate?: string; endDate?: string; city?: string; venue?: string; level?: string;
-    officialUrl: string; uvaPlayers: string[]; matches: UvaMatch[]; progress?: LiveProgress; draws: LiveDraw[]; checkedAt?: string; stale: boolean;
+    officialUrl?: string; manual?: boolean; uvaPlayers: string[]; matches: UvaMatch[]; progress?: LiveProgress; draws: LiveDraw[]; checkedAt?: string; stale: boolean;
   }[];
 }

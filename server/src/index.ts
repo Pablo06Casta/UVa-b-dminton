@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
 import { createApp, Hub } from './api';
@@ -9,6 +10,22 @@ import { RealSource } from './source';
 import { httpConfig } from './config-http';
 
 const db = openDb(path.join(settings.dataDir, 'club.sqlite'));
+
+/** Copia de la base de datos (consentimientos, jugadores, partidos): al arrancar y cada 24 h; se conservan las 7 últimas. */
+function backup() {
+  try {
+    const dir = path.join(settings.dataDir, 'backups');
+    fs.mkdirSync(dir, { recursive: true });
+    const file = path.join(dir, `club-${new Date().toISOString().slice(0, 10)}.sqlite`);
+    fs.rmSync(file, { force: true });
+    db.exec(`vacuum into '${file.replace(/'/g, "''")}'`);
+    for (const old of fs.readdirSync(dir).filter((f) => f.startsWith('club-')).sort().slice(0, -7)) fs.rmSync(path.join(dir, old), { force: true });
+  } catch (e) {
+    console.error('copia de seguridad', e);
+  }
+}
+backup();
+setInterval(backup, 24 * 3600_000).unref();
 const hub = new Hub(db);
 
 const source = new RealSource();

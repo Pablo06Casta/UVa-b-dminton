@@ -6,7 +6,7 @@ const t = (id: string, startDate: string, city: string, extra: Partial<Tournamen
 const m = (id: string, state: UvaMatch['state'], plannedStart?: string, estimatedStart?: string): UvaMatch => ({ id, state, players: ['A'], plannedStart, estimatedStart });
 const state = (over: Partial<LiveState['tournaments'][number]> = {}): LiveState => ({
   generatedAt: '', officialReadEnabled: true, version: 'v', players: [], pushEnabled: false,
-  tournaments: [{ id: 'AAAAAAAA-1', name: 'Torneo en vivo', startDate: '2026-11-07', city: 'Valladolid', officialUrl: 'u', uvaPlayers: ['Ana Prueba'], matches: [m('k1', 'scheduled')], draws: [], stale: false, ...over }],
+  tournaments: [{ id: 'AAAAAAAA-1', name: 'Torneo en vivo', startDate: '2026-11-07', city: 'Valladolid', officialUrl: 'u' as string | undefined, uvaPlayers: ['Ana Prueba'], matches: [m('k1', 'scheduled')], draws: [], stale: false, ...over }],
 });
 
 describe('mezcla con los datos en directo', () => {
@@ -23,6 +23,14 @@ describe('mezcla con los datos en directo', () => {
   it('si no está en el calendario oficial, se añade como torneo propio', () => {
     const out = mergeLive([t('fesba-9', '2026-12-01', 'Otra')], state());
     expect(out.map((x) => x.id)).toEqual(['ts-aaaaaaaa', 'fesba-9']);
+  });
+});
+
+describe('torneos introducidos a mano por el club', () => {
+  it('se añaden aunque no tengan ficha oficial y no enlazan a badminton.es', () => {
+    const out = mergeLive([], state({ id: 'M-ABC123', officialUrl: undefined, manual: true }));
+    expect(out[0]).toMatchObject({ id: 'ts-m-abc123', liveId: 'M-ABC123', players: ['Ana Prueba'] });
+    expect(out[0].externalUrl).toBeUndefined();
   });
 });
 

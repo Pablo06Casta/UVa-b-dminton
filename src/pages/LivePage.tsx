@@ -44,8 +44,8 @@ export function LivePage() {
             </Notice>
           )}
           {live && !live.officialReadEnabled && (
-            <Notice title="Lectura automática de badminton.es desactivada">
-              De momento no se actualizan partidos ni cuadros de forma automática.
+            <Notice title="Resultados anotados por el club">
+              Los partidos y resultados los introduce el club durante la jornada; no se leen automáticamente de badminton.es.
             </Notice>
           )}
 

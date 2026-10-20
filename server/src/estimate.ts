@@ -45,8 +45,8 @@ export interface Estimate {
   /** Retraso medio del inicio real respecto al programado (+ = tarde). */
   delayMin?: number;
   courts: number;
-  /** `observed` si hay partidos terminados de los que aprender; `default` si se usa la duración por defecto. */
-  basis: 'observed' | 'default';
+  /** `observed`: aprende de partidos terminados; `default`: duración supuesta; `manual`: cifras que introduce el club. */
+  basis: 'observed' | 'default' | 'manual';
   done: boolean;
   estimatedEnd?: string;
   estimatedEndLow?: string;
@@ -191,4 +191,44 @@ export function estimate(slots: Slot[], now: Date, cfg: EstimateConfig = default
   base.estimatedEndLow = new Date(quantile(ends, 0.1)).toISOString();
   base.estimatedEndHigh = new Date(quantile(ends, 0.9)).toISOString();
   return base;
+}
+
+export interface ManualProgress {
+  /** Partidos del día en total, terminados y en juego (cifras que anota el club). */
+  total: number;
+  finished: number;
+  live: number;
+  courts: number;
+  /** Duración media por partido y retraso medio al empezar (minutos), si el club los conoce. */
+  avgDurationMin?: number;
+  delayMin?: number;
+}
+
+/**
+ * Estimación sencilla con las cifras que introduce el club: los partidos que quedan se reparten por rondas entre las pistas.
+ * Cada ronda dura la duración media más el cambio de pista; los partidos en juego acaban, de media, a mitad de duración.
+ */
+export function estimateManual(p: ManualProgress, now: Date, cfg: EstimateConfig = defaultEstimateConfig): Estimate {
+  const avg = p.avgDurationMin && p.avgDurationMin > 0 ? p.avgDurationMin : cfg.defaultMatchMin;
+  const courts = Math.max(1, Math.round(p.courts));
+  const remaining = Math.max(0, p.total - p.finished - p.live);
+  const done = remaining === 0 && p.live === 0 && p.total > 0;
+  const rounds = Math.ceil(remaining / courts);
+  const at = (factor: number) => new Date(now.getTime() + ((p.live > 0 ? avg / 2 : 0) + rounds * (avg + cfg.changeoverMin)) * factor * MIN).toISOString();
+  return {
+    asOf: now.toISOString(),
+    total: p.total,
+    finished: p.finished,
+    live: p.live,
+    remaining,
+    avgDurationMin: p.avgDurationMin,
+    delayMin: p.delayMin,
+    courts,
+    basis: 'manual',
+    done,
+    estimatedEnd: done ? now.toISOString() : at(1),
+    estimatedEndLow: done ? undefined : at(0.85),
+    estimatedEndHigh: done ? undefined : at(1.2),
+    starts: {},
+  };
 }

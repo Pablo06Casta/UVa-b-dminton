@@ -8,13 +8,14 @@
     "node": ">=22.13"
   },
   "scripts": {
-    "start": "tsx src/index.ts",
+    "start": "node --env-file-if-exists=.env --import tsx src/index.ts",
     "dev": "tsx watch src/index.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "demo": "tsx scripts/demo.ts",
     "vapid": "node scripts/vapid.mjs",
-    "roster:import": "tsx scripts/import-roster.ts"
+    "roster:import": "tsx scripts/import-roster.ts",
+    "setup": "node scripts/setup.mjs"
   },
   "dependencies": {
     "cheerio": "^1.2.0",

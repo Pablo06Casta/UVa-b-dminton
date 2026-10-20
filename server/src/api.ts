@@ -11,6 +11,7 @@ import { buildPublicState, type PublicMatch } from './publicView';
 import { pushConfigured, subscribe, unsubscribe } from './push';
 import { buildOverview } from './adminView';
 import { importPlayersCsv } from './importCsv';
+import { addManualMatch, createManualTournament, deleteManualMatch, deleteManualTournament, listManual, setManualProgress, updateManualMatch } from './manual';
 import { createPlayer, deletePlayer, listPlayers, updatePlayer, ValidationError, type PlayerInput } from './roster';
 
 const MAX_BODY = 64 * 1024;
@@ -210,6 +211,42 @@ export function createApp(db: Db, engine: SyncEngine | undefined, hub: Hub) {
           const ids = Array.isArray(body.playerIds) ? (body.playerIds as number[]) : [undefined];
           for (const id of ids) engine.track(guid, id);
           return send(res, 201, { tracking: guid });
+        }
+
+        // --- Torneos, partidos y resultados introducidos a mano por el club ---
+        if (rest === 'manual' && req.method === 'GET') return send(res, 200, listManual(db));
+        if (rest === 'manual/tournaments' && req.method === 'POST') {
+          const guid = createManualTournament(db, (await readJson(req)) as unknown as Parameters<typeof createManualTournament>[1]);
+          hub.check();
+          return send(res, 201, { guid });
+        }
+        const mt = /^manual\/tournaments\/(.+)$/.exec(rest);
+        if (mt && req.method === 'DELETE') {
+          deleteManualTournament(db, decodeURIComponent(mt[1]));
+          hub.check();
+          return send(res, 200, { deleted: true });
+        }
+        if (rest === 'manual/matches' && req.method === 'POST') {
+          const key = addManualMatch(db, (await readJson(req)) as unknown as Parameters<typeof addManualMatch>[1]);
+          hub.check();
+          return send(res, 201, { key });
+        }
+        const mm = /^manual\/matches\/(.+)$/.exec(rest);
+        if (mm && req.method === 'PATCH') {
+          updateManualMatch(db, decodeURIComponent(mm[1]), (await readJson(req)) as Partial<Parameters<typeof addManualMatch>[1]>);
+          hub.check();
+          return send(res, 200, { ok: true });
+        }
+        if (mm && req.method === 'DELETE') {
+          if (!deleteManualMatch(db, decodeURIComponent(mm[1]))) throw new HttpFail(404, 'No existe ese partido manual.');
+          hub.check();
+          return send(res, 200, { deleted: true });
+        }
+        const mp = /^manual\/progress\/(.+)$/.exec(rest);
+        if (mp && req.method === 'PUT') {
+          const est = setManualProgress(db, decodeURIComponent(mp[1]), (await readJson(req)) as unknown as Parameters<typeof setManualProgress>[2]);
+          hub.check();
+          return send(res, 200, { estimatedEnd: est.estimatedEnd });
         }
 
         if (rest === 'overview' && req.method === 'GET') return send(res, 200, buildOverview(db));

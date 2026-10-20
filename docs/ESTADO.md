@@ -16,6 +16,12 @@
 - Calendario oficial absoluto (136 torneos, nacionales y territoriales) con fecha de última comprobación, y filtro
   «Solo con jugadores de la UVa» activo por defecto. Script `npm run calendario:actualizar` (solo rutas permitidas).
 
+## Entrada manual y despliegue (listo)
+
+- Panel `/admin`: torneos, partidos, «en juego», resultados por sets y cifras de la jornada → hora estimada de fin. Probado de
+  punta a punta en navegador y con 104 pruebas. Guía de puesta en marcha en `docs/MANANA.md`.
+- Despliegue en un comando (`npm run setup`, `docker compose up -d`), copia de seguridad diaria, comprobado con una instalación limpia.
+
 ## Servidor en directo (`server/`)
 
 Hecho y probado con una fuente simulada (la implementación contra badminton.es de los lectores de torneo está pendiente, ver abajo):

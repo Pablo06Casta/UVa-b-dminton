@@ -28,3 +28,17 @@ export const eachDay = (start: string, end: string): string[] => {
   for (let d = start; d <= end; d = addDays(d, 1)) out.push(d);
   return out;
 };
+
+/** Hora local de una zona («2026-11-07», «10:30», Europe/Madrid) → instante UTC en ISO. */
+export function localToUtcIso(date: string, time: string, tz = 'Europe/Madrid'): string | undefined {
+  const d = date.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const t = time.match(/^(\d{1,2}):(\d{2})$/);
+  if (!d || !t) return undefined;
+  const guess = Date.UTC(+d[1], +d[2] - 1, +d[3], +t[1], +t[2]);
+  // Diferencia entre la hora local mostrada y la UTC en ese instante (cubre el cambio de hora).
+  const shown = new Intl.DateTimeFormat('en-GB', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+    .formatToParts(new Date(guess))
+    .reduce<Record<string, string>>((a, p) => ((a[p.type] = p.value), a), {});
+  const asUtc = Date.UTC(+shown.year, +shown.month - 1, +shown.day, +shown.hour, +shown.minute);
+  return new Date(guess - (asUtc - guess)).toISOString();
+}

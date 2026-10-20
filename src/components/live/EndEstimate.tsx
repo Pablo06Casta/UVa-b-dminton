@@ -52,7 +52,9 @@ export function EndEstimate({ tournament: t }: { tournament: Tournament }) {
           </dl>
 
           <p className="estimate__note">
-            {p.basis === 'default'
+            {p.basis === 'manual'
+              ? 'Estimación a partir de las cifras que anota el club durante la jornada (partidos totales, terminados, en juego y pistas).'
+              : p.basis === 'default'
               ? 'Aún no hay partidos terminados de los que aprender: se supone una duración típica por partido.'
               : 'Estimación estadística a partir de lo que han tardado los partidos ya terminados, el retraso respecto a lo programado, los partidos que quedan y las pistas disponibles.'}{' '}
             Es una previsión: puede variar.

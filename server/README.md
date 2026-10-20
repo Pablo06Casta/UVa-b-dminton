@@ -11,7 +11,13 @@ navegador ◀── avisos Web Push (N min antes del partido de un jugador) · /
 
 El navegador **nunca** consulta badminton.es: solo habla con este servidor.
 
-## Qué hace
+## Qué funciona hoy
+
+**Entrada manual por el club** (`/admin` → «Directo»): torneos, partidos, estados (programado, en juego, finalizado), resultados por sets
+y cifras de la jornada. Alimenta directo, próximos, resultados, hora estimada de fin del torneo, avisos push y enlaces para compartir.
+Es lo que hace que todo funcione sin lectura automática. Guía: [`docs/MANANA.md`](../docs/MANANA.md).
+
+## Qué hace el motor de lectura automática (cuando existan los lectores)
 
 | Función | Cómo |
 |---|---|
@@ -55,9 +61,8 @@ El `robots.txt` de badminton.es excluye para clientes automáticos `/sport/`, `/
 ```bash
 cd server
 npm install
-cp .env.example .env        # (el servidor lee variables de entorno; en tu alojamiento, defínelas allí)
-npm run vapid               # claves para los avisos → a las variables de entorno, no al chat
-npm start                   # http://localhost:8787
+npm run setup -- --site=https://TU-WEB   # crea .env con ADMIN_TOKEN y claves de avisos (sin mostrarlas)
+npm start                   # http://localhost:8787 (lee .env)
 npm run demo                # servidor de demostración con datos ficticios (no consulta badminton.es)
 npm test                    # pruebas
 ```
