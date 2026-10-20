@@ -4,7 +4,7 @@ name: Publicar en GitHub Pages
 
 on:
   push:
-    branches: [main]
+    branches: [main, claude/peaceful-ride-r3scdt]
   workflow_dispatch:
 
 permissions:
