@@ -24,7 +24,7 @@ export function sameFullName(a: string, b: string): boolean {
   return ta.length > 0 && ta.length === tb.length && ta.every((t, i) => t === tb[i]);
 }
 
-/** ¿Todos los tokens de `short` aparecen en `full`? ("Pablo Martin" ⊂ "Pablo Martín Castañeda") */
+/** ¿Todos los tokens de `short` aparecen en `full`? ("Ana Pérez" ⊂ "Ana María Pérez Gil") */
 export function nameIsSubset(short: string, full: string): boolean {
   const f = new Set(nameTokens(full));
   const s = nameTokens(short);
