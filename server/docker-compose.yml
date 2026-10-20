@@ -1,0 +1,14 @@
+# Alternativa para un VPS propio: docker compose up -d
+services:
+  club:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATA_DIR: /data
+    volumes:
+      - club_data:/data
+    ports:
+      - "8787:8787"
+volumes:
+  club_data:

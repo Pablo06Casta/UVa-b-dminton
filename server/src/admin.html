@@ -96,7 +96,8 @@ async function load() {
     const [players, status, cands, overview] = await Promise.all([api('players'), api('status'), api('candidates'), api('overview')]);
     $('#app').hidden = false; msg('');
     $('#status').textContent = JSON.stringify({ lecturaOficial: status.officialReadEnabled, ultimoTrabajo: status.lastJob, torneos: status.tournaments, partidos: status.matches, jugadores: status.players, publicos: status.publicPlayers }, null, 2);
-    $('#players').innerHTML = players.map((p) => `<tr><td>${esc(p.name)}</td><td>${esc(p.category)}</td><td>${p.profileGuid ? esc(p.profileGuid.slice(0, 8)) + '…' : '<small>—</small>'}</td><td>${p.isMinor ? 'Sí' : 'No'}${p.isMinor ? (p.guardianConsent ? ' (familia OK)' : ' (falta familia)') : ''}</td><td>${p.consentAt ? esc(p.consentBy) + ' · ' + esc(p.consentAt) : '<small>sin registrar</small>'}</td><td><span class="tag ${p.public ? '' : 'no'}">${p.public ? 'Público' : 'Oculto'}</span></td><td><button class="sec" data-t="${p.id}" data-p="${p.public ? 0 : 1}">${p.public ? 'Ocultar' : 'Mostrar'}</button> <button class="danger" data-d="${p.id}">Borrar</button></td></tr>`).join('');
+    window.__players = players;
+    $('#players').innerHTML = players.map((p) => `<tr><td>${esc(p.name)}</td><td>${esc(p.category)}</td><td>${p.profileGuid ? esc(p.profileGuid.slice(0, 8)) + '…' : '<small>—</small>'}</td><td>${p.isMinor ? 'Sí' : 'No'}${p.isMinor ? (p.guardianConsent ? ' (familia OK)' : ' (falta familia)') : ''}</td><td>${p.consentAt ? esc(p.consentBy) + ' · ' + esc(p.consentAt) : '<small>sin registrar</small>'}</td><td><span class="tag ${p.public ? '' : 'no'}">${p.public ? 'Público' : 'Oculto'}</span></td><td><button class="sec" data-c="${p.id}">Registrar consentimiento</button> <button class="sec" data-t="${p.id}" data-p="${p.public ? 0 : 1}">${p.public ? 'Ocultar' : 'Mostrar'}</button> <button class="danger" data-d="${p.id}">Borrar</button></td></tr>`).join('');
     const hh = (iso) => iso ? new Date(iso).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '';
     $('#overview').innerHTML = overview.map((p) => `<h3 style="margin:14px 0 4px">${esc(p.name)} <span class="tag ${p.public ? '' : 'no'}">${p.public ? 'Público' : 'Oculto'}</span> ${p.profileLinked ? '' : '<small>· sin perfil oficial enlazado</small>'}</h3>` + (p.tournaments.length ? p.tournaments.map((t) => `<p style="margin:6px 0 2px"><strong>${esc(t.name)}</strong> <small>${esc(t.startDate)} · ${esc(t.city)}${t.checkedAt ? ' · comprobado ' + hh(t.checkedAt) : ''}${t.progress && t.progress.estimatedEnd ? ' · fin estimado ' + hh(t.progress.estimatedEnd) : ''}</small></p>` + (t.matches.length ? '<ul style="margin:0 0 6px;padding-left:18px">' + t.matches.map((m) => `<li>${esc(m.event)} · ${esc(m.sides[0])} vs ${esc(m.sides[1])} · ${m.state === 'finished' ? esc(m.score || 'finalizado') + (m.outcome ? ' (' + (m.outcome === 'win' ? 'victoria' : 'derrota') + ')' : '') : m.state === 'live' ? '<strong>en juego</strong>' : 'programado ' + esc(m.time) + (m.estimatedStart ? ' · estimado ~' + hh(m.estimatedStart) : '')}${m.court ? ' · pista ' + esc(m.court) : ''}</li>`).join('') + '</ul>' : '<small>Sin partidos todavía.</small>')).join('') : '<small>Sin torneos en seguimiento.</small>')).join('') || '<small>Aún no hay jugadores.</small>';
     $('#cands').innerHTML = cands.map((c) => `<tr><td>${esc(c.name)}</td><td>${esc(c.club)}</td><td>${esc(c.tournament)}</td><td>${esc(c.date)}</td></tr>`).join('') || '<tr><td colspan="4"><small>Ninguna.</small></td></tr>';
@@ -125,7 +126,17 @@ $('#track').addEventListener('submit', async (e) => {
 $('#players').addEventListener('click', async (e) => {
   const t = e.target.closest('button'); if (!t) return;
   try {
-    if (t.dataset.d) { if (!confirm('¿Borrar a esta persona y todos sus datos del servidor? No se puede deshacer.')) return; await api('players/' + t.dataset.d, 'DELETE'); }
+    if (t.dataset.c) {
+      const p = window.__players.find((x) => String(x.id) === t.dataset.c);
+      const by = prompt('¿Quién consintió? (p. ej. «él mismo», «su madre», «su padre»). Solo si el consentimiento existe de verdad.');
+      if (!by) return;
+      const at = prompt('¿Cuándo? (AAAA-MM-DD)', new Date().toISOString().slice(0, 10));
+      if (!at) return;
+      const body = { consentBy: by, consentAt: at };
+      if (p.isMinor) { if (!confirm('Es menor: ¿consta el consentimiento de su familia o tutores?')) return; body.guardianConsent = true; }
+      await api('players/' + t.dataset.c, 'PATCH', body);
+      msg('Consentimiento registrado. Ahora puedes pulsar «Mostrar».');
+    } else if (t.dataset.d) { if (!confirm('¿Borrar a esta persona y todos sus datos del servidor? No se puede deshacer.')) return; await api('players/' + t.dataset.d, 'DELETE'); }
     else await api('players/' + t.dataset.t, 'PATCH', { public: t.dataset.p === '1' });
     await load();
   } catch (err) { msg(err.message, true); }

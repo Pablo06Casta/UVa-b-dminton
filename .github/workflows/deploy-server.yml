@@ -1,0 +1,17 @@
+# Despliega el servidor del club en Fly.io. Solo se ejecuta a mano (Actions → Desplegar servidor → Run workflow).
+# Requisitos previos (una sola vez, ver server/README.md): crear la app y el volumen, y definir los secretos en Fly
+# (ADMIN_TOKEN, VAPID_*, SITE_URL, CORS_ORIGINS) y en GitHub el secreto FLY_API_TOKEN.
+name: Desplegar servidor
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - run: flyctl deploy --remote-only --config server/fly.toml --dockerfile server/Dockerfile server
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}

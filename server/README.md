@@ -68,6 +68,20 @@ npm test                    # 73 pruebas
 2. En la web (GitHub → Settings → Secrets and variables → Actions → **Variables**) crea `VITE_API_URL` con la dirección del servidor y vuelve a publicar.
 3. Cuando haya autorización: `OFFICIAL_READ_ENABLED=true`.
 
+## Puesta en marcha paso a paso (resumen)
+
+1. **Servidor** (Fly.io o VPS): `fly launch --no-deploy --copy-config` · `fly volumes create club_data --size 1 --region mad` ·
+   `fly secrets set ADMIN_TOKEN=… VAPID_PUBLIC_KEY=… VAPID_PRIVATE_KEY=… VAPID_SUBJECT=… SITE_URL=… CORS_ORIGINS=…` · `fly deploy`
+   (o, en GitHub, Actions → «Desplegar servidor»; en un VPS, `docker compose up -d`).
+2. **Jugadores**: `/admin` → importar el CSV → para cada persona, **«Registrar consentimiento»** (quién y cuándo; en menores,
+   también la familia) → «Mostrar». Añade el enlace de su perfil oficial para que se descubran sus torneos.
+3. **Directo**: cuando el club decida activarlo (idealmente con autorización de la federación), `OFFICIAL_READ_ENABLED=true`
+   y reinicia. Desde ese momento el servidor lee solo, sin que nadie tenga la web abierta.
+4. **Web**: variable `VITE_API_URL` en GitHub (Settings → Secrets and variables → Actions → Variables) y volver a publicar.
+
+> «Es público en badminton.es» no equivale a consentimiento para republicar nombres y resultados en otra web. El consentimiento
+> o, en su caso, otra base jurídica debe constar y validarse con el DPD de la UVA; por eso el servidor no publica a nadie sin registro.
+
 ## Alojamiento
 
 - Necesita **un proceso siempre encendido y un disco persistente** (la base de datos guarda la lista de jugadores y los consentimientos).
