@@ -1,12 +1,12 @@
 import { createHash } from 'node:crypto';
-import { todayIn } from '@/lib/util/time';
+import { todayIn } from './dates';
 import { settings } from './config';
 import { type Db, kvGet } from './db';
 import { tournamentPhase } from './policy';
 import { listPlayers, type Player } from './roster';
 import { isUvaClub } from './uva';
 import type { Estimate } from './estimate';
-import { sameFullName } from '@/lib/util/text';
+import { sameFullName } from './text';
 import type { StoredMatch } from './uva';
 
 export interface PublicMatch {

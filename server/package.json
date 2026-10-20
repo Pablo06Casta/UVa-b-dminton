@@ -12,19 +12,16 @@
     "dev": "tsx watch src/index.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "fixtures:copy": "node scripts/copy-fixtures.mjs",
     "demo": "tsx scripts/demo.ts",
     "vapid": "node scripts/vapid.mjs",
     "roster:import": "tsx scripts/import-roster.ts"
   },
   "dependencies": {
     "cheerio": "^1.2.0",
-    "luxon": "^3.7.2",
-    "web-push": "^3.6.7",
-    "tsx": "^4.20.0"
+    "tsx": "^4.20.0",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
-    "@types/luxon": "^3.7.6",
     "@types/node": "^22.20.5",
     "@types/web-push": "^3.6.4",
     "typescript": "^5.9.3",

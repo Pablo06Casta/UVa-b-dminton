@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SourceUnavailableError } from '@/lib/ts/http';
+import { SourceUnavailableError } from '../src/http';
 import { settings } from '../src/config';
 import { SyncEngine } from '../src/engine';
 import { createPlayer } from '../src/roster';

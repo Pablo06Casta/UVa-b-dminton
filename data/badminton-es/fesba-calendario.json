@@ -1,10 +1,7 @@
 {
   "meta": {
     "fuente": "https://www.badminton.es",
-    "extraidoEl": "2026-10-20T21:23:58.592Z",
-    "peticiones": 9,
-    "intervaloMinimoMs": 2500,
-    "userAgent": "Mozilla/5.0 (compatible; ClubBadmintonUVa/0.1; lectura puntual del calendario publico; 1 peticion cada 2,5 s)"
+    "extraidoEl": "2026-10-20T22:05:54.659Z"
   },
   "filas": [
     {

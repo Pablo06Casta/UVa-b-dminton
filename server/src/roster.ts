@@ -1,6 +1,5 @@
 import { type Db, nowIso } from './db';
-import { extractGuid } from '@/lib/util/text';
-import { nameTokens, normalizeName, sameFullName } from '@/lib/util/text';
+import { extractGuid, nameTokens, normalizeName, sameFullName } from './text';
 
 export interface Player {
   id: number;

@@ -1,5 +1,5 @@
-import { eachDay, todayIn } from '@/lib/util/time';
-import { SourceUnavailableError } from '@/lib/ts/http';
+import { eachDay, todayIn } from './dates';
+import { SourceUnavailableError } from './http';
 import { settings } from './config';
 import { type Db, kvGet, kvSet, nowIso } from './db';
 import { intervalsFor, NEVER, priorityFor, tournamentPhase, type Phase } from './policy';
@@ -7,7 +7,7 @@ import { listPlayers, type Player } from './roster';
 import type { OfficialSource } from './source';
 import { transformCalendar } from './calendar';
 import { estimate, type Slot } from './estimate';
-import type { ParsedRow } from '@/lib/ts/parse/common';
+import type { MatchRow } from './model';
 import { buildStoredMatch, type ClubEntrants, diffMatch, findClubEntrants, matchFingerprint, type EntrantLike, type StoredMatch } from './uva';
 
 const DEFAULT_TZ = 'Europe/Madrid';
@@ -236,7 +236,7 @@ export class SyncEngine {
   }
 
   /** Datos anónimos de horario de TODOS los partidos del día (no solo los del club): base de la estimación. */
-  private upsertSlot(guid: string, date: string, r: ParsedRow, now: Date, prevRead?: string) {
+  private upsertSlot(guid: string, date: string, r: MatchRow, now: Date, prevRead?: string) {
     const iso = now.toISOString();
     const done = r.status === 'finished' || r.status === 'walkover' || r.status === 'retired';
     const row = this.db.prepare('select started_seen_at, finished_seen_at, duration_min from slots where key = ?').get(r.key) as unknown as

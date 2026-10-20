@@ -6,14 +6,18 @@ import { openDb } from './db';
 import { SyncEngine } from './engine';
 import { notifyUpcoming, realSender } from './push';
 import { RealSource } from './source';
+import { httpConfig } from './config-http';
 
 const db = openDb(path.join(settings.dataDir, 'club.sqlite'));
 const hub = new Hub(db);
 
-const features = { live: settings.officialReadEnabled, calendar: settings.calendarRefreshEnabled };
+const source = new RealSource();
+if (settings.officialReadEnabled && !source.hasLiveReaders) {
+  console.error('OFFICIAL_READ_ENABLED=true, pero los lectores de las páginas de torneo no están implementados: la lectura en directo no se activa.');
+}
+const features = { live: settings.officialReadEnabled && source.hasLiveReaders, calendar: settings.calendarRefreshEnabled };
 let engine: SyncEngine | undefined;
 if (features.live || features.calendar) {
-  const source = new RealSource();
   source.http.onLog = (e) =>
     db.prepare('insert into fetch_log(at, url, status, ms, bytes, changed, error) values(?,?,?,?,?,?,?)').run(e.at, e.url, e.status, e.ms, e.bytes, +e.changed, e.error ?? null);
   engine = new SyncEngine(db, source, () => new Date(), features);

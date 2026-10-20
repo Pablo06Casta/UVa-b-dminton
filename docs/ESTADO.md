@@ -18,7 +18,7 @@
 
 ## Servidor en directo (`server/`)
 
-Hecho y probado (73 pruebas, incluida una jornada oficial real de 129 partidos):
+Hecho y probado con una fuente simulada (la implementación contra badminton.es de los lectores de torneo está pendiente, ver abajo):
 
 - Lista de jugadores con consentimiento + panel `/admin`; descubrimiento de torneos desde el perfil oficial.
 - Lectura de una vez por torneo, frecuencias por fase (orden de juego cada 5 min en jornada), confirmación de cambios con
@@ -28,6 +28,9 @@ Hecho y probado (73 pruebas, incluida una jornada oficial real de 129 partidos):
 
 Importante:
 
+- **Lectores de páginas de torneo: pendientes.** Se retiró el código que venía de otro repositorio; el calendario tiene lectores
+  propios y verificados, pero los de torneo, cuadros, partidos y perfiles no existen aún. Para escribirlos hace falta ver esas
+  páginas: o bien con autorización de la federación, o bien con páginas guardadas desde el navegador por el club.
 - **La lectura en directo está DESACTIVADA por defecto** (`OFFICIAL_READ_ENABLED=false`): las rutas de inscritos, cuadros,
   partidos y perfiles están excluidas por el `robots.txt` de badminton.es. Activarla es decisión del club; se recomienda
   autorización de la FESBA / Federación de Castilla y León. **No se ha ejecutado contra badminton.es** más que el calendario.

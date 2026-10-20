@@ -59,7 +59,7 @@ cp .env.example .env        # (el servidor lee variables de entorno; en tu aloja
 npm run vapid               # claves para los avisos → a las variables de entorno, no al chat
 npm start                   # http://localhost:8787
 npm run demo                # servidor de demostración con datos ficticios (no consulta badminton.es)
-npm test                    # 73 pruebas
+npm test                    # pruebas
 ```
 
 1. Define `ADMIN_TOKEN` y entra en `/admin`. Carga la lista de jugadores: uno a uno, o en bloque con un CSV (`nombre;categoria;perfil;menor`)
@@ -96,14 +96,15 @@ Pública: `GET /api/public/state` · `GET /api/public/stream` (SSE) · `GET /api
 `POST /api/public/push/subscribe|unsubscribe` · `GET /compartir/:partido` · `GET /api/health`.
 Administración (`Authorization: Bearer ADMIN_TOKEN`): `/api/admin/players`, `/tournaments`, `/candidates`, `/status`, `/export`, `/import`.
 
-## Código reutilizado
+## Código propio y estado de los lectores
 
-Copiado y adaptado de `Pablo06Casta/badmiton.live`: `src/lib/ts/http.ts` (cliente prudente), `src/lib/ts/parse/*` (lectores de
-páginas oficiales), `src/lib/ts/source.ts`, `src/lib/util/*`, y la lógica de calendario FESBA/buscador (`src/lib/org/parse.ts`).
-El motor (`src/engine.ts`) es nuevo: pasa de «seguir a una persona» a «leer una vez por torneo».
+Todo el código de este servidor es propio del proyecto (cliente HTTP, utilidades, modelo, motor, estimación, API, avisos).
 
-## Pruebas con páginas oficiales reales
-
-`npm run fixtures:copy` copia desde `badmiton.live/tests/fixtures` unas páginas reales (torneo de Valladolid, 3-oct-2026) a
-`tests/fixtures/` (ignorado por git: contienen nombres de personas). Con ellas, `npm test` ejecuta el recorrido completo con
-129 partidos reales. Sin ellas, esas 4 pruebas se omiten.
+- **Calendario oficial (listo y verificado):** `src/calendarParse.ts` lee el calendario FESBA y el buscador de torneos
+  (páginas públicas permitidas por robots.txt). Comprobado contra las páginas reales: 295 filas FESBA y 117 del buscador →
+  136 torneos absolutos, idéntico al resultado anterior. Pruebas con las páginas guardadas en `tests/pages/`.
+- **Lectores de páginas de torneo (pendientes):** información del torneo, lista de cuadros, clasificaciones, cuadros y orden
+  de juego, y perfil de jugador. El motor y la API ya los usan a través de la interfaz `LiveReaders` (`src/source.ts`), y están
+  probados con una fuente simulada, pero **no existe todavía una implementación contra badminton.es**: escribirla exige ver
+  esas páginas (rutas excluidas por su robots.txt). Con `OFFICIAL_READ_ENABLED=true` y sin lectores, el servidor lo avisa y no
+  activa el directo. Ver `docs/ESTADO.md`.

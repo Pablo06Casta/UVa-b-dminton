@@ -1,6 +1,6 @@
-import type { FesbaCalendarRow } from './source';
-import type { FinderRow } from '@/lib/org/parse';
-import type { FesbaRow } from '@/lib/org/parse';
+import type { FesbaRow, FinderRow } from './calendarParse';
+
+export type FesbaCalendarRow = FesbaRow & { year: number; egid: string };
 
 const BASE = 'https://www.badminton.es';
 

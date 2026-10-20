@@ -1,32 +1,9 @@
 {
   "meta": {
     "fuente": "https://www.badminton.es",
-    "extraidoEl": "2026-10-20T21:23:58.592Z",
-    "peticiones": 9,
-    "intervaloMinimoMs": 2500,
-    "userAgent": "Mozilla/5.0 (compatible; ClubBadmintonUVa/0.1; lectura puntual del calendario publico; 1 peticion cada 2,5 s)"
+    "extraidoEl": "2026-10-20T22:05:54.659Z"
   },
   "filas": [
-    {
-      "tsId": "010347F7-5E3E-49CC-97CB-B274C3006DF7",
-      "name": "TOP Máster - Sub 13 y Sub 17 - Canovelles",
-      "startDate": "2026-09-19",
-      "endDate": "2026-09-20",
-      "events": [
-        "IM-13",
-        "IF-13",
-        "DM-13",
-        "DF-13",
-        "DX-13",
-        "IM-17",
-        "IF-17",
-        "DM-17",
-        "DF-17",
-        "DX-17"
-      ],
-      "organizer": "Federación Española de Bádminton",
-      "city": "Canovelles"
-    },
     {
       "tsId": "4EF9A0C0-4868-4A7A-9199-4B85CB2C641A",
       "name": "Liga Nacional de Clubes edición 2026-2027",
@@ -35,26 +12,6 @@
       "events": [],
       "organizer": "Federación Española de Bádminton",
       "city": "Madrid"
-    },
-    {
-      "tsId": "35E1F737-C9BA-4D25-83DA-00006A1948C7",
-      "name": "MADRID TOP TTR Guadarrama Sub 15, Sub 19",
-      "startDate": "2026-09-20",
-      "endDate": "2026-09-20",
-      "events": [
-        "IM 15",
-        "IF 15",
-        "DM 15",
-        "DF 15",
-        "DX 15",
-        "IM 19",
-        "IF 19",
-        "DM 19",
-        "DF 19",
-        "DX 19"
-      ],
-      "organizer": "Federación Española de Bádminton-MADRID",
-      "city": "Guadarrama"
     },
     {
       "tsId": "1373FA0B-A2D0-4F68-8157-122D43967C7B",

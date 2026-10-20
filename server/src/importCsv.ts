@@ -1,6 +1,6 @@
 import type { Db } from './db';
 import { createPlayer, ValidationError } from './roster';
-import { normalizeName } from '@/lib/util/text';
+import { normalizeName } from './text';
 
 export interface ImportResult {
   created: number;
@@ -33,17 +33,24 @@ function splitLine(line: string, sep: string): string[] {
 }
 
 const key = (h: string) => normalizeName(h).replace(/\s+/g, '');
-const COLUMNS: Record<string, 'name' | 'category' | 'profile' | 'minor'> = {
+type Col = 'name' | 'category' | 'profile' | 'minor' | 'consentBy' | 'consentAt' | 'guardian' | 'public';
+const COLUMNS: Record<string, Col> = {
   nombre: 'name', nombreyapellidos: 'name', jugador: 'name', name: 'name',
   categoria: 'category', category: 'category',
   perfil: 'profile', enlace: 'profile', profile: 'profile', perfiloficial: 'profile',
   menor: 'minor', minor: 'minor', esmenor: 'minor',
+  consentimiento: 'consentBy', consintio: 'consentBy', quienconsintio: 'consentBy',
+  fechaconsentimiento: 'consentAt', fecha: 'consentAt',
+  familia: 'guardian', consentimientofamilia: 'guardian',
+  publico: 'public', mostrar: 'public',
 };
 const yes = (v: string) => /^(s|si|sí|1|true|x|yes|y)$/i.test(v.trim());
 
 /**
  * Importa la lista de jugadores del club desde un CSV con columnas `nombre`, `categoria`, `perfil` y `menor`.
- * Todos se crean OCULTOS: hay que registrar su consentimiento (y el de la familia, si son menores) antes de publicarlos.
+ * Sin más columnas, todos se crean OCULTOS: hay que registrar su consentimiento (y el de la familia, si son menores) antes de
+ * publicarlos. Con las columnas opcionales `consentimiento` (quién), `fecha` (AAAA-MM-DD), `familia` y `publico`, se registra
+ * el consentimiento que el club declara y se publica a quien así se indique. Las reglas de consentimiento se aplican igual.
  */
 export function importPlayersCsv(db: Db, text: string): ImportResult {
   const lines = text.replace(/^﻿/, '').split(/\r?\n/).filter((l) => l.trim() !== '');
@@ -61,14 +68,23 @@ export function importPlayersCsv(db: Db, text: string): ImportResult {
   lines.slice(1).forEach((line, idx) => {
     const lineNo = idx + 2;
     const cells = splitLine(line, sep);
-    const get = (c: 'name' | 'category' | 'profile' | 'minor') => cells[header.indexOf(c)]?.trim() ?? '';
+    const get = (c: Col) => cells[header.indexOf(c)]?.trim() ?? '';
     const name = get('name');
     try {
       if (existing.has(normalizeName(name))) {
         result.skipped++;
         return;
       }
-      createPlayer(db, { name, category: get('category') || null, profile: get('profile') || null, isMinor: yes(get('minor')) });
+      createPlayer(db, {
+        name,
+        category: get('category') || null,
+        profile: get('profile') || null,
+        isMinor: yes(get('minor')),
+        consentBy: get('consentBy') || null,
+        consentAt: get('consentAt') || null,
+        guardianConsent: yes(get('guardian')),
+        public: yes(get('public')),
+      });
       existing.add(normalizeName(name));
       result.created++;
     } catch (e) {

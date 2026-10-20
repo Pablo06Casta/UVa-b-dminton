@@ -28,3 +28,22 @@ describe('importación de la lista de jugadores (CSV)', () => {
     expect(importPlayersCsv(memDb(), 'categoria\nAbsoluto').errors[0].message).toMatch(/nombre/);
   });
 });
+
+describe('importación con consentimiento declarado por el club', () => {
+  it('registra quién y cuándo y publica a quien se indica', () => {
+    const db = memDb();
+    const r = importPlayersCsv(db, 'nombre;consentimiento;fecha;publico\nAna Prueba;Declarado por el club;2026-10-20;sí\nLuis Prueba;;;no');
+    expect(r.errors).toEqual([]);
+    const ps = listPlayers(db);
+    expect(ps.find((p) => p.name.startsWith('Ana'))).toMatchObject({ public: true, consentBy: 'Declarado por el club', consentAt: '2026-10-20' });
+    expect(ps.find((p) => p.name.startsWith('Luis'))?.public).toBe(false);
+  });
+
+  it('las reglas se mantienen: sin consentimiento registrado no se publica; un menor necesita a su familia', () => {
+    const db = memDb();
+    const r = importPlayersCsv(db, 'nombre;menor;consentimiento;fecha;familia;publico\nAna Prueba;no;;;;sí\nBeto Prueba;sí;Madre;2026-10-20;no;sí\nCarla Prueba;sí;Madre;2026-10-20;sí;sí');
+    expect(r.created).toBe(1);
+    expect(r.errors.map((e) => e.line)).toEqual([2, 3]);
+    expect(listPlayers(db).map((p) => p.name)).toEqual(['Carla Prueba']);
+  });
+});

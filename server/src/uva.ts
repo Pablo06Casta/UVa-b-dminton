@@ -1,8 +1,7 @@
 import { CLUB_PATTERN } from './config';
 import { createHash } from 'node:crypto';
 import { findByName, type Player } from './roster';
-import type { Match, MatchStatus } from '@/lib/domain/types';
-import type { ParsedRow } from '@/lib/ts/parse/common';
+import type { MatchRow, MatchStatus, Team } from './model';
 
 /** ¿El club que publica la fuente oficial es el de la Universidad de Valladolid? */
 export const isUvaClub = (club?: string | null): boolean => !!club && CLUB_PATTERN.test(club);
@@ -79,7 +78,7 @@ export type ClubEntrants = Map<number, number | undefined>;
  * Un jugador es del club solo si su número en el torneo figura entre los participantes verificados por el club
  * publicado (clasificaciones y cuadros). Coincidir solo en el nombre no basta: hay homónimos en otros clubes.
  */
-const sideOf = (team: Match['team1'], entrants: ClubEntrants): Side => ({
+const sideOf = (team: Team, entrants: ClubEntrants): Side => ({
   placeholder: team.placeholder,
   players: team.players.map((p) => {
     const known = p.tsPlayerId !== undefined && entrants.has(p.tsPlayerId);
@@ -87,7 +86,7 @@ const sideOf = (team: Match['team1'], entrants: ClubEntrants): Side => ({
   }),
 });
 
-export function buildStoredMatch(row: ParsedRow, ctx: { tournamentGuid: string; entrants: ClubEntrants }): StoredMatch | undefined {
+export function buildStoredMatch(row: MatchRow, ctx: { tournamentGuid: string; entrants: ClubEntrants }): StoredMatch | undefined {
   const sides: [Side, Side] = [sideOf(row.team1, ctx.entrants), sideOf(row.team2, ctx.entrants)];
   if (!sides.some((s) => s.players.some((p) => p.uva))) return undefined;
   return {

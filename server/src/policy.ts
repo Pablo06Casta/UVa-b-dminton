@@ -1,4 +1,4 @@
-import { daysBetween } from '@/lib/util/time';
+import { daysBetween } from './dates';
 import { settings } from './config';
 
 export type Phase = 'far' | 'soon' | 'imminent' | 'live' | 'recent' | 'past' | 'undated';

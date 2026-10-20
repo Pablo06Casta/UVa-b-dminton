@@ -2,7 +2,7 @@ import { createHash, timingSafeEqual } from 'node:crypto';
 import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
-import { extractGuid } from '@/lib/util/text';
+import { extractGuid } from './text';
 import { settings } from './config';
 import { type Db, nowIso } from './db';
 import type { SyncEngine } from './engine';

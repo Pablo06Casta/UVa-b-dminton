@@ -1,7 +1,5 @@
-import type { TournamentInfo } from '@/lib/domain/types';
-import type { ParsedRow } from '@/lib/ts/parse/common';
-import type { BracketRound, DrawInfo, StandingRow } from '@/lib/ts/parse/draws';
 import { openDb } from '../../src/db';
+import type { BracketRound, DrawInfo, MatchRow, StandingRow, TournamentInfo } from '../../src/model';
 import type { OfficialSource } from '../../src/source';
 
 export const GUID = '11111111-2222-3333-4444-555555555555';
@@ -9,7 +7,7 @@ export const PROFILE = 'AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE';
 
 export const info = (over: Partial<TournamentInfo> = {}): TournamentInfo => ({
   id: GUID, name: 'Torneo de prueba', startDate: '2026-11-07', endDate: '2026-11-07', days: ['2026-11-07'],
-  city: 'Valladolid', tz: 'Europe/Madrid', hasLiveScore: false, categories: [], ...over,
+  city: 'Valladolid', tz: 'Europe/Madrid', ...over,
 });
 
 export const standing = (names: string[], ids: number[], club: string): StandingRow => ({
@@ -17,27 +15,27 @@ export const standing = (names: string[], ids: number[], club: string): Standing
 });
 
 export interface RowOpts {
-  key?: string; names1?: [string, number][]; names2?: [string, number][]; status?: ParsedRow['status'];
+  key?: string; names1?: [string, number][]; names2?: [string, number][]; status?: MatchRow['status'];
   winner?: 1 | 2; sets?: [number, number][]; clock?: string; court?: string; date?: string;
 }
-export const row = (o: RowOpts = {}): ParsedRow =>
+export const row = (o: RowOpts = {}): MatchRow =>
   ({
     key: o.key ?? 'm1', tournamentId: GUID, drawName: 'IM', eventCode: 'IM', round: 'Octavos',
     date: o.date ?? '2026-11-07', plannedClock: o.clock ?? '10:00', court: o.court ?? '1',
     team1: { players: (o.names1 ?? [['Ana Prueba', 1]]).map(([name, tsPlayerId]) => ({ name, tsPlayerId })) },
     team2: { players: (o.names2 ?? [['Rival Uno', 2]]).map(([name, tsPlayerId]) => ({ name, tsPlayerId })) },
     sets: o.sets ?? [], winner: o.winner, status: o.status ?? 'scheduled',
-  }) as ParsedRow;
+  }) as MatchRow;
 
 /** Fuente oficial simulada: lo que devuelve se configura en cada prueba. Cuenta las peticiones. */
 export class FakeSource implements OfficialSource {
   calls: string[] = [];
   profileTournaments: string[] = [GUID];
   infoData: TournamentInfo = info();
-  drawList: DrawInfo[] = [{ drawId: 1, name: 'IM - Grupo A', base: 'IM', group: 'Grupo A', type: 'roundrobin' }];
+  drawList: DrawInfo[] = [{ drawId: 1, name: 'IM - Grupo A', type: 'roundrobin' }];
   standingRows: StandingRow[] = [standing(['Ana Prueba'], [1], 'UNIVERSIDAD DE VALLADOLID'), standing(['Rival Uno'], [2], 'OTRO CLUB')];
   bracketRounds: BracketRound[] = [];
-  dayRows: ParsedRow[] = [];
+  dayRows: MatchRow[] = [];
   calendarData: { fesba: never[]; finder: never[] } = { fesba: [], finder: [] };
   failWith?: Error;
 
