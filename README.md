@@ -61,6 +61,20 @@ no indica el club, así que la participación la registra el club en `uva-torneo
 `tournamentId` es el `id` del torneo en `calendario-oficial.json`. Solo se listan nombres con autorización
 (en menores, de su familia). `torneosPropios` admite torneos que no estén en el calendario oficial absoluto.
 
+**Partidos y resultados.** Dentro de cada entrada, `matches` registra los partidos de jugadores de la UVa. Al
+actualizar el fichero y publicar, aparecen en la ficha del torneo y en Inicio («Partidos y resultados»):
+
+```json
+"matches": [
+  { "id": "m1", "event": "IM · Octavos", "players": ["Nombre Apellidos"], "opponent": "Rival",
+    "state": "finished", "date": "2026-11-07", "time": "10:00", "score": "21-15 18-21 21-17", "outcome": "win" },
+  { "id": "m2", "event": "DX · Cuartos", "players": ["A", "B"], "state": "scheduled", "date": "2026-11-07", "time": "16:30", "court": "3" }
+]
+```
+
+`state`: `scheduled`, `live` o `finished`. La lectura automática de partidos desde badminton.es no está activada
+(ver `docs/ESTADO.md`).
+
 **Equipo.** Una persona solo se muestra si tiene `"consent": true` en `players.json`.
 
 **Sustituir la foto de portada**: copia la imagen a `public/images/` y cambia `images.hero` en
@@ -83,3 +97,8 @@ Todas las páginas leen los torneos a través de `src/lib/tournamentSource.ts`. 
 implementación de `TournamentSource` ahí. **No se ha implementado ni asumido ninguna integración.**
 
 Estado del proyecto y datos pendientes: ver [`docs/ESTADO.md`](docs/ESTADO.md).
+
+## Publicación en GitHub Pages
+
+El flujo `.github/workflows/pages.yml` compila y publica la web en `https://<usuario>.github.io/UVa-b-dminton/`
+cada vez que cambia la rama `main`. Requiere activar **Settings → Pages → Source: GitHub Actions** una vez.

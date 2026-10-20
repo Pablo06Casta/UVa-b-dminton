@@ -62,6 +62,12 @@ export function TournamentCard({ tournament: t }: { tournament: Tournament }) {
             <Icon name="users" size={16} />
             {participantsText(t)}
           </li>
+          {t.players && t.players.length > 0 && (
+            <li className="meta__players">
+              <span className="sr-only">Jugadores de la UVa: </span>
+              {t.players.join(', ')}
+            </li>
+          )}
         </ul>
       </div>
     </article>

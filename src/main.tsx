@@ -6,7 +6,12 @@ import App from './App';
 import './styles/global.css';
 
 // VITE_ROUTER=memory: navegación interna sin tocar la URL (para visores/alojamientos embebidos).
-const Router = import.meta.env.VITE_ROUTER === 'memory' ? MemoryRouter : BrowserRouter;
+const Router =
+  import.meta.env.VITE_ROUTER === 'memory'
+    ? MemoryRouter
+    : ({ children }: { children: React.ReactNode }) => (
+        <BrowserRouter basename={import.meta.env.BASE_URL}>{children}</BrowserRouter>
+      );
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

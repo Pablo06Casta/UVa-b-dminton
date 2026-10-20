@@ -52,7 +52,12 @@ export function MonthGrid({ month, tournaments, today }: { month: string; tourna
                     </span>
                     {events.length > 0 && <span className="month__dot" aria-hidden="true" />}
                     {events.map((t) => (
-                      <Link key={t.id} to={tournamentHref(t)} className={`chip chip--${getStatus(t, today)}`}>
+                      <Link
+                        key={t.id}
+                        to={tournamentHref(t)}
+                        className={`chip chip--${getStatus(t, today)}`}
+                        title={t.players?.length ? `Jugadores UVa: ${t.players.join(', ')}` : undefined}
+                      >
                         {hasUvaPlayers(t) && <strong>UVa · </strong>}
                         {t.name}
                       </Link>

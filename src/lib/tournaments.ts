@@ -1,4 +1,4 @@
-import type { Tournament, TournamentStatus, UvaEntry } from '../types';
+import type { Tournament, TournamentStatus, UvaEntry, UvaMatch } from '../types';
 import { eachDay, toISO } from './dates';
 
 export const statusLabels: Record<TournamentStatus, string> = {
@@ -66,7 +66,7 @@ export const getCategories = (list: Tournament[]): string[] =>
 
 /** Un torneo "tiene jugadores de la UVa" solo si el club ha registrado participación. */
 export const hasUvaPlayers = (t: Tournament): boolean =>
-  (t.clubParticipants ?? 0) > 0 || (t.players?.length ?? 0) > 0;
+  (t.clubParticipants ?? 0) > 0 || (t.players?.length ?? 0) > 0 || (t.matches?.length ?? 0) > 0;
 
 /** Superpone la participación de la UVa sobre el calendario oficial. No se inventa nada: sin entrada, sin jugadores. */
 export function mergeUva(official: Tournament[], entries: UvaEntry[], own: Tournament[] = []): Tournament[] {
@@ -79,7 +79,33 @@ export function mergeUva(official: Tournament[], entries: UvaEntry[], own: Tourn
       clubParticipants: e.clubParticipants ?? e.players?.length,
       players: e.players,
       results: e.results ?? t.results,
+      matches: e.matches,
     };
   });
   return sortByDate([...merged, ...own.filter((o) => !official.some((t) => t.id === o.id))]);
+}
+
+export interface MatchRef {
+  tournament: Tournament;
+  match: UvaMatch;
+}
+
+const matchKey = (m: UvaMatch) => `${m.date ?? '9999-99-99'} ${m.time ?? '99:99'}`;
+
+/** Próximos partidos de la UVa (programados o en juego), por orden de fecha y hora. */
+export function upcomingMatches(list: Tournament[], limit = 6): MatchRef[] {
+  return list
+    .flatMap((tournament) => (tournament.matches ?? []).map((match) => ({ tournament, match })))
+    .filter(({ match }) => match.state !== 'finished')
+    .sort((a, b) => matchKey(a.match).localeCompare(matchKey(b.match)))
+    .slice(0, limit);
+}
+
+/** Últimos resultados de la UVa, de más reciente a más antiguo. */
+export function recentResults(list: Tournament[], limit = 6): MatchRef[] {
+  return list
+    .flatMap((tournament) => (tournament.matches ?? []).map((match) => ({ tournament, match })))
+    .filter(({ match }) => match.state === 'finished')
+    .sort((a, b) => matchKey(b.match).localeCompare(matchKey(a.match)))
+    .slice(0, limit);
 }

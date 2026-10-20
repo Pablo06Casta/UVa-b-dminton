@@ -97,6 +97,8 @@ export interface Tournament {
   externalUrl?: string;
   /** Resultados en texto, para torneos finalizados. */
   results?: string;
+  /** Partidos de jugadores de la UVa (los registra el club). */
+  matches?: UvaMatch[];
   /** `true` = dato de ejemplo, no real. Se muestra con la etiqueta "Provisional". */
   provisional?: boolean;
   /**
@@ -116,10 +118,32 @@ export interface UvaEntry {
   /** Nombres: solo de jugadores con autorización para publicarse. */
   players?: string[];
   results?: string;
+  matches?: UvaMatch[];
 }
 
 export interface UvaTournamentsFile {
   entradas: UvaEntry[];
   /** Torneos con jugadores de la UVa que no figuran en el calendario oficial absoluto. */
   torneosPropios: Tournament[];
+}
+
+export type MatchState = 'scheduled' | 'live' | 'finished';
+
+/** Partido de jugadores de la UVa. Lo registra el club; solo con jugadores autorizados para publicarse. */
+export interface UvaMatch {
+  id: string;
+  /** Prueba y ronda, tal cual las publica el torneo ("IM · Octavos"). */
+  event?: string;
+  /** Jugadores de la UVa que disputan el partido. */
+  players: string[];
+  opponent?: string;
+  state: MatchState;
+  /** `YYYY-MM-DD` y `HH:MM` locales de la sede, si se conocen. */
+  date?: string;
+  time?: string;
+  court?: string;
+  /** Marcador por sets desde el punto de vista de la UVa ("21-15 18-21 21-17"). Solo si ha terminado. */
+  score?: string;
+  /** Resultado para la UVa; solo si el partido ha terminado y se conoce. */
+  outcome?: 'win' | 'loss';
 }

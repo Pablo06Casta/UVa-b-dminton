@@ -4,6 +4,7 @@ import { getStatus, hasUvaPlayers } from '../../lib/tournaments';
 import type { Tournament } from '../../types';
 import { Icon } from '../Icon';
 import { PendingTag } from '../ui';
+import { MatchList } from './MatchList';
 import { StatusBadge, participantsText } from './TournamentCard';
 
 const TBC = 'Por confirmar';
@@ -81,6 +82,14 @@ export function TournamentDialog({ tournament: t, onClose }: { tournament: Tourn
                   {t.players && t.players.length > 0
                     ? t.players.join(', ')
                     : 'Los nombres se publicarán cuando los jugadores (o sus familias, si son menores) lo autoricen.'}
+                </dd>
+              </div>
+            )}
+            {t.matches && t.matches.length > 0 && (
+              <div className="facts__wide">
+                <dt>Partidos de la UVa</dt>
+                <dd>
+                  <MatchList matches={t.matches} />
                 </dd>
               </div>
             )}

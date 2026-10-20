@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Tournament } from '../types';
 import { monthGrid, formatDateRange, shiftMonth } from './dates';
-import { applyFilters, getStatus, getUpcoming, hasUvaPlayers, indexByDay, mergeUva } from './tournaments';
+import { applyFilters, getStatus, getUpcoming, hasUvaPlayers, indexByDay, mergeUva, recentResults, upcomingMatches } from './tournaments';
 
 const t = (id: string, startDate: string, endDate?: string, extra: Partial<Tournament> = {}): Tournament => ({
   id,
@@ -81,5 +81,24 @@ describe('participación de la UVa', () => {
   it('admite torneos propios fuera del calendario oficial', () => {
     const own = t('propio', '2026-12-01', undefined, { clubParticipants: 1 });
     expect(mergeUva(official, [], [own]).map((x) => x.id)).toContain('propio');
+  });
+});
+
+describe('partidos de la UVa', () => {
+  const m = (id: string, state: 'scheduled' | 'finished', date: string, time: string) => ({
+    id, state, date, time, players: ['Jugador A'],
+  });
+  const list = [
+    t('a', '2026-11-07', undefined, { matches: [m('m1', 'finished', '2026-11-07', '10:00'), m('m2', 'scheduled', '2026-11-07', '16:30')] }),
+    t('b', '2026-11-21', undefined, { matches: [m('m3', 'scheduled', '2026-11-21', '09:00'), m('m4', 'finished', '2026-11-21', '12:00')] }),
+  ];
+  it('lista solo los partidos no terminados, en orden', () => {
+    expect(upcomingMatches(list).map((x) => x.match.id)).toEqual(['m2', 'm3']);
+  });
+  it('lista los resultados del más reciente al más antiguo', () => {
+    expect(recentResults(list).map((x) => x.match.id)).toEqual(['m4', 'm1']);
+  });
+  it('un torneo con partidos de la UVa cuenta como torneo con jugadores UVa', () => {
+    expect(hasUvaPlayers(list[0])).toBe(true);
   });
 });
