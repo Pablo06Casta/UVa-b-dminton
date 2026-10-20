@@ -62,7 +62,9 @@ npm run demo                # servidor de demostración con datos ficticios (no 
 npm test                    # 73 pruebas
 ```
 
-1. Define `ADMIN_TOKEN` y entra en `/admin`. Añade a los jugadores (con su consentimiento) y, si los tienes, sus perfiles oficiales.
+1. Define `ADMIN_TOKEN` y entra en `/admin`. Carga la lista de jugadores: uno a uno, o en bloque con un CSV (`nombre;categoria;perfil;menor`)
+   pegado en el panel o con `npm run roster:import -- lista.csv`. Todos se crean **ocultos**; después registra el consentimiento de cada persona.
+   El servidor no busca jugadores en el ranking nacional: esa ruta está excluida por el `robots.txt` de badminton.es.
 2. En la web (GitHub → Settings → Secrets and variables → Actions → **Variables**) crea `VITE_API_URL` con la dirección del servidor y vuelve a publicar.
 3. Cuando haya autorización: `OFFICIAL_READ_ENABLED=true`.
 

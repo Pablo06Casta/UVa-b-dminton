@@ -9,6 +9,7 @@ import type { SyncEngine } from './engine';
 import { kvGet } from './db';
 import { buildPublicState, type PublicMatch } from './publicView';
 import { pushConfigured, subscribe, unsubscribe } from './push';
+import { importPlayersCsv } from './importCsv';
 import { createPlayer, deletePlayer, listPlayers, updatePlayer, ValidationError, type PlayerInput } from './roster';
 
 const MAX_BODY = 64 * 1024;
@@ -231,6 +232,13 @@ export function createApp(db: Db, engine: SyncEngine | undefined, hub: Hub) {
             recentChanges: db.prepare('select at, kind, field, old_value, new_value from changes order by id desc limit 30').all(),
             recentRequests: db.prepare('select at, url, status, ms from fetch_log order by id desc limit 30').all(),
           });
+        }
+
+        if (rest === 'import-csv' && req.method === 'POST') {
+          const body = await readJson(req);
+          const result = importPlayersCsv(db, String(body.csv ?? ''));
+          hub.check();
+          return send(res, 201, result);
         }
 
         if (rest === 'export' && req.method === 'GET') return send(res, 200, { exportedAt: nowIso(), players: listPlayers(db) });

@@ -58,6 +58,14 @@
       <p><small>Por defecto, nadie se muestra. «Mostrar públicamente» exige quién consintió y cuándo; en menores, también el consentimiento de su familia.</small></p>
     </section>
     <section>
+      <h2>Importar lista de jugadores (CSV)</h2>
+      <form id="csv">
+        <label style="grid-column:1/-1">Pega aquí el CSV (columnas: nombre, categoria, perfil, menor)<textarea name="csv" rows="6" placeholder="nombre;categoria;perfil;menor&#10;Nombre Apellidos;Absoluto;;no" style="font:inherit;padding:7px 10px;border:1px solid #6b7586;border-radius:4px"></textarea></label>
+        <button>Importar</button>
+      </form>
+      <p><small>Todos se crean ocultos: después registra el consentimiento de cada persona (y de su familia si es menor).</small></p>
+    </section>
+    <section>
       <h2>Seguir un torneo concreto</h2>
       <form id="track"><label>Enlace o GUID oficial del torneo<input name="url" required></label><button>Seguir</button></form>
     </section>
@@ -95,6 +103,14 @@ $('#add').addEventListener('submit', async (e) => {
   for (const [k, v] of f.entries()) b[k] = v === 'on' ? true : v || null;
   for (const k of ['isMinor', 'guardianConsent', 'public']) b[k] = !!b[k];
   try { await api('players', 'POST', b); e.target.reset(); await load(); msg('Guardado.'); } catch (err) { msg(err.message, true); }
+});
+$('#csv').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  try {
+    const r = await api('import-csv', 'POST', { csv: new FormData(e.target).get('csv') });
+    e.target.reset(); await load();
+    msg(`Creados: ${r.created} · Ya existían: ${r.skipped} · Errores: ${r.errors.length}` + r.errors.map((x) => ` · línea ${x.line}: ${x.message}`).join(''), r.errors.length > 0);
+  } catch (err) { msg(err.message, true); }
 });
 $('#track').addEventListener('submit', async (e) => {
   e.preventDefault();

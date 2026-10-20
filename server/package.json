@@ -14,7 +14,8 @@
     "test": "vitest run",
     "fixtures:copy": "node scripts/copy-fixtures.mjs",
     "demo": "tsx scripts/demo.ts",
-    "vapid": "node scripts/vapid.mjs"
+    "vapid": "node scripts/vapid.mjs",
+    "roster:import": "tsx scripts/import-roster.ts"
   },
   "dependencies": {
     "cheerio": "^1.2.0",
