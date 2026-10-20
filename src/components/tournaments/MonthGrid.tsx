@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { dayOfMonth, formatMonth, monthGrid } from '../../lib/dates';
-import { getStatus, indexByDay } from '../../lib/tournaments';
+import { getStatus, hasUvaPlayers, indexByDay } from '../../lib/tournaments';
 import type { Tournament } from '../../types';
 import { tournamentHref } from './TournamentCard';
 
@@ -53,6 +53,7 @@ export function MonthGrid({ month, tournaments, today }: { month: string; tourna
                     {events.length > 0 && <span className="month__dot" aria-hidden="true" />}
                     {events.map((t) => (
                       <Link key={t.id} to={tournamentHref(t)} className={`chip chip--${getStatus(t, today)}`}>
+                        {hasUvaPlayers(t) && <strong>UVa · </strong>}
                         {t.name}
                       </Link>
                     ))}

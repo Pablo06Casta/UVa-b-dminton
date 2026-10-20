@@ -1645,3 +1645,42 @@ textarea:focus-visible {
     font-size: 1rem;
   }
 }
+
+/* ---------- Participación de la UVa ---------- */
+
+.uva-tag {
+  display: inline-block;
+  padding: 3px 9px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  line-height: 1.5;
+  color: var(--white);
+  background: var(--blue);
+  border-radius: 2px;
+}
+.chip strong {
+  font-weight: 800;
+}
+.filters .check {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  min-height: 46px;
+}
+.filters .check input {
+  width: 22px;
+  height: 22px;
+  accent-color: var(--uva);
+}
+.filters .check span {
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  color: var(--text);
+}
+.source-note--top {
+  margin: 0 0 24px;
+}

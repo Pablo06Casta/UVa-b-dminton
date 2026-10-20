@@ -7,11 +7,12 @@ import { TournamentDialog } from '../components/tournaments/TournamentDialog';
 import { Notice, PageHeader } from '../components/ui';
 import { useTournaments } from '../hooks/useTournaments';
 import { usePageTitle } from '../hooks/usePageTitle';
-import { formatMonth, monthKey, shiftMonth, toISO } from '../lib/dates';
+import { formatDay, formatMonth, monthKey, shiftMonth, toISO } from '../lib/dates';
 import {
   applyFilters,
   endOf,
   getCategories,
+  hasUvaPlayers,
   statusLabels,
   type TournamentFilters,
 } from '../lib/tournaments';
@@ -21,7 +22,7 @@ type View = 'calendar' | 'list';
 
 export function CalendarPage() {
   usePageTitle('Calendario');
-  const { status, tournaments } = useTournaments();
+  const { status, tournaments: allTournaments, checkedAt, sourceLabel, note } = useTournaments();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const today = toISO(new Date());
@@ -31,6 +32,11 @@ export function CalendarPage() {
   const [month, setMonth] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<TournamentStatus | 'all'>('all');
   const [category, setCategory] = useState<string>('all');
+  const [onlyUva, setOnlyUva] = useState(true);
+  const tournaments = useMemo(
+    () => (onlyUva ? allTournaments.filter(hasUvaPlayers) : allTournaments),
+    [allTournaments, onlyUva],
+  );
 
   const visibleMonth = month === 'all' ? thisMonth : month;
   const categories = useMemo(() => getCategories(tournaments), [tournaments]);
@@ -47,7 +53,7 @@ export function CalendarPage() {
   const gridItems = applyFilters(tournaments, { ...base, month: 'all' }, today);
   const agendaItems = applyFilters(tournaments, { ...base, month: visibleMonth }, today);
 
-  const selected = tournaments.find((t) => t.id === searchParams.get('torneo')) ?? null;
+  const selected = allTournaments.find((t) => t.id === searchParams.get('torneo')) ?? null;
   const closeDialog = () =>
     setSearchParams(
       (prev) => {
@@ -115,6 +121,10 @@ export function CalendarPage() {
                   ))}
                 </select>
               </label>
+              <label className="check">
+                <input type="checkbox" checked={onlyUva} onChange={(e) => setOnlyUva(e.target.checked)} />
+                <span>Solo con jugadores de la UVa</span>
+              </label>
               <label>
                 <span>Estado</span>
                 <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as TournamentStatus | 'all')}>
@@ -128,7 +138,7 @@ export function CalendarPage() {
               </label>
               {categories.length > 0 && (
                 <label>
-                  <span>Categoría</span>
+                  <span>Ámbito</span>
                   <select value={category} onChange={(e) => setCategory(e.target.value)}>
                     <option value="all">Todas</option>
                     {categories.map((c) => (
@@ -146,6 +156,20 @@ export function CalendarPage() {
               )}
             </div>
           </div>
+
+          {status === 'ready' && checkedAt && (
+            <p className="source-note source-note--top">
+              Calendario oficial de torneos absolutos, nacionales y territoriales. Fuente: {sourceLabel}. Última
+              comprobación: {formatDay(toISO(new Date(checkedAt)))}. {note}
+            </p>
+          )}
+
+          {status === 'ready' && onlyUva && tournaments.length === 0 && (
+            <Notice title="Todavía no hay torneos con jugadores de la UVa registrados">
+              La lista de inscritos de badminton.es no indica el club, así que la participación de la UVa la registra el
+              club. Desactiva «Solo con jugadores de la UVa» para ver el calendario oficial completo.
+            </Notice>
+          )}
 
           <div aria-live="polite">
             {status === 'loading' && <p className="empty">Cargando competiciones…</p>}
@@ -231,8 +255,8 @@ export function CalendarPage() {
           )}
 
           <p className="source-note">
-            Los torneos se introducen manualmente. Más adelante podrán sincronizarse con una fuente oficial, previa
-            autorización. ¿Falta alguna competición? <Link to="/contacto">Escríbenos</Link>.
+            El calendario se actualiza desde la fuente oficial; la participación de la UVa la registra el club. ¿Falta o
+            sobra algún torneo? <Link to="/contacto">Escríbenos</Link>.
           </p>
         </div>
       </div>

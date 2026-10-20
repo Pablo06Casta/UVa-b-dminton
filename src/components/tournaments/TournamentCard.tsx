@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { dayOfMonth, formatDateRange, parseISO, shortMonth } from '../../lib/dates';
-import { getStatus, statusLabels } from '../../lib/tournaments';
+import { getStatus, hasUvaPlayers, statusLabels } from '../../lib/tournaments';
 import type { Tournament } from '../../types';
 import { Icon } from '../Icon';
 import { PendingTag } from '../ui';
@@ -13,8 +13,10 @@ export function StatusBadge({ tournament }: { tournament: Tournament }) {
 }
 
 export function participantsText(t: Tournament): string {
-  if (t.clubParticipants === undefined) return 'Participantes del club por confirmar';
-  return t.clubParticipants === 1 ? '1 integrante del club' : `${t.clubParticipants} integrantes del club`;
+  if (!hasUvaPlayers(t)) return 'Sin jugadores de la UVa registrados';
+  const n = t.clubParticipants ?? t.players?.length;
+  if (n === undefined) return 'Jugadores de la UVa (número por confirmar)';
+  return n === 1 ? '1 jugador de la UVa' : `${n} jugadores de la UVa`;
 }
 
 export function TournamentCard({ tournament: t }: { tournament: Tournament }) {
@@ -33,6 +35,7 @@ export function TournamentCard({ tournament: t }: { tournament: Tournament }) {
       <div className="t-card__body">
         <div className="t-card__tags">
           <StatusBadge tournament={t} />
+          {hasUvaPlayers(t) && <span className="uva-tag">UVa</span>}
           {t.provisional && <PendingTag />}
         </div>
         <h3 className="t-card__title">

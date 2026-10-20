@@ -3,7 +3,8 @@ import type { Player } from '../../types';
 import { Notice, SectionHeading } from '../ui';
 import { asset } from '../../lib/asset';
 
-const players = playersJson as Player[];
+// Solo se publican personas con autorización expresa (consent: true).
+const players = (playersJson as Player[]).filter((p) => p.consent === true);
 
 function Silhouette() {
   return (

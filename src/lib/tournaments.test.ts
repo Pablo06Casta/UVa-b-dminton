@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Tournament } from '../types';
 import { monthGrid, formatDateRange, shiftMonth } from './dates';
-import { applyFilters, getStatus, getUpcoming, indexByDay } from './tournaments';
+import { applyFilters, getStatus, getUpcoming, hasUvaPlayers, indexByDay, mergeUva } from './tournaments';
 
 const t = (id: string, startDate: string, endDate?: string, extra: Partial<Tournament> = {}): Tournament => ({
   id,
@@ -62,5 +62,24 @@ describe('fechas', () => {
   it('cambia de mes sin saltarse meses cortos', () => {
     expect(shiftMonth('2026-01', 1)).toBe('2026-02');
     expect(shiftMonth('2026-01', -1)).toBe('2025-12');
+  });
+});
+
+describe('participación de la UVa', () => {
+  const official = [t('fesba-1', '2026-11-07'), t('fesba-2', '2026-11-21')];
+  it('sin entrada del club no hay jugadores de la UVa', () => {
+    expect(mergeUva(official, []).some(hasUvaPlayers)).toBe(false);
+  });
+  it('superpone la participación solo sobre el torneo indicado', () => {
+    const merged = mergeUva(official, [{ tournamentId: 'fesba-2', players: ['Jugador A', 'Jugador B'] }]);
+    expect(merged.filter(hasUvaPlayers).map((x) => x.id)).toEqual(['fesba-2']);
+    expect(merged.find((x) => x.id === 'fesba-2')?.clubParticipants).toBe(2);
+  });
+  it('ignora entradas que no existen en el calendario oficial', () => {
+    expect(mergeUva(official, [{ tournamentId: 'no-existe', clubParticipants: 3 }])).toHaveLength(2);
+  });
+  it('admite torneos propios fuera del calendario oficial', () => {
+    const own = t('propio', '2026-12-01', undefined, { clubParticipants: 1 });
+    expect(mergeUva(official, [], [own]).map((x) => x.id)).toContain('propio');
   });
 });

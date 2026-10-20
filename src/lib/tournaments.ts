@@ -1,4 +1,4 @@
-import type { Tournament, TournamentStatus } from '../types';
+import type { Tournament, TournamentStatus, UvaEntry } from '../types';
 import { eachDay, toISO } from './dates';
 
 export const statusLabels: Record<TournamentStatus, string> = {
@@ -63,3 +63,23 @@ export const getCategories = (list: Tournament[]): string[] =>
   [...new Set(list.map((t) => t.category).filter((c): c is string => Boolean(c)))].sort((a, b) =>
     a.localeCompare(b, 'es'),
   );
+
+/** Un torneo "tiene jugadores de la UVa" solo si el club ha registrado participación. */
+export const hasUvaPlayers = (t: Tournament): boolean =>
+  (t.clubParticipants ?? 0) > 0 || (t.players?.length ?? 0) > 0;
+
+/** Superpone la participación de la UVa sobre el calendario oficial. No se inventa nada: sin entrada, sin jugadores. */
+export function mergeUva(official: Tournament[], entries: UvaEntry[], own: Tournament[] = []): Tournament[] {
+  const byId = new Map(entries.map((e) => [e.tournamentId, e]));
+  const merged = official.map((t) => {
+    const e = byId.get(t.id);
+    if (!e) return t;
+    return {
+      ...t,
+      clubParticipants: e.clubParticipants ?? e.players?.length,
+      players: e.players,
+      results: e.results ?? t.results,
+    };
+  });
+  return sortByDate([...merged, ...own.filter((o) => !official.some((t) => t.id === o.id))]);
+}

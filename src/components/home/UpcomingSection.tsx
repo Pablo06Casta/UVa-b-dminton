@@ -1,11 +1,11 @@
-import { getUpcoming } from '../../lib/tournaments';
+import { getUpcoming, hasUvaPlayers } from '../../lib/tournaments';
 import { useTournaments } from '../../hooks/useTournaments';
 import { TournamentCard } from '../tournaments/TournamentCard';
 import { ButtonLink, SectionHeading } from '../ui';
 
 export function UpcomingSection() {
   const { status, tournaments } = useTournaments();
-  const upcoming = getUpcoming(tournaments, 3);
+  const upcoming = getUpcoming(tournaments.filter(hasUvaPlayers), 3);
 
   return (
     <section className="section section--gray" aria-labelledby="torneos-title">
@@ -14,13 +14,13 @@ export function UpcomingSection() {
           id="torneos-title"
           eyebrow="Competición"
           title="Próximas competiciones"
-          lead="Los próximos torneos en los que participa el club."
+          lead="Los próximos torneos con jugadores de la UVa."
         />
         <div aria-live="polite">
           {status === 'loading' && <p className="empty">Cargando competiciones…</p>}
           {status === 'error' && <p className="empty">No se han podido cargar las competiciones.</p>}
           {status === 'ready' && upcoming.length === 0 && (
-            <p className="empty">Todavía no hay competiciones próximas registradas.</p>
+            <p className="empty">Todavía no hay torneos próximos con jugadores de la UVa registrados.</p>
           )}
         </div>
         {upcoming.length > 0 && (

@@ -31,6 +31,11 @@ export interface Player {
   photo?: string;
   /** Información deportiva adicional (categoría, palmarés…), solo si se facilita. */
   info?: string;
+  /**
+   * Autorización para publicar nombre y foto (en menores, de su familia o tutores).
+   * Si no es `true`, la persona NO se muestra en la web.
+   */
+  consent: boolean;
 }
 
 export interface Achievement {
@@ -81,7 +86,10 @@ export interface Tournament {
   city: string;
   venue?: string;
   address?: string;
+  /** Ámbito (Nacional / Territorial) en el calendario oficial; en torneos propios, la categoría. */
   category?: string;
+  /** Nivel oficial publicado por la FESBA (n7, TOP Máster, Premium…). */
+  level?: string;
   /** Nº de integrantes del club inscritos. Omitir si no se conoce. */
   clubParticipants?: number;
   /** Nombres de inscritos: solo si es público y está autorizado. */
@@ -98,4 +106,20 @@ export interface Tournament {
   source?: 'manual' | 'official';
   /** Identificador en la fuente oficial, si algún día existe. */
   externalId?: string;
+}
+
+/** Participación de la UVa en un torneo del calendario oficial. Solo se rellena con datos confirmados por el club. */
+export interface UvaEntry {
+  /** `id` del torneo en `calendario-oficial.json` (p. ej. "fesba-88169"). */
+  tournamentId: string;
+  clubParticipants?: number;
+  /** Nombres: solo de jugadores con autorización para publicarse. */
+  players?: string[];
+  results?: string;
+}
+
+export interface UvaTournamentsFile {
+  entradas: UvaEntry[];
+  /** Torneos con jugadores de la UVa que no figuran en el calendario oficial absoluto. */
+  torneosPropios: Tournament[];
 }

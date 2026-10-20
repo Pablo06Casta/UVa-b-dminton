@@ -30,7 +30,8 @@ de reescritura.
 | --- | --- |
 | Textos del club, correo, redes, dirección, imágenes de portada | `src/data/club.json` |
 | Integrantes del equipo | `src/data/players.json` |
-| Torneos (Inicio y Calendario) | `src/data/tournaments.json` |
+| Calendario oficial de torneos absolutos (se regenera con un comando) | `src/data/calendario-oficial.json` |
+| Participación de la UVa en torneos (la informa el club) | `src/data/uva-torneos.json` |
 | Logros y estadísticas | `src/data/achievements.json` |
 | Historia (secciones, línea temporal, fotos) | `src/data/history.json` |
 | Fotografías | `public/images/` |
@@ -44,14 +45,23 @@ Los tipos de cada fichero están documentados en `src/types.ts`.
 { "id": "nombre-apellido", "name": "Nombre Apellidos", "role": "Jugador", "photo": "/images/equipo/nombre.jpg", "info": "Opcional" }
 ```
 
-**Añadir un torneo** (`tournaments.json`). Elimina los que tienen `"provisional": true`: son ejemplos.
-El estado (próximo / en curso / finalizado) se calcula solo a partir de las fechas.
+**Calendario oficial.** `npm run calendario:actualizar` lee el calendario FESBA y el buscador de torneos de
+badminton.es (solo rutas permitidas por su `robots.txt`, una petición cada 2,5 s, unas 10 en total) y regenera
+`calendario-oficial.json` con los torneos absolutos nacionales y territoriales. La web muestra la fecha de la
+última comprobación. Frecuencia razonable: una o dos veces al día (el calendario cambia poco).
+
+**Torneos con jugadores de la UVa.** La web muestra por defecto solo estos. La lista de inscritos de badminton.es
+no indica el club, así que la participación la registra el club en `uva-torneos.json`:
 
 ```json
-{ "id": "torneo-2026-11", "name": "Nombre oficial", "startDate": "2026-11-07", "endDate": "2026-11-08",
-  "city": "Valladolid", "venue": "Pabellón…", "address": "…", "category": "Absoluto",
-  "clubParticipants": 8, "externalUrl": "https://…", "results": "Solo si ya finalizó" }
+{ "entradas": [ { "tournamentId": "fesba-88169", "clubParticipants": 3, "players": ["Nombre Apellidos"] } ],
+  "torneosPropios": [] }
 ```
+
+`tournamentId` es el `id` del torneo en `calendario-oficial.json`. Solo se listan nombres con autorización
+(en menores, de su familia). `torneosPropios` admite torneos que no estén en el calendario oficial absoluto.
+
+**Equipo.** Una persona solo se muestra si tiene `"consent": true` en `players.json`.
 
 **Sustituir la foto de portada**: copia la imagen a `public/images/` y cambia `images.hero` en
 `club.json` (`"provisional": false` oculta el aviso de imagen provisional). Lo mismo para `images.about`.

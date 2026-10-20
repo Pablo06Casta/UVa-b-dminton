@@ -1,11 +1,7 @@
 import { useEffect, useState } from 'react';
-import { tournamentSource } from '../lib/tournamentSource';
-import type { Tournament } from '../types';
+import { tournamentSource, type TournamentData } from '../lib/tournamentSource';
 
-type State =
-  | { status: 'loading'; tournaments: Tournament[] }
-  | { status: 'ready'; tournaments: Tournament[] }
-  | { status: 'error'; tournaments: Tournament[] };
+type State = { status: 'loading' | 'ready' | 'error' } & TournamentData;
 
 /** Fuente única de torneos para Inicio y Calendario. */
 export function useTournaments(): State {
@@ -15,7 +11,7 @@ export function useTournaments(): State {
     let cancelled = false;
     tournamentSource
       .load()
-      .then((tournaments) => !cancelled && setState({ status: 'ready', tournaments }))
+      .then((data) => !cancelled && setState({ status: 'ready', ...data }))
       .catch(() => !cancelled && setState({ status: 'error', tournaments: [] }));
     return () => {
       cancelled = true;
