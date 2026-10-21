@@ -67,4 +67,23 @@ describe('inscripción y admisión en torneos futuros', () => {
     for (let i = 0; i < 6; i++) await engine.tick(new Date(NOW.getTime() + 7 * 3600_000 + i * 5 * 60_000));
     expect(reads.length).toBeGreaterThan(first);
   });
+
+  it('reconoce a la gente del club en torneos sin perfil enlazado, confirmándola con el perfil oficial (sin confundir homónimos)', async () => {
+    const { db, src, reads } = world();
+    createPlayer(db, { name: 'Ana Prueba', profile: PROFILE, public: true, ...consent });
+    createPlayer(db, { name: 'Luis Ejemplo', profile: 'BBBBBBBB-0000-0000-0000-000000000001', public: true, ...consent });
+    src.profileTournaments = []; // el perfil no lista este torneo: solo se encuentra por la lista de jugadores
+    src.tournamentPlayers = (async () => (reads.push('players'), [{ tsPlayerId: 7, name: 'Ana Prueba' }, { tsPlayerId: 8, name: 'Luis Ejemplo' }, { tsPlayerId: 9, name: 'Pedro Otro' }])) as never;
+    src.playerProfile = (async (_g: string, id: number) => (reads.push(`player:${id}`), id === 7 ? PROFILE.toLowerCase() : 'CCCCCCCC-0000-0000-0000-000000000002')) as never; // el «Luis Ejemplo» inscrito es otra persona
+    const engine = new SyncEngine(db, src, () => NOW);
+    // El torneo ya está en la base (p. ej. seguido desde el calendario).
+    db.prepare("insert into tournaments(guid, name, discovered_at, start_date, end_date) values(?,?,?,?,?)").run(GUID.toUpperCase(), 't', NOW.toISOString(), '2026-11-07', '2026-11-08');
+    for (let i = 0; i < 30; i++) await engine.tick(new Date(NOW.getTime() + i * 5 * 60_000));
+    expect(reads).toContain('player:7');
+    expect(reads).toContain('player:8');
+    expect(reads).not.toContain('player:9'); // Pedro Otro no coincide con nadie de la lista del club
+    const linked = db.prepare('select p.name from tournament_players tp join players p on p.id = tp.player_id where tp.tournament_guid = ?').all(GUID.toUpperCase()) as unknown as { name: string }[];
+    expect(linked.map((x) => x.name)).toEqual(['Ana Prueba']);
+    expect(reads.filter((r) => r.startsWith('event:')).length).toBeGreaterThan(0); // y ya se lee su admisión
+  });
 });

@@ -40,6 +40,8 @@ export class FakeSource implements OfficialSource {
   rankingProfile?: OfficialSource['rankingProfile'];
   events?: OfficialSource['events'];
   eventEntries?: OfficialSource['eventEntries'];
+  tournamentPlayers?: OfficialSource['tournamentPlayers'];
+  playerProfile?: OfficialSource['playerProfile'];
   calendarData: { fesba: never[]; finder: never[] } = { fesba: [], finder: [] };
   failWith?: Error;
 

@@ -51,7 +51,10 @@ Importante:
   inscrito sin confirmar. No se guardan parejas ni rivales.
 - En el Calendario (tarjeta y ficha) y en Directo se ve «Inscripción y admisión». Cuando se publican, aparecen solos los cuadros
   y el orden de juego en la misma ficha.
-- Solo aparecen torneos enlazados desde el perfil oficial de cada jugador o jugadora (ver `server/README.md`).
+- Torneos de los próximos 30 días (`FOLLOW_CALENDAR_DAYS`), aunque aún no tengan cuadros: se lee la lista de jugadores (solo nombres) y se
+  reconoce a la gente del club por nombre; cada coincidencia se confirma con el perfil oficial que enlaza su ficha en el torneo, así que un
+  homónimo de otro club no se atribuye al club. Después se lee su estado de admisión por prueba.
+- Además se incluyen los torneos que enlaza el perfil oficial de cada jugador o jugadora, hasta 90 días antes (`ENTRIES_DAYS`).
 
 ## Estimación, cuadros y rendimiento
 

@@ -23,6 +23,9 @@ export interface LiveReaders extends Partial<RosterReaders> {
   /** Pruebas del torneo (IM, DX…) y, de cada una, la lista de inscritos con su estado (admitido, reserva…). */
   events?(guid: string, p: Priority): Promise<{ eventId: number; name: string }[]>;
   eventEntries?(guid: string, eventId: number, p: Priority): Promise<EventEntryRow[]>;
+  /** Jugadores inscritos en el torneo (solo nombre) y el perfil oficial de uno de ellos: así se reconoce a la gente del club sin confundir homónimos. */
+  tournamentPlayers?(guid: string, p: Priority): Promise<{ tsPlayerId: number; name: string }[]>;
+  playerProfile?(guid: string, tsPlayerId: number, p: Priority): Promise<string | undefined>;
 }
 
 export interface EventEntryRow {

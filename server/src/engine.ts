@@ -17,7 +17,13 @@ import { buildStoredMatch, type ClubEntrants, diffMatch, findClubEntrants, match
 
 const DEFAULT_TZ = 'Europe/Madrid';
 
-export type JobKind = 'roster' | 'discover' | 'info' | 'draws' | 'day' | 'calendar' | 'entries';
+export type JobKind = 'roster' | 'discover' | 'info' | 'draws' | 'day' | 'calendar' | 'entries' | 'identify';
+
+/**
+ * Reconocer a la gente del club en un torneo antes de que haya cuadros: se lee la lista de jugadores (solo nombres), se eligen los de la
+ * lista del club por nombre y cada candidato se confirma con el perfil oficial que enlaza su ficha en el torneo (sin dudas con homónimos).
+ */
+interface IdentState { pending: { tsPlayerId: number; rosterId: number }[]; checked: Record<string, 0 | 1>; listAt?: string }
 
 /** Avance de la lectura de inscritos de un torneo: una prueba por lectura, para no bloquear lo urgente. */
 interface EntriesState { events: { eventId: number; name: string }[]; next: number; doneAt?: string }
@@ -127,6 +133,13 @@ export class SyncEngine {
       // Torneos seguidos solo por el calendario (aún sin nadie del club identificado): se revisan cada pocas horas.
       const drawsEvery = !linked && (phase === 'far' || phase === 'soon') ? Math.max(iv.draws, settings.followRefreshMinutes) : iv.draws;
       jobs.push({ key: `draws:${t.guid}`, kind: 'draws', guid: t.guid, phase, due: t.draws_ok_at && hasDraws ? ms(t.draws_ok_at) + drawsEvery : 0, rank: !t.draws_ok_at ? (soonDays <= 7 ? -3 : -1) : phase === 'live' ? 1 : 3 });
+
+      // Torneos de los próximos días (30 por defecto): ¿hay inscrita gente del club? Se mira la lista de jugadores aunque aún no haya cuadros.
+      if (this.src.tournamentPlayers && this.src.playerProfile && settings.followCalendarDays > 0 && (phase === 'far' || phase === 'soon' || phase === 'imminent') && soonDays <= settings.followCalendarDays) {
+        const st = kvGet<IdentState>(this.db, `identify:${t.guid}`);
+        const every = settings.entries[phase];
+        jobs.push({ key: `identify:${t.guid}`, kind: 'identify', guid: t.guid, phase, due: st && st.pending.length > 0 ? 0 : st?.listAt ? ms(st.listAt) + every : 0, rank: 4 });
+      }
 
       // Inscripción y admisión de la gente del club en torneos futuros (listas de cada prueba), una prueba por lectura.
       if (linked && this.src.events && this.src.eventEntries && (phase === 'far' || phase === 'soon' || phase === 'imminent') && soonDays <= settings.entries.days) {
@@ -261,6 +274,8 @@ export class SyncEngine {
         return this.readCalendar(now);
       case 'entries':
         return this.readEntries(job, now);
+      case 'identify':
+        return this.identify(job, now);
     }
   }
 
@@ -397,6 +412,37 @@ export class SyncEngine {
     if (full) kvSet(this.db, fullKey, { at: now.toISOString() });
     this.saveEntrants(guid, entrants, roster, now);
     this.db.prepare('update tournaments set draws_ok_at = ?, last_error = null where guid = ?').run(now.toISOString(), guid);
+  }
+
+  /** Reconoce a la gente del club entre los jugadores inscritos de un torneo (una lectura por tick). Ver `IdentState`. */
+  private async identify(job: Job, now: Date) {
+    const guid = job.guid!;
+    const key = `identify:${guid}`;
+    const p = priorityFor(job.phase, 'discover');
+    const st = kvGet<IdentState>(this.db, key) ?? { pending: [], checked: {} };
+    const roster = listPlayers(this.db).filter((x) => x.profileGuid);
+    if (st.pending.length === 0) {
+      const list = await this.src.tournamentPlayers!(guid, p);
+      const pending: IdentState['pending'] = [];
+      for (const e of list) {
+        if (String(e.tsPlayerId) in st.checked) continue;
+        for (const pl of roster) if (findByNameLoose([pl], e.name)) pending.push({ tsPlayerId: e.tsPlayerId, rosterId: pl.id });
+      }
+      kvSet(this.db, key, { pending, checked: st.checked, listAt: now.toISOString() } satisfies IdentState);
+      return;
+    }
+    const [next, ...rest] = st.pending;
+    const found = await this.src.playerProfile!(guid, next.tsPlayerId, p);
+    const pl = roster.find((x) => x.id === next.rosterId);
+    const same = !!found && !!pl?.profileGuid && found.toUpperCase() === pl.profileGuid.toUpperCase();
+    if (same && pl) {
+      this.db.prepare('insert or ignore into tournament_players(tournament_guid, player_id) values(?, ?)').run(guid, pl.id);
+      this.db
+        .prepare(`insert into entrants(tournament_guid, ts_player_id, name, club, player_id, seen_at) values(?,?,?,?,?,?)
+                  on conflict(tournament_guid, ts_player_id) do update set player_id=excluded.player_id, seen_at=excluded.seen_at`)
+        .run(guid, next.tsPlayerId, pl.name, null, pl.id, now.toISOString());
+    }
+    kvSet(this.db, key, { pending: rest, checked: { ...st.checked, [String(next.tsPlayerId)]: same ? 1 : 0 }, listAt: st.listAt } satisfies IdentState);
   }
 
   /**
