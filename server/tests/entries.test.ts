@@ -99,4 +99,17 @@ describe('inscripción y admisión en torneos futuros', () => {
     expect(typeof real.playerProfile).toBe('function');
     expect(new RealSource(client).events).toBeUndefined();
   });
+
+  it('con homónimos en una prueba elige la inscripción con el mismo nombre (tildes incluidas), no la última', async () => {
+    const { db, src } = world();
+    createPlayer(db, { name: 'Enrique Fernandez Polo', profile: PROFILE, public: true, ...consent });
+    src.eventEntries = (async (_g: string, id: number) =>
+      id === 1
+        ? [{ names: ['Enrique Fernandez'], status: 'confirmed', label: 'Main draw', seed: '3' }, { names: ['Enrique Fernández'], status: 'reserve', label: 'Reserve' }]
+        : []) as never;
+    const engine = new SyncEngine(db, src, () => NOW);
+    for (let i = 0; i < 12; i++) await engine.tick(new Date(NOW.getTime() + i * 5 * 60_000));
+    const row = db.prepare('select status, seed from entries where event_id = 1').get() as unknown as { status: string; seed: number };
+    expect(row).toMatchObject({ status: 'confirmed', seed: 3 });
+  });
 });

@@ -465,8 +465,14 @@ export class SyncEngine {
     const linked = listPlayers(this.db).filter((x) => (this.db.prepare('select 1 from tournament_players where tournament_guid = ? and player_id = ?').get(guid, x.id) as unknown) !== undefined);
     this.db.prepare('delete from entries where tournament_guid = ? and event_id = ?').run(guid, ev.eventId);
     const ins = this.db.prepare('insert or replace into entries(tournament_guid, event_id, event_name, player_id, status, label, seed, event_total, seen_at) values(?,?,?,?,?,?,?,?,?)');
-    for (const r of rows) {
-      for (const pl of linked) if (r.names.some((n) => findByNameLoose([pl], n))) ins.run(guid, ev.eventId, ev.name, pl.id, r.status, r.label, /^\d+$/.test(r.seed ?? '') ? Number(r.seed) : null, rows.length, now.toISOString());
+    // Un mismo nombre puede salir dos veces en una prueba (homónimos, p. ej. «Enrique Fernandez» y «Enrique Fernández»): se elige la inscripción cuyo
+    // nombre coincide con el de la lista del club incluidas las tildes y, a igualdad, la primera (las listas van primero con los cabezas de serie).
+    const raw = (x: string) => x.toLowerCase().split(/\s+/).filter(Boolean);
+    for (const pl of linked) {
+      const plTokens = new Set(raw(pl.name));
+      const cands = rows.filter((r) => r.names.some((n) => findByNameLoose([pl], n))).map((r) => ({ r, exact: r.names.some((n) => raw(n).length >= 2 && raw(n).every((t) => plTokens.has(t))) }));
+      const best = cands.find((c) => c.exact) ?? cands[0];
+      if (best) ins.run(guid, ev.eventId, ev.name, pl.id, best.r.status, best.r.label, /^\d+$/.test(best.r.seed ?? '') ? Number(best.r.seed) : null, rows.length, now.toISOString());
     }
     const next = st.next + 1;
     kvSet(this.db, key, { events: st.events, next, ...(next >= st.events.length ? { doneAt: now.toISOString() } : {}) } satisfies EntriesState);
