@@ -36,6 +36,8 @@ export function transformCalendar(fesba: FesbaCalendarRow[], finder: FinderRow[]
       externalUrl: f.url,
       source: 'official',
       externalId: f.calendarId,
+      // Identificador del torneo en el sistema oficial, si se pudo emparejar: permite seguirlo para saber quién juega.
+      ...(t ? { tsId: t.tsId.toUpperCase() } : {}),
     });
   }
   // Torneos del buscador con prueba absoluta que no están en el calendario FESBA.
@@ -52,6 +54,7 @@ export function transformCalendar(fesba: FesbaCalendarRow[], finder: FinderRow[]
       externalUrl: `${BASE}/sport/tournament.aspx?id=${t.tsId}`,
       source: 'official',
       externalId: t.tsId,
+      tsId: t.tsId.toUpperCase(),
     });
   }
   tournaments.sort((a, b) => String(a.startDate).localeCompare(String(b.startDate)) || String(a.name).localeCompare(String(b.name), 'es'));

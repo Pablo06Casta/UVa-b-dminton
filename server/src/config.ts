@@ -38,6 +38,9 @@ export const settings = {
   ].join(',')).split(',').map((u) => u.trim()).filter(Boolean),
   /** Torneos que no se leen ni se muestran: se excluyen por nombre (expresión regular, sin distinguir mayúsculas). */
   excludedTournaments: new RegExp(process.env.EXCLUDED_TOURNAMENTS ?? 'liga\\s+nacional', 'i'),
+  /** Torneos absolutos del calendario oficial que empiezan en los próximos N días se leen una vez para ver quién del club juega (0 = desactivado). */
+  followCalendarDays: num('FOLLOW_CALENDAR_DAYS', 30),
+  followRefreshMinutes: min('FOLLOW_REFRESH_MINUTES', 360),
   autoRosterHours: num('AUTO_ROSTER_HOURS', 24),
   /** «declared»: los jugadores del club encontrados quedan visibles (consentimiento declarado por la administración). «hidden»: ocultos hasta registrar su consentimiento. */
   autoRosterConsent: (process.env.AUTO_ROSTER_CONSENT === 'declared' ? 'declared' : 'hidden') as 'declared' | 'hidden',

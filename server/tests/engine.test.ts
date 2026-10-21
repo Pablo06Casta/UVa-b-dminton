@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { SourceUnavailableError } from '../src/http';
 import { settings } from '../src/config';
 import { SyncEngine } from '../src/engine';
+import { kvSet } from '../src/db';
 import { createPlayer } from '../src/roster';
 import { buildStoredMatch } from '../src/uva';
 import { FakeSource, GUID, info, memDb, PROFILE, row } from './helpers/fakes';
@@ -173,5 +174,20 @@ describe('torneos excluidos', () => {
     const before = src.calls.length;
     for (let i = 8; i < 20; i++) await e.tick(min(i * 30));
     expect(src.calls.slice(before).filter((c) => c === 'draws' || c === 'day' || c === 'tournament')).toEqual([]);
+  });
+});
+
+describe('seguimiento del calendario oficial', () => {
+  const cal = (tournaments: object[]) => ({ meta: {}, tournaments });
+  it('sigue los torneos absolutos cercanos con identificador oficial, y no los lejanos ni los excluidos', () => {
+    const db = memDb();
+    kvSet(db, 'calendar', cal([
+      { name: 'Cercano', startDate: '2026-11-14', tsId: 'AAAAAAAA-0000-0000-0000-000000000001' },
+      { name: 'Lejano', startDate: '2027-03-14', tsId: 'AAAAAAAA-0000-0000-0000-000000000002' },
+      { name: 'Liga Nacional de Clubes', startDate: '2026-11-10', tsId: 'AAAAAAAA-0000-0000-0000-000000000003' },
+      { name: 'Sin identificador', startDate: '2026-11-10' },
+    ]));
+    new SyncEngine(db, new FakeSource(), () => NOW).followCalendar(NOW);
+    expect((db.prepare('select guid from tournaments').all() as { guid: string }[]).map((r) => r.guid)).toEqual(['AAAAAAAA-0000-0000-0000-000000000001']);
   });
 });

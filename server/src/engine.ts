@@ -106,7 +106,10 @@ export class SyncEngine {
       jobs.push({ key: `info:${t.guid}`, kind: 'info', guid: t.guid, phase, due: infoDue, rank: phase === 'live' ? 2 : 3 });
       if (!t.info_ok_at || phase === 'past') continue;
       // La primera lectura de cuadros va antes que el orden de juego: de ahí sale quién es del club.
-      jobs.push({ key: `draws:${t.guid}`, kind: 'draws', guid: t.guid, phase, due: t.draws_ok_at ? ms(t.draws_ok_at) + iv.draws : 0, rank: !t.draws_ok_at ? -1 : phase === 'live' ? 1 : 3 });
+      const linked = (this.db.prepare('select count(*) n from tournament_players where tournament_guid = ?').get(t.guid) as unknown as { n: number }).n > 0;
+      // Torneos seguidos solo por el calendario (aún sin nadie del club identificado): se revisan cada pocas horas.
+      const drawsEvery = !linked && (phase === 'far' || phase === 'soon') ? Math.max(iv.draws, settings.followRefreshMinutes) : iv.draws;
+      jobs.push({ key: `draws:${t.guid}`, kind: 'draws', guid: t.guid, phase, due: t.draws_ok_at ? ms(t.draws_ok_at) + drawsEvery : 0, rank: !t.draws_ok_at ? -1 : phase === 'live' ? 1 : 3 });
 
       if (phase === 'live' || phase === 'recent' || phase === 'imminent' || phase === 'soon') {
         const days: string[] = JSON.parse(t.days_json);
@@ -340,6 +343,22 @@ export class SyncEngine {
     if (fesba.length === 0 && finder.length === 0) throw new Error('El calendario oficial devolvió 0 filas: se conserva el anterior.');
     kvSet(this.db, 'calendar', transformCalendar(fesba, finder, now.toISOString()), now.toISOString());
     kvSet(this.db, 'calendar_ok', { at: now.toISOString() });
+    this.followCalendar(now);
+  }
+
+  /**
+   * Sigue los torneos absolutos del calendario oficial que están cerca: se leen sus cuadros una vez (y de vez en cuando)
+   * para saber quién del club juega, aunque aún no figuren en el perfil de nadie.
+   */
+  followCalendar(now: Date) {
+    if (settings.followCalendarDays <= 0) return;
+    const cal = kvGet<{ tournaments: { tsId?: string; name?: string; startDate?: string }[] }>(this.db, 'calendar');
+    const today = todayIn(DEFAULT_TZ, now);
+    for (const t of cal?.tournaments ?? []) {
+      if (!t.tsId || !t.startDate || (t.name && settings.excludedTournaments.test(t.name))) continue;
+      const d = daysBetween(today, t.startDate);
+      if (d >= -3 && d <= settings.followCalendarDays) this.track(t.tsId, undefined, now);
+    }
   }
 
   /**
