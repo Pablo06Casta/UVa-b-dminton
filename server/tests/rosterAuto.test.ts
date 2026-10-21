@@ -119,3 +119,13 @@ describe('nombre corto del torneo frente al nombre completo del ranking', () => 
     expect(buildPublicState(db, NOW2).tournaments[0].matches[0]).toMatchObject({ players: ['Pablo Martin Castañeda'] });
   });
 });
+
+describe('cuadros públicos con nombres cortos', () => {
+  it('marca como de la UVa a «Pablo Martin» (nombre corto) y no a un homónimo de otro club', async () => {
+    const { entrantLabel } = await import('../src/publicView');
+    const pablo = { id: 1, name: 'Pablo Martin Castañeda', profileGuid: null, category: null, isMinor: false, guardianConsent: false, public: true, consentBy: 'x', consentAt: 'y', notes: null };
+    expect(entrantLabel(['Pablo Martin'], 'UNIVERSIDAD DE VALLADOLID', [pablo])).toEqual({ label: 'Pablo Martin Castañeda', uva: true });
+    expect(entrantLabel(['Pablo Martin'], undefined, [pablo]).uva).toBe(true);
+    expect(entrantLabel(['Pablo Martin'], 'OTRO CLUB', [pablo]).uva).toBe(false); // homónimo
+  });
+});

@@ -3,10 +3,9 @@ import { todayIn } from './dates';
 import { settings } from './config';
 import { type Db, kvGet } from './db';
 import { tournamentPhase } from './policy';
-import { listPlayers, type Player } from './roster';
+import { findByNameLoose, listPlayers, type Player } from './roster';
 import { isUvaClub } from './uva';
 import type { Estimate } from './estimate';
-import { sameFullName } from './text';
 import type { StoredMatch } from './uva';
 
 export interface PublicMatch {
@@ -152,7 +151,9 @@ const initials = (name: string) =>
  */
 export function entrantLabel(names: string[], club: string | undefined, publicPlayers: Player[]): { label: string; uva: boolean } {
   const parts = names.map((n) => {
-    const pub = publicPlayers.find((p) => sameFullName(p.name, n));
+    // Nombre corto del torneo frente al completo de la lista; y si el club publicado es otro, es un homónimo, no del club.
+    // (En parejas el club publicado puede ser el del compañero: la comprobación del club solo se aplica a individuales.)
+    const pub = names.length > 1 || !club || isUvaClub(club) ? findByNameLoose(publicPlayers, n) : undefined;
     if (pub) return { text: pub.name, uva: true };
     if (isUvaClub(club)) return { text: 'Jugador/a UVa', uva: false };
     if (settings.drawNames === 'full') return { text: n, uva: false };
