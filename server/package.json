@@ -15,7 +15,8 @@
     "demo": "tsx scripts/demo.ts",
     "vapid": "node scripts/vapid.mjs",
     "roster:import": "tsx scripts/import-roster.ts",
-    "setup": "node scripts/setup.mjs"
+    "setup": "node scripts/setup.mjs",
+    "check:live": "tsx scripts/check-live.ts"
   },
   "dependencies": {
     "cheerio": "^1.2.0",
