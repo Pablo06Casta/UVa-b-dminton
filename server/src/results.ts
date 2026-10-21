@@ -9,6 +9,8 @@ export interface PublicResult {
   /** 1 = oro, 2 = plata, 3 = bronce. Solo si el cuadro lo decide ya. */
   place?: 1 | 2 | 3;
   text: string;
+  /** Marcador de la final (por sets, desde el punto de vista de la persona o pareja de la UVa), si ya se jugó. */
+  score?: string;
   /** `true` si ya no le quedan partidos en esa prueba. */
   done: boolean;
 }
@@ -35,7 +37,10 @@ function knockoutResult(event: string, rounds: Round[], label: string): PublicRe
   if (!m.winner) return result({ text: `Próximo partido: ${title}`, done: false });
   const won = m.winner === side;
   const isFinal = i === rounds.length - 1;
-  if (isFinal) return won ? result({ place: 1, text: 'Oro', done: true }) : result({ place: 2, text: 'Plata', done: true });
+  if (isFinal) {
+    const score = m.sets.map(([a, b]) => (side === 1 ? `${a}-${b}` : `${b}-${a}`)).join(' ') || undefined;
+    return won ? result({ place: 1, text: 'Oro', score, done: true }) : result({ place: 2, text: 'Plata', score, done: true });
+  }
   if (won) return result({ text: `Pasa a ${rounds[i + 1].title}`, done: false });
   // Semifinal (dos partidos antes de la final): las dos perdedoras son bronce.
   if (i === rounds.length - 2 && rounds[i].matches.length === 2) return result({ place: 3, text: 'Bronce', done: true });

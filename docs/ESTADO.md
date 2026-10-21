@@ -56,6 +56,14 @@ Importante:
   homónimo de otro club no se atribuye al club. Después se lee su estado de admisión por prueba.
 - Además se incluyen los torneos que enlaza el perfil oficial de cada jugador o jugadora, hasta 90 días antes (`ENTRIES_DAYS`).
 
+## Noticias automáticas
+
+- Cuando un torneo con resultados del club termina (pasa su último día o no quedan partidos), el servidor crea solo una noticia en el
+  carrusel de la portada: medallas por prueba con el marcador de la final, o dónde cayó cada jugador/a si no hubo medallas. Solo salen
+  personas con consentimiento y no se publican rivales. Se mantiene 45 días y se actualiza sola con cada lectura de resultados.
+- Una noticia escrita a mano en `src/data/news.json` con el mismo `tournamentGuid` sustituye a la automática.
+- Una tarea programada (sábados y domingos por la noche) comprueba que se han generado y avisa si algo no cuadra.
+
 ## Estimación, cuadros y rendimiento
 
 - Estimación calibrada con 1.299 partidos reales y probada con 10 torneos terminados (ver `docs/ESTIMACION.md`).

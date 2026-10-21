@@ -55,7 +55,8 @@
         "label": "Ficha del torneo en badminton.es",
         "url": "https://www.badminton.es/sport/tournament.aspx?id=BD151966-B76B-4B1B-A591-E8DBDFB16D76"
       }
-    ]
+    ],
+    "tournamentGuid": "BD151966-B76B-4B1B-A591-E8DBDFB16D76"
   },
   {
     "id": "europeo-senior-2026",

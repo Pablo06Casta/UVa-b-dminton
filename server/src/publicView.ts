@@ -7,6 +7,7 @@ import { findByNameLoose, listPlayers, type Player } from './roster';
 import { isUvaClub } from './uva';
 import type { Estimate } from './estimate';
 import { uvaResults, type PublicResult } from './results';
+import { buildAutoNews, type PublicNews } from './news';
 import type { StoredMatch } from './uva';
 
 export interface PublicMatch {
@@ -112,6 +113,8 @@ export interface PublicState {
   players: { id: number; name: string; category?: string }[];
   pushEnabled: boolean;
   tournaments: PublicTournament[];
+  /** Noticias generadas solas con los resultados de los torneos terminados. */
+  news: PublicNews[];
 }
 
 /** Con cifras manuales, la hora estimada es la programada más el retraso medio que anota el club. */
@@ -310,7 +313,8 @@ export function buildPublicState(db: Db, now = new Date()): PublicState {
 
   const publicList = [...publicPlayers.values()].map((p) => ({ id: p.id, name: p.name, category: p.category ?? undefined }));
   // La versión cambia si cambia cualquier cosa publicable (jugadores o torneos); no depende de la hora de generación.
-  const version = createHash('sha1').update(JSON.stringify([publicList, tournaments])).digest('hex').slice(0, 12);
+  const news = buildAutoNews(tournaments, now);
+  const version = createHash('sha1').update(JSON.stringify([publicList, tournaments, news])).digest('hex').slice(0, 12);
   return {
     generatedAt: now.toISOString(),
     officialReadEnabled: settings.officialReadEnabled,
@@ -319,6 +323,7 @@ export function buildPublicState(db: Db, now = new Date()): PublicState {
     players: publicList,
     pushEnabled: !!(settings.vapid.publicKey && settings.vapid.privateKey && settings.vapid.subject),
     tournaments,
+    news,
   };
 }
 

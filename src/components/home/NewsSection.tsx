@@ -1,11 +1,12 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import newsJson from '../../data/news.json';
+import { useLiveNews } from '../../hooks/useLiveNews';
 import { formatDateRange } from '../../lib/dates';
 import type { NewsItem } from '../../types';
 import { Icon } from '../Icon';
 import { SectionHeading } from '../ui';
 
-const news = (newsJson as NewsItem[]).slice().sort((a, b) => b.date.localeCompare(a.date));
+const manual = newsJson as NewsItem[];
 const MEDAL = { 1: 'Oro', 2: 'Plata', 3: 'Bronce' } as const;
 const CLASS = { 1: 'gold', 2: 'silver', 3: 'bronze' } as const;
 
@@ -87,6 +88,12 @@ function Story({ item }: { item: NewsItem }) {
 export function NewsSection() {
   const track = useRef<HTMLUListElement>(null);
   const [index, setIndex] = useState(0);
+  const auto = useLiveNews();
+  // Las noticias escritas a mano mandan: si hay una del mismo torneo, no se repite la automática. La más reciente va primero.
+  const news = useMemo(() => {
+    const written = new Set(manual.map((n) => n.tournamentGuid).filter(Boolean));
+    return [...manual, ...auto.filter((n) => !n.tournamentGuid || !written.has(n.tournamentGuid))].sort((a, b) => b.date.localeCompare(a.date));
+  }, [auto]);
 
   const update = useCallback(() => {
     const el = track.current;
@@ -114,7 +121,7 @@ export function NewsSection() {
       el.removeEventListener('scroll', onScroll);
       window.removeEventListener('resize', onScroll);
     };
-  }, [update]);
+  }, [update, news.length]);
 
   if (news.length === 0) return null;
 

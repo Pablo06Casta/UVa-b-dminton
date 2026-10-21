@@ -231,6 +231,8 @@ export interface LiveState {
   version: string;
   players: { id: number; name: string; category?: string }[];
   pushEnabled: boolean;
+  /** Noticias generadas solas con los resultados de los torneos terminados. */
+  news?: NewsItem[];
   tournaments: {
     id: string; name: string; startDate?: string; endDate?: string; city?: string; venue?: string; level?: string;
     officialUrl?: string; manual?: boolean; uvaPlayers: string[]; matches: UvaMatch[]; progress?: LiveProgress; draws: LiveDraw[]; results?: UvaResult[]; entries?: TournamentEntry[]; checkedAt?: string; stale: boolean;
@@ -250,5 +252,9 @@ export interface NewsItem {
   medals?: { place: 1 | 2 | 3; event: string; eventName: string; who: string; detail?: string }[];
   /** Puntos clave de la noticia (camino hasta la medalla, etc.). */
   highlights?: string[];
+  /** Torneo al que se refiere (GUID oficial): una noticia escrita a mano sustituye a la automática del mismo torneo. */
+  tournamentGuid?: string;
+  /** `true` si la ha generado sola el servidor con los resultados oficiales. */
+  auto?: boolean;
   sources?: { label: string; url: string }[];
 }
