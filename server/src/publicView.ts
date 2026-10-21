@@ -6,6 +6,7 @@ import { tournamentPhase } from './policy';
 import { findByNameLoose, listPlayers, type Player } from './roster';
 import { isUvaClub } from './uva';
 import type { Estimate } from './estimate';
+import { uvaResults, type PublicResult } from './results';
 import type { StoredMatch } from './uva';
 
 export interface PublicMatch {
@@ -80,6 +81,8 @@ export interface PublicTournament {
   matches: PublicMatch[];
   progress?: PublicProgress;
   draws: PublicDraw[];
+  /** Resultados de la UVa por prueba (medallas y ronda alcanzada). */
+  results: PublicResult[];
   /** Última lectura correcta de este torneo. Los datos nunca son «en directo» si esta fecha es antigua. */
   checkedAt?: string;
   stale: boolean;
@@ -265,6 +268,7 @@ export function buildPublicState(db: Db, now = new Date()): PublicState {
     const watching = phase === 'live' || phase === 'imminent' || phase === 'recent';
     const stale = !t.manual && settings.officialReadEnabled && watching && (!checkedAt || now.getTime() - Date.parse(checkedAt) > settings.staleAfterMs);
 
+    const draws = buildPublicDraws(db, t.guid, [...publicPlayers.values()]);
     tournaments.push({
       id: t.guid,
       name: t.name,
@@ -278,7 +282,8 @@ export function buildPublicState(db: Db, now = new Date()): PublicState {
       uvaPlayers: [...new Set([...linked.map((p) => p.name), ...matches.flatMap((m) => m.players)])].sort((a, b) => a.localeCompare(b, 'es')),
       matches,
       progress: est ? toProgress(est) : undefined,
-      draws: buildPublicDraws(db, t.guid, [...publicPlayers.values()]),
+      draws,
+      results: uvaResults(draws),
       checkedAt,
       stale,
     });

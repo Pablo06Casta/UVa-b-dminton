@@ -10,6 +10,11 @@ const state = (over: Partial<LiveState['tournaments'][number]> = {}): LiveState 
 });
 
 describe('mezcla con los datos en directo', () => {
+  it('pasa los resultados de la UVa (podio) a la ficha del torneo', () => {
+    const results = [{ event: 'IM', entrant: 'Ana Prueba', place: 3 as const, text: 'Bronce', done: true }];
+    const [out] = mergeLive([t('a', '2026-11-07', 'Valladolid')], state({ results }));
+    expect(out.podium).toEqual(results);
+  });
   it('superpone jugadores, partidos y estimación sobre el torneo oficial de la misma fecha y localidad', () => {
     const out = mergeLive([t('fesba-1', '2026-11-07', 'Valladolid'), t('fesba-2', '2026-11-14', 'Burgos')], state());
     expect(out).toHaveLength(2);

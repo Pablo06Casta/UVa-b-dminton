@@ -23,6 +23,7 @@ export function mergeLive(base: Tournament[], live: LiveState): Tournament[] {
       matches: lt.matches as UvaMatch[],
       progress: lt.progress,
       draws: lt.draws,
+      podium: lt.results,
       checkedAt: lt.checkedAt,
       stale: lt.stale,
       officialUrl: lt.officialUrl,

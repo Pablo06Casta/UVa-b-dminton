@@ -3201,3 +3201,53 @@ abbr.est--big {
   color: #c4dcf3;
   text-decoration: underline;
 }
+
+/* ---------- Resultados y podio de la UVa ---------- */
+.podium {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 10px;
+  padding: 0;
+  list-style: none;
+}
+.podium__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-left: 5px solid var(--gray-200);
+  background: var(--gray-50);
+  border-radius: var(--radius);
+}
+.podium__medal {
+  min-width: 4.6em;
+  font-weight: 800;
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.podium__item--1 {
+  border-left-color: #c9a227;
+}
+.podium__item--2 {
+  border-left-color: #8b95a5;
+}
+.podium__item--3 {
+  border-left-color: #b0703a;
+}
+.uvares__list {
+  display: grid;
+  gap: 4px;
+  padding-left: 1.1em;
+  list-style: disc;
+}
+.medal-tag {
+  padding: 2px 8px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #5b4500;
+  background: #f7e7a6;
+  border-radius: 2px;
+}

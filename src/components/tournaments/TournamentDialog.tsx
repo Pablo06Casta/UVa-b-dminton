@@ -5,6 +5,7 @@ import type { Tournament } from '../../types';
 import { Icon } from '../Icon';
 import { PendingTag } from '../ui';
 import { MatchList } from './MatchList';
+import { UvaResults } from './UvaResults';
 import { StatusBadge, participantsText } from './TournamentCard';
 
 const TBC = 'Por confirmar';
@@ -93,7 +94,15 @@ export function TournamentDialog({ tournament: t, onClose }: { tournament: Tourn
                 </dd>
               </div>
             )}
-            {finished && (
+            {t.podium && t.podium.length > 0 && (
+              <div className="facts__wide">
+                <dt>Resultados de la UVa</dt>
+                <dd>
+                  <UvaResults results={t.podium} />
+                </dd>
+              </div>
+            )}
+            {finished && !(t.podium && t.podium.length > 0) && (
               <div className="facts__wide">
                 <dt>Resultados</dt>
                 <dd>{t.results ?? 'Resultados pendientes de incorporar.'}</dd>

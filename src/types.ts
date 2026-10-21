@@ -107,6 +107,8 @@ export interface Tournament {
   liveId?: string;
   progress?: LiveProgress;
   draws?: LiveDraw[];
+  /** Resultados de la UVa por prueba (medallas y ronda alcanzada). */
+  podium?: UvaResult[];
   /** Última lectura correcta de la fuente para este torneo (ISO) y si ya es antigua. */
   checkedAt?: string;
   stale?: boolean;
@@ -163,6 +165,16 @@ export interface UvaMatch {
   estimatedStart?: string;
 }
 
+/** Resultado de una persona o pareja de la UVa en una prueba (lo calcula el servidor con los cuadros). */
+export interface UvaResult {
+  event: string;
+  entrant: string;
+  /** 1 = oro, 2 = plata, 3 = bronce. */
+  place?: 1 | 2 | 3;
+  text: string;
+  done: boolean;
+}
+
 /** Estimación estadística del avance del torneo (la calcula el servidor con el ritmo real de los partidos). */
 export interface LiveProgress {
   date: string;
@@ -212,6 +224,6 @@ export interface LiveState {
   pushEnabled: boolean;
   tournaments: {
     id: string; name: string; startDate?: string; endDate?: string; city?: string; venue?: string; level?: string;
-    officialUrl?: string; manual?: boolean; uvaPlayers: string[]; matches: UvaMatch[]; progress?: LiveProgress; draws: LiveDraw[]; checkedAt?: string; stale: boolean;
+    officialUrl?: string; manual?: boolean; uvaPlayers: string[]; matches: UvaMatch[]; progress?: LiveProgress; draws: LiveDraw[]; results?: UvaResult[]; checkedAt?: string; stale: boolean;
   }[];
 }

@@ -4,6 +4,7 @@ import { getStatus, hasUvaPlayers, statusLabels } from '../../lib/tournaments';
 import type { Tournament } from '../../types';
 import { Icon } from '../Icon';
 import { PendingTag } from '../ui';
+import { hasMedals } from './UvaResults';
 
 export const tournamentHref = (t: Tournament) => `/calendario?torneo=${encodeURIComponent(t.id)}`;
 
@@ -36,6 +37,7 @@ export function TournamentCard({ tournament: t }: { tournament: Tournament }) {
         <div className="t-card__tags">
           <StatusBadge tournament={t} />
           {hasUvaPlayers(t) && <span className="uva-tag">UVa</span>}
+          {hasMedals(t.podium) && <span className="medal-tag">Podio UVa</span>}
           {t.provisional && <PendingTag />}
         </div>
         <h3 className="t-card__title">
