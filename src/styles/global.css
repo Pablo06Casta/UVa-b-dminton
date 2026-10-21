@@ -2610,3 +2610,242 @@ textarea:focus-visible {
 .t-group__title {
   border-bottom-width: 4px;
 }
+
+/* ---------- Directo: «En juego ahora» y agenda por horas ---------- */
+.livenow {
+  margin-top: 28px;
+}
+.livenow h3 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  font-family: var(--font-sport);
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--uva-ink);
+}
+.livenow__dot {
+  width: 12px;
+  height: 12px;
+  background: var(--gray-500);
+  border-radius: 50%;
+}
+.livenow__dot.is-on {
+  background: #d8322c;
+  box-shadow: 0 0 0 0 rgba(216, 50, 44, 0.6);
+  animation: livepulse 1.6s infinite;
+}
+@keyframes livepulse {
+  70% { box-shadow: 0 0 0 10px rgba(216, 50, 44, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(216, 50, 44, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .livenow__dot.is-on { animation: none; }
+}
+.livenow__list {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+}
+.dayplan__hint {
+  margin: -6px 0 14px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+.dayplan__days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.dayplan__days button {
+  padding: 8px 14px;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--uva);
+  background: var(--white);
+  border: 2px solid var(--uva);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.dayplan__days button.is-active {
+  color: var(--white);
+  background: var(--uva);
+}
+.dayplan__days button:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 2px;
+}
+.dayplan__title {
+  margin: 0 0 12px !important;
+  font-size: 1.15rem !important;
+}
+.dayplan__title::first-letter,
+.dayplan__days button::first-letter {
+  text-transform: uppercase;
+}
+.dayplan__today {
+  padding: 2px 10px;
+  font-size: 0.75rem;
+  letter-spacing: 0.14em;
+  color: var(--white);
+  background: #d8322c;
+  border-radius: 12px;
+}
+.dayplan__grid {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--gray-200);
+}
+.dayplan__grid > li,
+.dayplan__slot ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.dayplan__hour {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 12px;
+  min-height: 52px;
+  border-bottom: 1px solid var(--gray-200);
+}
+.dayplan__label {
+  padding-top: 10px;
+  font-family: var(--font-sport);
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.dayplan__slot {
+  position: relative;
+  min-width: 0;
+  padding: 8px 0;
+  border-left: 3px solid var(--gray-200);
+  padding-left: 12px;
+}
+.dayplan__slot ul {
+  display: grid;
+  gap: 8px;
+}
+.dayplan__hour.is-now .dayplan__slot {
+  border-left-color: #d8322c;
+  background: linear-gradient(#fdeceb, #fdeceb) no-repeat;
+}
+.dayplan__now {
+  position: absolute;
+  left: -3px;
+  right: 0;
+  top: var(--now, 0);
+  z-index: 1;
+  height: 0;
+  border-top: 2px solid #d8322c;
+  pointer-events: none;
+}
+.dayplan__now b {
+  position: absolute;
+  right: 0;
+  top: -11px;
+  padding: 0 8px;
+  font-size: 0.78rem;
+  color: var(--white);
+  background: #d8322c;
+  border-radius: 10px;
+}
+.dayplan__match {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-left: 5px solid var(--blue);
+  border-radius: var(--radius);
+}
+.dayplan__match--live {
+  border-left-color: #d8322c;
+  background: #fff5f4;
+}
+.dayplan__match--finished {
+  border-left-color: var(--gray-500);
+  background: var(--gray-50);
+}
+.dayplan__match--win {
+  border-left-color: var(--uva);
+}
+.dayplan__match.is-highlight {
+  outline: 3px solid var(--blue);
+  outline-offset: 2px;
+}
+.dayplan__match p {
+  margin: 0;
+}
+.dayplan__time {
+  min-width: 64px;
+  font-family: var(--font-sport);
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--uva);
+  font-variant-numeric: tabular-nums;
+}
+.dayplan__was {
+  display: block;
+  font-family: var(--font);
+  font-size: 0.72rem;
+  font-weight: 400;
+  color: var(--muted);
+}
+.dayplan__players {
+  font-weight: 800;
+  color: var(--uva-ink);
+  overflow-wrap: anywhere;
+}
+.dayplan__players span {
+  font-weight: 400;
+  color: var(--muted);
+}
+.dayplan__meta,
+.dayplan__delay {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.dayplan__result {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px !important;
+}
+.dayplan__outcome {
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.dayplan__outcome--win {
+  color: var(--blue-dark);
+}
+.dayplan__outcome--loss {
+  color: var(--muted);
+}
+.dayplan__next {
+  margin-top: 14px;
+}
+@media (max-width: 560px) {
+  .dayplan__hour {
+    grid-template-columns: 44px minmax(0, 1fr);
+    gap: 8px;
+  }
+  .dayplan__match {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .dayplan__match .status {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+}

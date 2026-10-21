@@ -154,7 +154,20 @@ export function estimate(slots: Slot[], now: Date, cfg: EstimateConfig = default
   // Respeta la hora programada como hora mínima de inicio.
   const courtList = courtIds.size ? [...courtIds] : Array.from({ length: courts }, (_, i) => `#${i + 1}`);
   const preassigned = pending.length > 0 && pending.every((s) => s.court && courtIds.has(s.court));
+  // Sin nada observado (torneo sin empezar), el orden de juego ya trae las horas: cada partido empieza a su hora programada y el
+  // torneo acaba cuando termina el último programado. No se inventa una cola por pistas.
+  const notStarted = live.length === 0 && finished.length === 0;
   const simulate = (draw: (e?: string) => number) => {
+    if (notStarted && pending.every((s) => s.plannedUtc)) {
+      const starts: Record<string, number> = {};
+      let last = nowMs;
+      for (const s of pending) {
+        const start = Math.max(Date.parse(s.plannedUtc!), nowMs);
+        starts[s.key] = start;
+        last = Math.max(last, start + draw(s.event) * MIN);
+      }
+      return { starts, end: last };
+    }
     const free = new Map<string, number>(courtList.map((c) => [c, nowMs]));
     const earliest = () => [...free.entries()].sort((a, b) => a[1] - b[1])[0][0];
     for (const s of live) {
@@ -181,9 +194,7 @@ export function estimate(slots: Slot[], now: Date, cfg: EstimateConfig = default
   const det = simulate((e) => meanFor(e));
   // Mientras no haya empezado ningún partido no hay nada observado: la hora estimada es la programada (nunca más tarde
   // por una cola imaginaria). Con el torneo en marcha, la simulación aplica los retrasos reales.
-  if (live.length === 0 && finished.length === 0) {
-    for (const s of pending) if (s.plannedUtc && Date.parse(s.plannedUtc) >= nowMs) det.starts[s.key] = Date.parse(s.plannedUtc);
-  }
+
   const rand = rng(Math.floor(nowMs / (5 * MIN)) + slots.length);
   const ends: number[] = [];
   for (let n = 0; n < cfg.simulations; n++) {

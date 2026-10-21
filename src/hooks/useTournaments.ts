@@ -2,15 +2,20 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { hasApi, listenForUpdates } from '../lib/api';
 import { tournamentSource, type TournamentData } from '../lib/tournamentSource';
 
-type State = { status: 'loading' | 'ready' | 'error'; refreshedAt?: Date; reload: () => void } & TournamentData;
+type State = { status: 'loading' | 'ready' | 'error'; refreshedAt?: Date; refreshMs: number; reload: () => void } & TournamentData;
 
-/** Refresco periódico con servidor: cada 5 minutos, al volver a la pestaña y cuando el servidor avisa de datos nuevos. */
+/** Refresco periódico con servidor: cada 5 minutos (cada minuto si hay partidos hoy), al volver a la pestaña y cuando el servidor avisa. */
 const REFRESH_MS = 5 * 60_000;
+const REFRESH_LIVE_MS = 60_000;
+const todayLocal = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Madrid' }).format(new Date());
 
 /** Fuente única de torneos para Inicio, Calendario y Directo. */
 export function useTournaments(): State {
-  const [state, setState] = useState<Omit<State, 'reload'>>({ status: 'loading', tournaments: [] });
+  const [state, setState] = useState<Omit<State, 'reload' | 'refreshMs'>>({ status: 'loading', tournaments: [] });
   const alive = useRef(true);
+  const playingToday = useRef(false);
+  const today = todayLocal();
+  playingToday.current = state.tournaments.some((t) => (t.matches ?? []).some((m) => m.date === today && m.state !== 'finished') || (t.matches ?? []).some((m) => m.state === 'live'));
 
   const load = useCallback(() => {
     tournamentSource
@@ -23,17 +28,23 @@ export function useTournaments(): State {
     alive.current = true;
     load();
     if (!hasApi) return () => void (alive.current = false);
-    const timer = setInterval(load, REFRESH_MS);
+    // Más seguido mientras hay partidos hoy: así se ve el avance del torneo y las horas estimadas se mantienen al día.
+    let timer: ReturnType<typeof setTimeout>;
+    const tick = () => {
+      load();
+      timer = setTimeout(tick, playingToday.current ? REFRESH_LIVE_MS : REFRESH_MS);
+    };
+    timer = setTimeout(tick, REFRESH_MS);
     const onVisible = () => document.visibilityState === 'visible' && load();
     document.addEventListener('visibilitychange', onVisible);
     const stop = listenForUpdates(load);
     return () => {
       alive.current = false;
-      clearInterval(timer);
+      clearTimeout(timer);
       document.removeEventListener('visibilitychange', onVisible);
       stop();
     };
   }, [load]);
 
-  return { ...state, reload: load };
+  return { ...state, refreshMs: playingToday.current ? REFRESH_LIVE_MS : REFRESH_MS, reload: load };
 }

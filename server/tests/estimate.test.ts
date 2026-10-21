@@ -109,4 +109,14 @@ describe('horas estimadas sin pistas publicadas', () => {
     expect(delayH('e')).toBeLessThan(1.5);
     expect(delayH('c')).toBeGreaterThanOrEqual(0);
   });
+
+  it('antes de empezar, el fin del torneo es el último partido programado más su duración', () => {
+    const slots: Slot[] = [];
+    for (let r = 0; r < 10; r++) for (let c = 0; c < 4; c++) slots.push(slot(`z${r}-${c}`, T(7, 35 * r)));
+    const e = estimate(slots, new Date(Date.UTC(2026, 9, 21, 10)));
+    const lastStart = Date.parse(T(7, 35 * 9));
+    const end = Date.parse(e.estimatedEnd!);
+    expect(end).toBeGreaterThan(lastStart);
+    expect(end - lastStart).toBeLessThan(60 * 60_000); // duración típica, no una cola de horas
+  });
 });

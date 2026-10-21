@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { DayAgenda } from '../components/live/DayAgenda';
 import { DrawsView } from '../components/live/DrawsView';
 import { EndEstimate } from '../components/live/EndEstimate';
 import { MatchCard } from '../components/live/MatchCard';
@@ -14,10 +15,15 @@ import type { Tournament } from '../types';
 
 export function LivePage() {
   usePageTitle('Directo');
-  const { status, tournaments, live, liveError, refreshedAt } = useTournaments();
+  const { status, tournaments, live, liveError, refreshedAt, refreshMs } = useTournaments();
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 30_000);
+    return () => clearInterval(t);
+  }, []);
   const [params] = useSearchParams();
   const [chosen, setChosen] = useState<string>();
-  const today = toISO(new Date());
+  const today = toISO(now);
 
   const candidates = useMemo(() => tournaments.filter((t) => t.liveId), [tournaments]);
   const active: Tournament | undefined = candidates.find((t) => t.id === chosen) ?? pickActive(tournaments, today);
@@ -51,7 +57,7 @@ export function LivePage() {
 
           {status === 'ready' && hasApi && (
             <p className="live__stamp" aria-live="polite">
-              Se actualiza cada 5 minutos · Comprobado en esta pantalla a las {refreshedAt ? clockSec(refreshedAt) : '—'}
+              Se actualiza cada {refreshMs >= 300_000 ? '5 minutos' : 'minuto'} · Comprobado en esta pantalla a las {refreshedAt ? clockSec(refreshedAt) : '—'}
             </p>
           )}
 
@@ -85,31 +91,30 @@ export function LivePage() {
                 )}
               </header>
 
-              <EndEstimate tournament={active} />
-
-              <div className="board">
-                <section aria-labelledby="b-live">
-                  <h3 id="b-live">En juego <span className="count-pill">{board.live.length}</span></h3>
-                  <ul className="mlist">
+              <section className="livenow" aria-labelledby="b-live">
+                <h3 id="b-live">
+                  <span className={`livenow__dot${board.live.length > 0 ? ' is-on' : ''}`} aria-hidden="true" />
+                  En juego ahora <span className="count-pill">{board.live.length}</span>
+                </h3>
+                {board.live.length > 0 ? (
+                  <ul className="mlist livenow__list">
                     {board.live.map(({ match }) => <MatchCard key={match.id} match={match} tournament={active.name} highlight={match.id === highlight} />)}
                   </ul>
-                  {board.live.length === 0 && <p className="empty">Ningún partido de la UVa se está jugando ahora.</p>}
-                </section>
-                <section aria-labelledby="b-next">
-                  <h3 id="b-next">Próximos <span className="count-pill">{board.next.length}</span></h3>
-                  <ul className="mlist">
-                    {board.next.map(({ match }) => <MatchCard key={match.id} match={match} tournament={active.name} highlight={match.id === highlight} />)}
-                  </ul>
-                  {board.next.length === 0 && <p className="empty">No hay más partidos programados.</p>}
-                </section>
-                <section aria-labelledby="b-done">
-                  <h3 id="b-done">Resultados <span className="count-pill">{board.done.length}</span></h3>
-                  <ul className="mlist">
-                    {board.done.map(({ match }) => <MatchCard key={match.id} match={match} tournament={active.name} highlight={match.id === highlight} />)}
-                  </ul>
-                  {board.done.length === 0 && <p className="empty">Aún no hay resultados.</p>}
-                </section>
-              </div>
+                ) : (
+                  <p className="empty">
+                    Ningún partido de la UVa se está jugando ahora.
+                    {board.next[0] && <> Siguiente: <strong>{board.next[0].match.players.join(' / ')}</strong>{board.next[0].match.estimatedStart ?? board.next[0].match.plannedStart ? ` a las ${clock((board.next[0].match.estimatedStart ?? board.next[0].match.plannedStart)!)}` : ''}.</>}
+                  </p>
+                )}
+              </section>
+
+              <EndEstimate tournament={active} />
+
+              <section className="livenow" aria-labelledby="b-agenda">
+                <h3 id="b-agenda">Partidos por horas <span className="count-pill">{(active.matches ?? []).length}</span></h3>
+                <p className="dayplan__hint">Cada partido está colocado a su hora estimada; si aún no hay estimación, a la programada. Los resultados aparecen al terminar.</p>
+                <DayAgenda matches={active.matches ?? []} now={now} highlight={highlight} />
+              </section>
 
               <DrawsView draws={active.draws ?? []} />
               {active.officialUrl && (
