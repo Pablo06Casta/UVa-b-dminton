@@ -112,11 +112,11 @@ describe('planificación y ciclo completo', () => {
     expect(db.prepare('select count(*) n from matches').get()).toEqual({ n: 1 });
 
     src.failWith = new Error('HTTP 503');
-    await e.tick(min(20));
+    await e.tick(min(19));
     expect(e.lastJob?.ok).toBe(false);
     expect(db.prepare('select count(*) n from matches').get()).toEqual({ n: 1 }); // datos anteriores intactos
     const retried = src.calls.length;
-    await e.tick(min(20) /* misma hora: aún en espera */);
+    await e.tick(min(19) /* misma hora: aún en espera */);
     expect(src.calls.length).toBe(retried);
     expect(db.prepare('select last_error from tournaments').get()).toEqual({ last_error: 'HTTP 503' });
   });
