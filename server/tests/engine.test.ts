@@ -160,3 +160,18 @@ describe('próximos partidos antes del torneo', () => {
   });
 });
 
+
+describe('torneos excluidos', () => {
+  it('«Liga Nacional» no se lee ni se muestra', async () => {
+    const db = memDb();
+    const src = new FakeSource();
+    src.infoData = info({ name: 'Liga Nacional de Clubes edición 2026-2027' });
+    createPlayer(db, { name: 'Ana Prueba', profile: PROFILE });
+    const e = new SyncEngine(db, src, () => NOW);
+    for (let i = 0; i < 8; i++) await e.tick(min(i));
+    expect(db.prepare('select hidden from tournaments').get()).toEqual({ hidden: 1 });
+    const before = src.calls.length;
+    for (let i = 8; i < 20; i++) await e.tick(min(i * 30));
+    expect(src.calls.slice(before).filter((c) => c === 'draws' || c === 'day' || c === 'tournament')).toEqual([]);
+  });
+});

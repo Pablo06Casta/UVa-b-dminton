@@ -95,6 +95,10 @@ export class SyncEngine {
 
     const rows = this.db.prepare('select * from tournaments where hidden = 0 and manual = 0').all() as unknown as TournamentRow[];
     for (const t of rows) {
+      if (t.name && settings.excludedTournaments.test(t.name)) {
+        this.db.prepare('update tournaments set hidden = 1 where guid = ?').run(t.guid);
+        continue;
+      }
       const phase = tournamentPhase({ startDate: t.start_date, endDate: t.end_date }, today);
       const iv = intervalsFor(phase);
       const infoDue = t.info_ok_at ? ms(t.info_ok_at) + iv.info : 0;

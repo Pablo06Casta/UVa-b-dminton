@@ -36,6 +36,8 @@ export const settings = {
     'https://www.badminton.es/ranking/category.aspx?id=54365&category=5940&ogid=9FC486AA-1B7C-4D65-9E14-3C75412D4773',
     'https://www.badminton.es/ranking/category.aspx?id=54365&category=5789&ogid=9FC486AA-1B7C-4D65-9E14-3C75412D4773',
   ].join(',')).split(',').map((u) => u.trim()).filter(Boolean),
+  /** Torneos que no se leen ni se muestran: se excluyen por nombre (expresión regular, sin distinguir mayúsculas). */
+  excludedTournaments: new RegExp(process.env.EXCLUDED_TOURNAMENTS ?? 'liga\\s+nacional', 'i'),
   autoRosterHours: num('AUTO_ROSTER_HOURS', 24),
   /** «declared»: los jugadores del club encontrados quedan visibles (consentimiento declarado por la administración). «hidden»: ocultos hasta registrar su consentimiento. */
   autoRosterConsent: (process.env.AUTO_ROSTER_CONSENT === 'declared' ? 'declared' : 'hidden') as 'declared' | 'hidden',
