@@ -21,7 +21,7 @@ import type { TournamentStatus } from '../types';
 type View = 'calendar' | 'list';
 
 export function CalendarPage() {
-  usePageTitle('Calendario');
+  usePageTitle('Calendario de torneos', 'Calendario de competiciones de bádminton en las que participan jugadores de la UVa: fechas, sedes, inscripciones, cuadros y resultados.');
   const { status, tournaments: allTournaments, checkedAt, sourceLabel, note } = useTournaments();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -53,7 +53,7 @@ export function CalendarPage() {
   const gridItems = applyFilters(tournaments, { ...base, month: 'all' }, today);
   const agendaItems = applyFilters(tournaments, { ...base, month: visibleMonth }, today);
 
-  const selected = allTournaments.find((t) => t.id === searchParams.get('torneo')) ?? null;
+  const selected = allTournaments.find((t) => t.id === searchParams.get('torneo') || (!!t.liveId && t.liveId.toUpperCase() === (searchParams.get('torneo') ?? '').toUpperCase())) ?? null;
   const closeDialog = () =>
     setSearchParams(
       (prev) => {

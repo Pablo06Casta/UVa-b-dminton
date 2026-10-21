@@ -29,7 +29,10 @@ export function listenForUpdates(onUpdate: () => void): () => void {
 }
 
 /** Enlace que se comparte: al abrirlo muestra una vista previa del partido y lleva a la web del club. */
-export const shareUrl = (matchId: string) => `${API_URL}/compartir/${encodeURIComponent(matchId)}`;
+export type ShareKind = 'partido' | 'torneo' | 'resultados';
+export const shareUrl = (id: string, kind: ShareKind = 'partido') => `${API_URL}/compartir/${kind}/${encodeURIComponent(id)}`;
+/** Imagen de la tarjeta: `square` (publicación de Instagram) o `story` (historia); por defecto 1200×630 para la vista previa. */
+export const shareImageUrl = (id: string, kind: ShareKind, size: 'og' | 'square' | 'story' = 'og') => `${API_URL}/og/${kind}/${encodeURIComponent(id)}.png?size=${size}`;
 
 /** Abre la conexión con el servidor y pide ya estado, noticias y calendario: las respuestas quedan en la caché HTTP (10-60 s) para cuando la interfaz las pida. */
 export function warmUpApi() {

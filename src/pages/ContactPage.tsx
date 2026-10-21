@@ -5,7 +5,7 @@ import { club, isContactFormConfigured } from '../config/site';
 import { usePageTitle } from '../hooks/usePageTitle';
 
 export function ContactPage() {
-  usePageTitle('Contacto');
+  usePageTitle('Contacto', 'Escribe al Club Bádminton Universidad de Valladolid: dudas, propuestas o información para unirte.');
   return (
     <>
       <PageHeader title="Contacto" lead="Escribe al club: dudas, propuestas o petición de información." />

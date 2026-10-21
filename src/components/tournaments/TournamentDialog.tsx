@@ -6,6 +6,7 @@ import { Icon } from '../Icon';
 import { PendingTag } from '../ui';
 import { MatchList } from './MatchList';
 import { DrawsView } from '../live/DrawsView';
+import { ShareMenu } from '../live/ShareMenu';
 import { EntriesList } from './EntriesList';
 import { UvaResults } from './UvaResults';
 import { StatusBadge, participantsText } from './TournamentCard';
@@ -121,6 +122,13 @@ export function TournamentDialog({ tournament: t, onClose }: { tournament: Tourn
           </dl>
 
           {t.draws && t.draws.length > 0 && <DrawsView draws={t.draws} updatedAt={t.checkedAt} />}
+
+          {t.liveId && (
+            <p className="dialog__share">
+              <ShareMenu kind="torneo" id={t.liveId} title={`${t.name} · jugadores de la UVa`} label="Compartir torneo" />
+              {t.podium && t.podium.length > 0 && <ShareMenu kind="resultados" id={t.liveId} title={`Resultados de la UVa en ${t.name}`} label="Compartir resultados" />}
+            </p>
+          )}
 
           {t.externalUrl && (
             <a className="btn btn--primary" href={t.externalUrl} target="_blank" rel="noopener noreferrer">

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { DayAgenda } from '../components/live/DayAgenda';
 import { DrawsView } from '../components/live/DrawsView';
+import { ShareMenu } from '../components/live/ShareMenu';
 import { EntriesList } from '../components/tournaments/EntriesList';
 import { EndEstimate } from '../components/live/EndEstimate';
 import { MatchCard } from '../components/live/MatchCard';
@@ -15,7 +16,7 @@ import { boardOf, clock, clockSec, pickActive } from '../lib/live';
 import type { Tournament } from '../types';
 
 export function LivePage() {
-  usePageTitle('Directo');
+  usePageTitle('Directo', 'Partidos de bádminton de los jugadores de la UVa en directo: en juego ahora, próximos partidos con hora estimada, resultados y hora estimada de fin del torneo.');
   const { status, tournaments, live, liveError, refreshedAt, refreshMs } = useTournaments();
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
@@ -85,6 +86,12 @@ export function LivePage() {
               <header className="live__head">
                 <h2>{active.name}</h2>
                 <p>{formatDateRange(active.startDate, active.endDate)} · {active.city}{active.venue ? ` · ${active.venue}` : ''}</p>
+                {active.liveId && (
+                  <p className="dialog__share">
+                    <ShareMenu kind="torneo" id={active.liveId} title={`${active.name} · jugadores de la UVa`} label="Compartir torneo" />
+                    {active.podium && active.podium.length > 0 && <ShareMenu kind="resultados" id={active.liveId} title={`Resultados de la UVa en ${active.name}`} label="Compartir resultados" />}
+                  </p>
+                )}
                 {active.stale && (
                   <Notice kind="warning" title="Datos antiguos">
                     La última lectura correcta de este torneo fue a las {active.checkedAt ? clock(active.checkedAt) : '—'}. No se muestran como «en directo» hasta que vuelva a actualizarse.

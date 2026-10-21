@@ -1,7 +1,7 @@
 import { clock, lateness } from '../../lib/live';
 import type { UvaMatch } from '../../types';
 import { SetScores } from '../tournaments/SetScores';
-import { ShareButton } from './ShareButton';
+import { ShareMenu } from './ShareMenu';
 
 const stateLabel = { scheduled: 'Programado', live: 'En juego', finished: 'Finalizado' } as const;
 
@@ -37,7 +37,7 @@ export function MatchCard({ match: m, tournament, highlight }: { match: UvaMatch
           )}
         </p>
       )}
-      <ShareButton match={m} tournament={tournament} />
+      <ShareMenu kind="partido" id={m.id} title={`${m.players.join(' / ')}${m.opponent ? ` vs ${m.opponent}` : ''} · ${m.event ?? tournament}`} />
     </li>
   );
 }

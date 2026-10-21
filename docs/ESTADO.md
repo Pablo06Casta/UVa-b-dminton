@@ -64,6 +64,16 @@ Importante:
 - Una noticia escrita a mano en `src/data/news.json` con el mismo `tournamentGuid` sustituye a la automática.
 - Una tarea programada (sábados y domingos por la noche) comprueba que se han generado y avisa si algo no cuadra.
 
+## Compartir y SEO
+
+- Botón «Compartir» en cada partido, en cada torneo y en sus resultados (WhatsApp, enviar desde el móvil, copiar enlace e imágenes para
+  Instagram: cuadrada para publicación y vertical para historia). El enlace enseña en WhatsApp, Telegram o X una tarjeta deportiva con el
+  «vs» y el marcador (o la hora estimada si aún no se juega); la imagen cambia sola cuando cambia el partido.
+- Las tarjetas las dibuja el servidor (`/og/...png`, `/compartir/...`) con la misma tipografía de la web y solo con datos públicos:
+  jugadores con consentimiento y rivales únicamente si `PUBLIC_OPPONENTS=names` (si no, sale «Rival»).
+- Etiquetas Open Graph y Twitter, enlace canónico, datos estructurados, `robots.txt`, `sitemap.xml` y título/descripción por página.
+  La dirección pública está en `.env.production` (`VITE_SITE_URL`): cambiarla si se compra un dominio, y actualizar `public/sitemap.xml` y `robots.txt`.
+
 ## Estimación, cuadros y rendimiento
 
 - Estimación calibrada con 1.299 partidos reales y probada con 10 torneos terminados (ver `docs/ESTIMACION.md`).

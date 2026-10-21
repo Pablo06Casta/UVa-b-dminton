@@ -7,7 +7,7 @@ import { asset } from "../lib/asset";
 const history = historyJson as HistoryData;
 
 export function HistoryPage() {
-  usePageTitle("Historia");
+  usePageTitle('Historia', 'Trayectoria deportiva del Club Bádminton Universidad de Valladolid: etapas, campeonatos, podios y logros.');
   const hasPending = history.sections.some((s) => s.status === "pending");
 
   return (
