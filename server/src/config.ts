@@ -14,12 +14,8 @@ export const settings = {
   /** Orígenes autorizados a leer la API pública (la web del club). `*` solo para pruebas. */
   corsOrigins: (process.env.CORS_ORIGINS ?? '').split(',').map((s) => s.trim()).filter(Boolean),
 
-  /**
-   * Lectura automática de badminton.es. DESACTIVADA por defecto: las rutas con inscritos, cuadros, partidos y
-   * perfiles están excluidas por su robots.txt. Actívala solo con autorización de la FESBA / Federación de
-   * Castilla y León (ver README, «Autorización»).
-   */
-  officialReadEnabled: process.env.OFFICIAL_READ_ENABLED === 'true',
+  /** Lectura automática de badminton.es (cuadros, partidos y perfiles), con peticiones espaciadas. Activada por defecto; `OFFICIAL_READ_ENABLED=false` la desactiva. */
+  officialReadEnabled: process.env.OFFICIAL_READ_ENABLED !== 'false',
   tickMs: num(process.env.TICK_MS, 5000),
 
   /** Frecuencias de lectura por fase del torneo (minutos). */

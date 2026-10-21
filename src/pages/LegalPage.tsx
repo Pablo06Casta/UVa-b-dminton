@@ -29,12 +29,13 @@ export function LegalPage() {
       <div className="section">
         <div className="container container--narrow">
           {pending && (
-            <Notice kind="warning" title="Faltan datos de identificación del titular">
-              Los textos están redactados conforme a la normativa vigente. Los datos marcados como pendientes (titular, NIF, domicilio y correo) los
-              debe facilitar el club o la Universidad de Valladolid antes de la publicación definitiva.
+            <Notice kind="warning" title="Versión de prueba">
+              Estos textos son una versión de prueba, redactada conforme a la normativa vigente, pendiente de revisión jurídica. Los datos marcados
+              como pendientes (NIF, domicilio y, en su caso, otro titular) los debe facilitar el club o la Universidad de Valladolid antes de la
+              publicación definitiva.
             </Notice>
           )}
-          <p className="legal__updated">Última actualización: {new Date(legal.updated).toLocaleDateString('es-ES', { dateStyle: 'long' })}</p>
+          <p className="legal__updated">Versión de prueba · Última actualización: {new Date(legal.updated).toLocaleDateString('es-ES', { dateStyle: 'long' })}</p>
 
           <Block id="aviso-legal" title="Aviso legal">
             <p>

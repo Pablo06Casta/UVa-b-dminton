@@ -58,15 +58,15 @@ Importante:
 | --- | --- |
 | Fotografía de grupo | Portada con la foto del equipo (hecha). Falta confirmar el consentimiento de las personas que aparecen para publicar su imagen. |
 | Presentación del club | Texto incorporado desde el informe del club (`club.json › about`). Falta una foto complementaria. |
-| Integrantes | Nombres, funciones y fotos, **con autorización** para publicarlos. Hoy: tarjetas de marcador. |
+| Integrantes | Sección retirada de la portada por ahora (`TeamSection` sigue en el código). Volver a mostrarla cuando haya nombres, funciones y fotos **con autorización**. |
 | Logros | Incorporados desde el informe del club (`achievements.json`). Cifras no respaldadas (p. ej. «17 medallas») no se muestran. |
 | Historia | Cronología y fuentes incorporadas (`history.json`). Pendiente: origen/fundación del club y fotos históricas. |
 | Participación de la UVa | Torneos donde juegan personas de la UVa (`uva-torneos.json`), con nº de jugadores y nombres autorizados. |
 | Correo y redes | Instagram @uva_bad añadido (contacto y pie). Falta el correo oficial del club en `club.json › email` (mientras esté vacío no se muestra). |
 | Formulario | Servicio de envío (`VITE_CONTACT_ENDPOINT`), correo de destino y captcha. Hoy no envía. |
-| Textos legales | Redactados (aviso legal, privacidad, cookies). Faltan los datos del titular en `club.json › legal` (titular, NIF, domicilio, correo, contacto de protección de datos) y una revisión por la Universidad o un asesor jurídico. |
+| Textos legales | Versión de prueba redactada (aviso legal, privacidad, cookies). Faltan los datos del titular en `club.json › legal` (titular, NIF, domicilio, correo, contacto de protección de datos) y una revisión por la Universidad o un asesor jurídico. |
 | Servidor | Alojarlo (Fly.io/VPS con disco), `ADMIN_TOKEN`, claves VAPID, `VITE_API_URL` en la web. |
-| Autorización | Permiso de la FESBA / Federación de Castilla y León para activar la lectura en directo. |
+| Lectura en directo | Activada por defecto. El `robots.txt` de badminton.es excluye esas rutas; el club asume la decisión. Se recomienda la autorización de la FESBA (`docs/SOLICITUD-AUTORIZACION.md`). |
 
 ## Antes de publicar
 
