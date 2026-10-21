@@ -1,6 +1,6 @@
 import { CLUB_PATTERN } from './config';
 import { createHash } from 'node:crypto';
-import { findByName, type Player } from './roster';
+import { findByNameLoose, type Player } from './roster';
 import type { MatchRow, MatchStatus, Team } from './model';
 
 /** ¿El club que publica la fuente oficial es el de la Universidad de Valladolid? */
@@ -63,7 +63,7 @@ export function findClubEntrants(entrants: EntrantLike[], roster: Player[]): Fou
       if (!tsPlayerId || !name) return;
       // Apellidos muy comunes tienen homónimos en otros clubes: un nombre de la lista solo vale si el club publicado
       // es el de la UVA o no se publica ninguno. Con otro club, es otra persona.
-      const rostered = !e.club || isUvaClub(e.club) ? findByName(roster, name) : undefined;
+      const rostered = !e.club || isUvaClub(e.club) ? findByNameLoose(roster, name) : undefined;
       const uva = isUvaClub(e.club) || !!rostered;
       if (uva) out.push({ tsPlayerId, name, club: e.club, rosterId: rostered?.id, uva });
     });

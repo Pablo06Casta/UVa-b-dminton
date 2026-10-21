@@ -106,7 +106,7 @@ const stateOf = (s: StoredMatch['status']): PublicMatch['state'] => (s === 'on_c
 /** Lo que la estimación aporta a un partido: hora estimada por partido y, en datos manuales, un retraso común. */
 export type StartHints = Pick<Estimate, 'starts'> & Partial<Pick<Estimate, 'delayMin' | 'basis'>>;
 
-export function toPublicMatch(m: StoredMatch, publicIds: Set<number>, hints: StartHints = { starts: {} }): PublicMatch | undefined {
+export function toPublicMatch(m: StoredMatch, publicIds: Set<number>, hints: StartHints = { starts: {} }, names?: Map<number, string>): PublicMatch | undefined {
   const uvaOn = m.sides.map((s) => s.players.filter((p) => p.uva));
   const all = uvaOn.flat();
   // Si alguien del club en el partido no es público, no se publica el partido entero.
@@ -126,7 +126,7 @@ export function toPublicMatch(m: StoredMatch, publicIds: Set<number>, hints: Sta
   return {
     id: m.key,
     event: [m.eventCode ?? m.drawName, m.round].filter(Boolean).join(' · ') || undefined,
-    players: all.map((p) => p.name),
+    players: all.map((p) => (p.rosterId !== undefined ? names?.get(p.rosterId) : undefined) ?? p.name),
     opponent: !bothSides && settings.opponents === 'names' && other ? other : undefined,
     state: stateOf(m.status),
     date: m.date,
@@ -228,7 +228,7 @@ export function buildPublicState(db: Db, now = new Date()): PublicState {
 
     const est = kvGet<Estimate & { date: string }>(db, `estimate:${t.guid}`);
     const matches = (db.prepare('select json from matches where tournament_guid = ?').all(t.guid) as unknown as { json: string }[])
-      .map((r) => toPublicMatch(JSON.parse(r.json) as StoredMatch, publicIds, est ?? { starts: {} }))
+      .map((r) => toPublicMatch(JSON.parse(r.json) as StoredMatch, publicIds, est ?? { starts: {} }, new Map([...publicPlayers].map(([id, p]) => [id, p.name]))))
       .filter((m): m is PublicMatch => !!m)
       .sort((a, b) => `${a.date ?? ''} ${a.time ?? ''}`.localeCompare(`${b.date ?? ''} ${b.time ?? ''}`));
 

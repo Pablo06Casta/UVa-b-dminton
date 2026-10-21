@@ -3,7 +3,7 @@ import { SourceUnavailableError } from './http';
 import { settings } from './config';
 import { type Db, kvGet, kvSet, nowIso } from './db';
 import { intervalsFor, NEVER, priorityFor, tournamentPhase, type Phase } from './policy';
-import { createPlayer, listPlayers, updatePlayer, type Player } from './roster';
+import { createPlayer, findByNameLoose, listPlayers, updatePlayer, type Player } from './roster';
 import { nameTokens } from './text';
 import { titleCase } from './rankingParse';
 import { isUvaClub } from './uva';
@@ -137,6 +137,42 @@ export class SyncEngine {
       .sort((a, b) => a.rank - b.rank || a.due - b.due);
   }
 
+  private relinked = false;
+
+  /**
+   * Vuelve a asociar a los participantes ya guardados con la lista del club (por si la lista cambió o el nombre corto del torneo
+   * no coincidía con el completo) y completa el identificador en los partidos guardados. No hace peticiones.
+   */
+  relinkEntrants() {
+    const roster = listPlayers(this.db);
+    const link = this.db.prepare('insert or ignore into tournament_players(tournament_guid, player_id) values(?, ?)');
+    const rows = this.db.prepare('select tournament_guid g, ts_player_id id, name, club, player_id pid from entrants').all() as unknown as { g: string; id: number; name: string; club: string | null; pid: number | null }[];
+    const set = this.db.prepare('update entrants set player_id = ? where tournament_guid = ? and ts_player_id = ?');
+    for (const r of rows) {
+      if (r.pid || (r.club && !isUvaClub(r.club))) continue;
+      const p = findByNameLoose(roster, r.name);
+      if (!p) continue;
+      set.run(p.id, r.g, r.id);
+      link.run(r.g, p.id);
+    }
+    const byTournament = new Map<string, Map<number, number>>();
+    for (const r of this.db.prepare('select tournament_guid g, ts_player_id id, player_id pid from entrants where player_id is not null').all() as unknown as { g: string; id: number; pid: number }[]) {
+      (byTournament.get(r.g) ?? byTournament.set(r.g, new Map()).get(r.g)!).set(r.id, r.pid);
+    }
+    const upd = this.db.prepare('update matches set json = ? where key = ?');
+    for (const [g, map] of byTournament) {
+      for (const m of this.db.prepare('select key, json from matches where tournament_guid = ?').all(g) as unknown as { key: string; json: string }[]) {
+        const stored = JSON.parse(m.json) as StoredMatch;
+        let changed = false;
+        for (const side of stored.sides) for (const pl of side.players) {
+          const pid = pl.tsPlayerId !== undefined ? map.get(pl.tsPlayerId) : undefined;
+          if (pl.uva && pl.rosterId === undefined && pid !== undefined) { pl.rosterId = pid; changed = true; }
+        }
+        if (changed) upd.run(JSON.stringify(stored), m.key);
+      }
+    }
+  }
+
   /** Estado interno para diagnóstico (sin datos personales). */
   diagnose(now = this.clock()) {
     const http = (this.src as unknown as { http?: { stats?: () => unknown } }).http?.stats?.();
@@ -152,6 +188,10 @@ export class SyncEngine {
   /** Ejecuta, como máximo, una lectura. Devuelve la clave del trabajo ejecutado. */
   async tick(now = this.clock()): Promise<string | undefined> {
     if (now.getTime() < this.pausedUntil) return undefined;
+    if (!this.relinked) {
+      this.relinked = true;
+      try { this.relinkEntrants(); } catch (e) { console.error('relinkEntrants', e); }
+    }
     const job = this.plan(now)[0];
     if (!job) return undefined;
     try {
@@ -233,6 +273,7 @@ export class SyncEngine {
       created++;
     }
     kvSet(this.db, 'roster_ok', { at: now.toISOString(), found: found.size, created });
+    this.relinkEntrants();
   }
 
   /** Torneos de cada jugador de la lista, desde su perfil oficial. */
@@ -300,6 +341,7 @@ export class SyncEngine {
       up.run(guid, f.tsPlayerId, f.name, f.club ?? null, f.rosterId ?? null, now.toISOString());
       if (f.rosterId) link.run(guid, f.rosterId);
     }
+    this.relinkEntrants();
   }
 
   /** Orden de juego de un día: se filtran los partidos de jugadores del club y se confirman los cambios. */

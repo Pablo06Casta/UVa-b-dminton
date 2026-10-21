@@ -114,6 +114,24 @@ export function deletePlayer(db: Db, id: number): boolean {
 }
 
 /** Busca en la lista a quien corresponde un nombre publicado por la fuente oficial (mismos tokens, en cualquier orden). */
+/**
+ * Como `findByName`, pero admite el nombre corto de los torneos («Pablo Martín») frente al completo del ranking
+ * («Pablo Martín Castañeda»). Exige al menos dos palabras y que el resultado sea único.
+ */
+export function findByNameLoose(players: Player[], name: string): Player | undefined {
+  const exact = players.find((p) => sameFullName(p.name, name));
+  if (exact) return exact;
+  const t = new Set(nameTokens(name));
+  if (t.size < 2) return undefined;
+  const hits = players.filter((p) => {
+    const r = new Set(nameTokens(p.name));
+    if (r.size < 2) return false;
+    const [small, big] = r.size <= t.size ? [r, t] : [t, r];
+    return [...small].every((x) => big.has(x));
+  });
+  return hits.length === 1 ? hits[0] : undefined;
+}
+
 export function findByName(players: Player[], name: string): Player | undefined {
   return players.find((p) => sameFullName(p.name, name));
 }

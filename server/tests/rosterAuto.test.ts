@@ -77,3 +77,45 @@ describe('lista del club construida sola', () => {
     expect(e.plan(new Date(NOW.getTime() + 25 * 3600_000)).map((j) => j.kind)).toContain('roster');
   });
 });
+
+describe('nombre corto del torneo frente al nombre completo del ranking', () => {
+  const NOW2 = new Date('2026-11-07T10:00:00+01:00');
+  it('reconoce a «Pablo Martin» como «Pablo Martin Castañeda» y publica su partido', async () => {
+    const { buildPublicState } = await import('../src/publicView');
+    const { standing, row, GUID, PROFILE } = await import('./helpers/fakes');
+    settings.opponents = 'none';
+    settings.officialReadEnabled = true;
+    settings.rankingUrls = [];
+    const db = memDb();
+    const src = new FakeSource();
+    src.standingRows = [standing(['Pablo Martin'], [1], 'UNIVERSIDAD DE VALLADOLID'), standing(['Rival Uno'], [2], 'OTRO CLUB')];
+    src.dayRows = [row({ names1: [['Pablo Martin', 1]], names2: [['Rival Uno', 2]] })];
+    createPlayer(db, { name: 'Pablo Martin Castañeda', profile: PROFILE, public: true, consentBy: 'Club', consentAt: '2026-10-20' });
+    const e = new SyncEngine(db, src, () => NOW2);
+    for (let i = 0; i < 8; i++) await e.tick(new Date(NOW2.getTime() + i * 5 * 60_000));
+    const [t] = buildPublicState(db, NOW2).tournaments;
+    expect(t.uvaPlayers).toEqual(['Pablo Martin Castañeda']);
+    expect(t.matches[0]).toMatchObject({ players: ['Pablo Martin Castañeda'], state: 'scheduled' });
+    void GUID;
+  });
+
+  it('repara los partidos ya guardados sin identificador, sin hacer peticiones', async () => {
+    const { buildPublicState } = await import('../src/publicView');
+    const { standing, row, GUID, PROFILE } = await import('./helpers/fakes');
+    const db = memDb();
+    const src = new FakeSource();
+    src.standingRows = [standing(['Pablo Martin'], [1], 'UNIVERSIDAD DE VALLADOLID')];
+    src.dayRows = [row({ names1: [['Pablo Martin', 1]], names2: [['Rival Uno', 2]] })];
+    // Se leen los datos cuando la lista aún no tiene a la persona…
+    let e = new SyncEngine(db, src, () => NOW2);
+    createPlayer(db, { name: 'Otro Jugador', profile: PROFILE });
+    for (let i = 0; i < 8; i++) await e.tick(new Date(NOW2.getTime() + i * 5 * 60_000));
+    expect(buildPublicState(db, NOW2).tournaments).toEqual([]);
+    // …y después se añade: al reiniciar el motor se reasocia y el partido ya se puede publicar.
+    createPlayer(db, { name: 'Pablo Martin Castañeda', public: true, consentBy: 'Club', consentAt: '2026-10-20' });
+    e = new SyncEngine(db, new FakeSource(), () => NOW2);
+    e.relinkEntrants();
+    db.prepare('insert or ignore into tournament_players select ?, id from players where name like ?').run(GUID, 'Pablo%');
+    expect(buildPublicState(db, NOW2).tournaments[0].matches[0]).toMatchObject({ players: ['Pablo Martin Castañeda'] });
+  });
+});
