@@ -72,7 +72,7 @@ Importante:
 | Presentación del club | Texto del informe e imagen UVa + volante (hechos). Confirmar con la UVa el uso del logotipo y el nombre. |
 | Integrantes | Sección retirada de la portada por ahora (`TeamSection` sigue en el código). Volver a mostrarla cuando haya nombres, funciones y fotos **con autorización**. |
 | Logros | Incorporados desde el informe del club (`achievements.json`). Cifras no respaldadas (p. ej. «17 medallas») no se muestran. |
-| Historia | Cronología y fuentes incorporadas (`history.json`). Pendiente: origen/fundación del club y fotos históricas. |
+| Historia | Cronología y fuentes incorporadas (`history.json`). Pendiente: fotos históricas. |
 | Participación de la UVa | Torneos donde juegan personas de la UVa (`uva-torneos.json`), con nº de jugadores y nombres autorizados. |
 | Correo y redes | Instagram @uva_bad añadido (contacto y pie). Falta el correo oficial del club en `club.json › email` (mientras esté vacío no se muestra). |
 | Formulario | Envía por correo a pablitocastaneda06@gmail.com mediante FormSubmit. **Hay que pulsar «Activate Form» en el correo de activación** (una sola vez). Para cambiar de destinatario: `VITE_CONTACT_ENDPOINT`. |

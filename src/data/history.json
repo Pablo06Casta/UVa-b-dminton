@@ -11,16 +11,6 @@
       ]
     },
     {
-      "id": "origen",
-      "title": "Origen y fundación",
-      "status": "pending",
-      "paragraphs": [
-        "No se ha localizado en fuentes públicas el año exacto de fundación del equipo de bádminton de la UVa. La referencia documentada más antigua es 1996, cuando José «Pepe» Fraile asumió la dirección técnica y de gestión del proyecto, que mantuvo hasta 2018.",
-        "En lo institucional, los equipos federados de la Universidad de Valladolid compitieron bajo el amparo del Centro Deportivo Universitario de Valladolid, denominación que se mantuvo hasta 2004, cuando pasó a llamarse Club Deportivo Universidad de Valladolid. Hoy el bádminton forma parte de la oferta deportiva del Servicio de Deportes de la UVa."
-      ],
-      "needed": "Año exacto y circunstancias de la fundación del equipo, personas impulsoras y un documento o fuente que lo acredite."
-    },
-    {
       "id": "evolucion",
       "title": "Evolución del equipo",
       "status": "verified",
@@ -147,10 +137,6 @@
     {
       "label": "Club Bádminton Valladolid (blog del club)",
       "url": "https://blog.badmintonvalladolid.com/tag/club-badminton-valladolid/page/2/"
-    },
-    {
-      "label": "Club Deportivo Universidad de Valladolid (Wikipedia): denominación histórica de la entidad que amparaba a los equipos federados",
-      "url": "https://es.wikipedia.org/wiki/Club_Deportivo_Universidad_de_Valladolid"
     }
   ]
 }
