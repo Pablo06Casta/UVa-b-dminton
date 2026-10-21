@@ -112,11 +112,11 @@ describe('planificación y ciclo completo', () => {
     expect(db.prepare('select count(*) n from matches').get()).toEqual({ n: 1 });
 
     src.failWith = new Error('HTTP 503');
-    await e.tick(min(10));
+    await e.tick(min(20));
     expect(e.lastJob?.ok).toBe(false);
     expect(db.prepare('select count(*) n from matches').get()).toEqual({ n: 1 }); // datos anteriores intactos
     const retried = src.calls.length;
-    await e.tick(min(10) /* misma hora: aún en espera */);
+    await e.tick(min(20) /* misma hora: aún en espera */);
     expect(src.calls.length).toBe(retried);
     expect(db.prepare('select last_error from tournaments').get()).toEqual({ last_error: 'HTTP 503' });
   });
@@ -143,6 +143,6 @@ describe('planificación y ciclo completo', () => {
     const e = new SyncEngine(db, src);
     for (let i = 0; i < 6; i++) await e.tick(min(i));
     expect(src.calls.filter((c) => c === 'draws' || c === 'day')).toHaveLength(0);
-    expect(settings.intervals.live.day).toBe(5 * 60_000);
+    expect(settings.intervals.live.day).toBe(15 * 60_000);
   });
 });

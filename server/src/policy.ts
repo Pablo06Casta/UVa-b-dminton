@@ -33,7 +33,7 @@ export function intervalsFor(phase: Phase): Intervals {
     case 'undated':
       return { info: i.before.info, draws: i.before.draws, day: NEVER };
     case 'imminent':
-      return { ...i.imminent, day: NEVER };
+      return i.imminent;
     case 'live':
       return i.live;
     case 'recent':

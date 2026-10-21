@@ -24,14 +24,14 @@ export const settings = {
 
   /** Frecuencias de lectura por fase del torneo (minutos). */
   intervals: {
-    discovery: min('DISCOVERY_MINUTES', 120),
-    before: { info: min('BEFORE_INFO_MINUTES', 240), draws: min('BEFORE_DRAWS_MINUTES', 240) },
-    imminent: { info: min('IMMINENT_INFO_MINUTES', 60), draws: min('IMMINENT_DRAWS_MINUTES', 20) },
-    live: { info: min('LIVE_INFO_MINUTES', 120), draws: min('LIVE_DRAWS_MINUTES', 20), day: min('LIVE_DAY_MINUTES', 5) },
+    discovery: min('DISCOVERY_MINUTES', 20),
+    before: { info: min('BEFORE_INFO_MINUTES', 60), draws: min('BEFORE_DRAWS_MINUTES', 60) },
+    imminent: { info: min('IMMINENT_INFO_MINUTES', 20), draws: min('IMMINENT_DRAWS_MINUTES', 20), day: min('IMMINENT_DAY_MINUTES', 20) },
+    live: { info: min('LIVE_INFO_MINUTES', 20), draws: min('LIVE_DRAWS_MINUTES', 20), day: min('LIVE_DAY_MINUTES', 15) },
     recent: { info: min('RECENT_INFO_MINUTES', 720), draws: min('RECENT_DRAWS_MINUTES', 60), day: min('RECENT_DAY_MINUTES', 180) },
   },
   /** Pasado este tiempo sin una lectura correcta, los datos se marcan como antiguos. */
-  staleAfterMs: min('STALE_MINUTES', 30),
+  staleAfterMs: min('STALE_MINUTES', 45),
   /** Lecturas idénticas necesarias para confirmar un cambio de hora, pista o resultado. */
   confirmReads: 2,
 
