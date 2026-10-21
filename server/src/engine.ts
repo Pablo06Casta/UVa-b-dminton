@@ -101,6 +101,8 @@ export class SyncEngine {
       }
       const phase = tournamentPhase({ startDate: t.start_date, endDate: t.end_date }, today);
       const iv = intervalsFor(phase);
+      // Lo más cercano primero: tras un reinicio, los torneos de esta semana se leen antes que el resto.
+      const soonDays = t.start_date ? daysBetween(today, t.start_date) : 99;
       const infoDue = t.info_ok_at ? ms(t.info_ok_at) + iv.info : 0;
       // Sin información básica (fechas) no se sabe en qué fase está: se lee ya.
       jobs.push({ key: `info:${t.guid}`, kind: 'info', guid: t.guid, phase, due: infoDue, rank: phase === 'live' ? 2 : 3 });
@@ -109,7 +111,7 @@ export class SyncEngine {
       const linked = (this.db.prepare('select count(*) n from tournament_players where tournament_guid = ?').get(t.guid) as unknown as { n: number }).n > 0;
       // Torneos seguidos solo por el calendario (aún sin nadie del club identificado): se revisan cada pocas horas.
       const drawsEvery = !linked && (phase === 'far' || phase === 'soon') ? Math.max(iv.draws, settings.followRefreshMinutes) : iv.draws;
-      jobs.push({ key: `draws:${t.guid}`, kind: 'draws', guid: t.guid, phase, due: t.draws_ok_at ? ms(t.draws_ok_at) + drawsEvery : 0, rank: !t.draws_ok_at ? -1 : phase === 'live' ? 1 : 3 });
+      jobs.push({ key: `draws:${t.guid}`, kind: 'draws', guid: t.guid, phase, due: t.draws_ok_at ? ms(t.draws_ok_at) + drawsEvery : 0, rank: !t.draws_ok_at ? (soonDays <= 7 ? -3 : -1) : phase === 'live' ? 1 : 3 });
 
       if (phase === 'live' || phase === 'recent' || phase === 'imminent' || phase === 'soon') {
         const days: string[] = JSON.parse(t.days_json);
@@ -120,7 +122,7 @@ export class SyncEngine {
         for (const date of wanted) {
           const k = `day:${t.guid}:${date}`;
           const lastOk = ms(kvGet<{ at: string }>(this.db, `ok:${k}`)?.at);
-          jobs.push({ key: k, kind: 'day', guid: t.guid, date, phase, due: lastOk ? lastOk + iv.day : 0, rank: phase === 'live' ? 0 : 2 });
+          jobs.push({ key: k, kind: 'day', guid: t.guid, date, phase, due: lastOk ? lastOk + iv.day : 0, rank: phase === 'live' ? 0 : phase === 'recent' ? 2 : 1 });
         }
       }
     }
