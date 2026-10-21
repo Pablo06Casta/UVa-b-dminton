@@ -236,3 +236,17 @@ export interface LiveState {
     officialUrl?: string; manual?: boolean; uvaPlayers: string[]; matches: UvaMatch[]; progress?: LiveProgress; draws: LiveDraw[]; results?: UvaResult[]; entries?: TournamentEntry[]; checkedAt?: string; stale: boolean;
   }[];
 }
+
+/** Noticia del club (se escribe a mano en `src/data/news.json`). */
+export interface NewsItem {
+  id: string;
+  /** `YYYY-MM-DD`. */
+  date: string;
+  tag: string;
+  title: string;
+  summary: string;
+  tournament?: { name: string; place?: string; url?: string };
+  /** Resultados del club en la noticia: 1 = oro, 2 = plata, 3 = bronce. */
+  medals?: { place: 1 | 2 | 3; event: string; eventName: string; who: string; detail?: string }[];
+  source?: { label: string; url: string };
+}

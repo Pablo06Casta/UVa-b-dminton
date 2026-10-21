@@ -1,0 +1,55 @@
+[
+  {
+    "id": "ttr-valladolid-2026",
+    "date": "2026-10-03",
+    "tag": "Podio",
+    "title": "Doble oro y cinco medallas para la UVa en el TOP TTR de Valladolid",
+    "summary": "El club se llevó el oro en individual y en dobles masculino, además de una plata y dos bronces, en el Castilla y León TOP TTR Absoluto-Sénior disputado en el Polideportivo Narciso Alonso Cortés.",
+    "tournament": {
+      "name": "Castilla y León TOP TTR Valladolid Absoluto-Sénior",
+      "place": "Valladolid · Polideportivo Narciso Alonso Cortés",
+      "url": "https://www.badminton.es/sport/tournament.aspx?id=BD151966-B76B-4B1B-A591-E8DBDFB16D76"
+    },
+    "medals": [
+      {
+        "place": 1,
+        "event": "IM",
+        "eventName": "Individual masculino",
+        "who": "Javier González",
+        "detail": "Ganó la final por 16-21, 21-13 y 21-14."
+      },
+      {
+        "place": 1,
+        "event": "DM",
+        "eventName": "Dobles masculino",
+        "who": "Javier González y Pablo Martín",
+        "detail": "Ganaron la final por 21-10 y 21-12."
+      },
+      {
+        "place": 2,
+        "event": "DM",
+        "eventName": "Dobles masculino",
+        "who": "Samuel Muñoz y su pareja",
+        "detail": "Finalistas, en una final entre dos parejas de la UVa."
+      },
+      {
+        "place": 3,
+        "event": "IM",
+        "eventName": "Individual masculino",
+        "who": "Samuel Muñoz",
+        "detail": "Cayó en semifinales ante el campeón."
+      },
+      {
+        "place": 3,
+        "event": "DX",
+        "eventName": "Dobles mixto",
+        "who": "Eduardo Bayón y su pareja",
+        "detail": "Bronce tras las semifinales."
+      }
+    ],
+    "source": {
+      "label": "Resultados oficiales en badminton.es",
+      "url": "https://www.badminton.es/sport/draws.aspx?id=BD151966-B76B-4B1B-A591-E8DBDFB16D76"
+    }
+  }
+]
