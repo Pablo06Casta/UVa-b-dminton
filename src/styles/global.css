@@ -3621,3 +3621,37 @@ abbr.est--big {
   display: block;
   color: #9fb4d8;
 }
+
+/* ---------- Móvil: nada puede ensanchar la página ---------- */
+/* En Safari de iPhone, un contenido más ancho que la pantalla (los cuadros de eliminatorias) encogía toda la página y dejaba una franja en blanco. */
+.draws,
+.draw,
+.gcards,
+.gcard,
+.live,
+.live > *,
+.livenow,
+.board,
+.board > * {
+  min-width: 0;
+  max-width: 100%;
+}
+.bk {
+  width: 100%;
+  min-width: 0;
+  overscroll-behavior-x: contain;
+}
+@supports (overflow: clip) {
+  html,
+  body {
+    overflow-x: clip;
+  }
+}
+.live {
+  grid-template-columns: minmax(0, 1fr);
+}
+.devent,
+.devent > * {
+  min-width: 0;
+  max-width: 100%;
+}
