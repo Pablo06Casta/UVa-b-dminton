@@ -24,6 +24,8 @@ export const settings = {
 
   /** Frecuencias de lectura por fase del torneo (minutos). */
   intervals: {
+    /** Cada cuánto se vuelven a leer TODOS los cuadros de un torneo (entre medias, solo donde juega alguien del club). */
+    drawsFull: min('DRAWS_FULL_MINUTES', 360),
     discovery: min('DISCOVERY_MINUTES', 20),
     before: { info: min('BEFORE_INFO_MINUTES', 60), draws: min('BEFORE_DRAWS_MINUTES', 60), day: min('BEFORE_DAY_MINUTES', 60) },
     imminent: { info: min('IMMINENT_INFO_MINUTES', 20), draws: min('IMMINENT_DRAWS_MINUTES', 20), day: min('IMMINENT_DAY_MINUTES', 20) },
@@ -44,6 +46,8 @@ export const settings = {
   autoRosterHours: num('AUTO_ROSTER_HOURS', 24),
   /** «declared»: los jugadores del club encontrados quedan visibles (consentimiento declarado por la administración). «hidden»: ocultos hasta registrar su consentimiento. */
   autoRosterConsent: (process.env.AUTO_ROSTER_CONSENT === 'declared' ? 'declared' : 'hidden') as 'declared' | 'hidden',
+  /** Cuánto se reutiliza el estado público ya calculado (ms). Se descarta antes si cambia algo. 0 = sin caché. */
+  publicCacheMs: num(process.env.PUBLIC_CACHE_MS, process.env.VITEST ? 0 : 10_000),
   /** Pasado este tiempo sin una lectura correcta, los datos se marcan como antiguos. */
   staleAfterMs: min('STALE_MINUTES', 45),
   /** Lecturas idénticas necesarias para confirmar un cambio de hora, pista o resultado. */

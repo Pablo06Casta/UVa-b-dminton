@@ -7,7 +7,7 @@ import { settings } from './config';
 import { type Db, nowIso } from './db';
 import type { SyncEngine } from './engine';
 import { kvGet } from './db';
-import { buildPublicState, type PublicMatch } from './publicView';
+import { buildPublicState, cachedPublicState, invalidatePublicState, type PublicMatch } from './publicView';
 import { pushConfigured, subscribe, unsubscribe } from './push';
 import { buildOverview } from './adminView';
 import { importPlayersCsv } from './importCsv';
@@ -53,7 +53,7 @@ export class Hub {
   }
   /** Llamar tras cada lectura o cambio de la lista: avisa solo si cambió algo publicable. */
   check() {
-    const v = buildPublicState(this.db).version;
+    const v = cachedPublicState(this.db).state.version;
     if (v === this.last) return;
     this.last = v;
     for (const c of this.clients) c.write(`event: update\ndata: ${JSON.stringify({ version: v, at: nowIso() })}\n\n`);
@@ -141,7 +141,15 @@ export function createApp(db: Db, engine: SyncEngine | undefined, hub: Hub) {
 
       if (route === 'GET /api/public/state') {
         if (limited(req)) throw new HttpFail(429, 'Demasiadas consultas.');
-        return send(res, 200, buildPublicState(db), { ...cors(req), 'Cache-Control': 'public, max-age=15' });
+        const c = cachedPublicState(db);
+        const headers = { ...cors(req), 'Cache-Control': 'public, max-age=10, must-revalidate', ETag: c.etag };
+        // El navegador pregunta cada minuto: si no ha cambiado nada, basta con un «304 no modificado» sin cuerpo.
+        if (req.headers['if-none-match'] === c.etag) {
+          res.writeHead(304, headers);
+          return res.end();
+        }
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'X-Content-Type-Options': 'nosniff', ...headers });
+        return res.end(c.body);
       }
 
       if (route === 'GET /api/public/stream') {
@@ -307,6 +315,9 @@ export function createApp(db: Db, engine: SyncEngine | undefined, hub: Hub) {
       if (/UNIQUE|constraint/i.test(message)) return send(res, 400, { error: 'No se puede guardar: ' + message });
       console.error(e);
       return send(res, 500, { error: 'Error interno.' });
+    } finally {
+      // Cualquier cambio desde la administración (jugadores, partidos a mano…) debe verse enseguida.
+      if (req.method !== 'GET' && url.pathname.startsWith('/api/admin/')) invalidatePublicState(db);
     }
   };
 }

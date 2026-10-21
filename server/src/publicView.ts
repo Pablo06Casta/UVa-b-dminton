@@ -37,6 +37,10 @@ export interface PublicDraw {
   id: number;
   name: string;
   type: 'knockout' | 'roundrobin';
+  /** Prueba a la que pertenece («IM», «DX»…) y, si es un grupo, «Grupo A» y cuántos de él pasan al cuadro final. */
+  base: string;
+  group?: string;
+  qualify?: number;
   standings?: { rank: number; entrant: PublicEntrant; played: number; won: number; lost: number; matches: string; games: string; points: string; pts: number }[];
   rounds?: { title: string; matches: { a: PublicEntrant; b: PublicEntrant; winner?: 1 | 2; sets: [number, number][]; when?: string; court?: string; note?: string }[] }[];
 }
@@ -165,13 +169,29 @@ export function entrantLabel(names: string[], club: string | undefined, publicPl
 export function buildPublicDraws(db: Db, guid: string, publicPlayers: Player[]): PublicDraw[] {
   if (settings.drawNames === 'off') return [];
   const out: PublicDraw[] = [];
-  for (const r of db.prepare('select draw_id, name, type, json from draws where tournament_guid = ? order by draw_id').all(guid) as unknown as { draw_id: number; name: string; type: 'knockout' | 'roundrobin'; json: string }[]) {
+  const pendingFinals: PublicDraw[] = [];
+  const rows = db.prepare('select draw_id, name, type, json from draws where tournament_guid = ? order by draw_id').all(guid) as unknown as { draw_id: number; name: string; type: 'knockout' | 'roundrobin'; json: string }[];
+  // Cuántos de cada grupo pasan al cuadro final de su prueba (lo recuerda el cuadro final al leerlo).
+  const qualifiers = new Map<string, Record<string, number>>();
+  for (const r of rows) {
+    if (r.type !== 'knockout') continue;
+    const q = (JSON.parse(r.json) as { qualifiers?: Record<string, number> }).qualifiers;
+    if (q) qualifiers.set(r.name, q);
+  }
+  for (const r of rows) {
     const data = JSON.parse(r.json) as {
       standings?: { rank: number; names: string[]; club?: string; played: number; won: number; lost: number; matches: string; games: string; points: string; pts: number }[];
       rounds?: { title: string; matches: { a: EntrantRaw; b: EntrantRaw; winner?: 1 | 2; sets: [number, number][]; when?: string; court?: string; note?: string }[] }[];
     };
     const ent = (e: EntrantRaw): PublicEntrant => ({ ...entrantLabel(e.names, e.club, publicPlayers), club: e.club, bye: e.bye, placeholder: e.placeholder });
-    const draw: PublicDraw = { id: r.draw_id, name: r.name, type: r.type };
+    const g = r.name.match(/^(.*?)\s+-\s+(?:Grupo|Group)\s+(\S+)$/i);
+    const base = g ? g[1] : r.name;
+    const draw: PublicDraw = { id: r.draw_id, name: r.name, type: r.type, base };
+    if (g) {
+      draw.group = `Grupo ${g[2]}`;
+      const n = qualifiers.get(base)?.[draw.group];
+      if (n) draw.qualify = n;
+    }
     let hasUva = false;
     if (data.standings) {
       draw.standings = data.standings.map((s) => {
@@ -191,10 +211,14 @@ export function buildPublicDraws(db: Db, guid: string, publicPlayers: Player[]):
         }),
       }));
     }
-    // Solo se muestran los cuadros donde juega alguien público del club.
+    // Solo se muestran los cuadros donde juega alguien público del club…
     if (hasUva) out.push(draw);
+    else if (r.type === 'knockout') pendingFinals.push(draw);
   }
-  return out;
+  // …y el cuadro final de las pruebas en las que el club tiene grupo, aunque aún solo tenga plazas «Grupo A #1»: así se ve por dónde avanzan.
+  const bases = new Set(out.filter((d) => d.group).map((d) => d.base));
+  for (const d of pendingFinals) if (bases.has(d.base)) out.push(d);
+  return out.sort((a, b) => a.id - b.id);
 }
 
 interface EntrantRaw {
@@ -261,14 +285,41 @@ export function buildPublicState(db: Db, now = new Date()): PublicState {
   }
   tournaments.sort((a, b) => (a.startDate ?? '').localeCompare(b.startDate ?? '') || a.name.localeCompare(b.name, 'es'));
 
-  const version = createHash('sha1').update(JSON.stringify(tournaments)).digest('hex').slice(0, 12);
+  const publicList = [...publicPlayers.values()].map((p) => ({ id: p.id, name: p.name, category: p.category ?? undefined }));
+  // La versión cambia si cambia cualquier cosa publicable (jugadores o torneos); no depende de la hora de generación.
+  const version = createHash('sha1').update(JSON.stringify([publicList, tournaments])).digest('hex').slice(0, 12);
   return {
     generatedAt: now.toISOString(),
     officialReadEnabled: settings.officialReadEnabled,
     lastErrorAt: kvGet<{ at: string }>(db, 'last_error')?.at,
     version,
-    players: [...publicPlayers.values()].map((p) => ({ id: p.id, name: p.name, category: p.category ?? undefined })),
+    players: publicList,
     pushEnabled: !!(settings.vapid.publicKey && settings.vapid.privateKey && settings.vapid.subject),
     tournaments,
   };
+}
+
+/* ---------------------------------------------------------------- */
+/* Caché del estado público                                          */
+/* ---------------------------------------------------------------- */
+
+interface CachedState { at: number; state: PublicState; body: string; etag: string }
+const cache = new WeakMap<Db, CachedState>();
+
+/** Descarta el estado calculado (hay datos nuevos o ha cambiado la lista). */
+export function invalidatePublicState(db: Db) {
+  cache.delete(db);
+}
+
+/**
+ * Estado público ya calculado y serializado, con su etiqueta (ETag). Construirlo recorre todos los torneos, partidos y cuadros,
+ * así que se calcula una vez y se reutiliza para todas las peticiones y para el aviso a los navegadores.
+ */
+export function cachedPublicState(db: Db, nowMs = Date.now()): CachedState {
+  const hit = cache.get(db);
+  if (hit && nowMs - hit.at < settings.publicCacheMs) return hit;
+  const state = buildPublicState(db, new Date(nowMs));
+  const entry = { at: nowMs, state, body: JSON.stringify(state), etag: `"${state.version}"` };
+  cache.set(db, entry);
+  return entry;
 }

@@ -116,7 +116,7 @@ export function LivePage() {
                 <DayAgenda matches={active.matches ?? []} now={now} highlight={highlight} />
               </section>
 
-              <DrawsView draws={active.draws ?? []} />
+              <DrawsView draws={active.draws ?? []} updatedAt={active.checkedAt} />
               {active.officialUrl && (
                 <p className="source-note"><a href={active.officialUrl} target="_blank" rel="noopener noreferrer">Ver el torneo completo en badminton.es<span className="sr-only"> (se abre en una pestaña nueva)</span></a></p>
               )}

@@ -1,15 +1,20 @@
+import { lazy, Suspense } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import { Layout } from './components/Layout';
-import { CalendarPage } from './pages/CalendarPage';
-import { ContactPage } from './pages/ContactPage';
-import { LivePage } from './pages/LivePage';
-import { HistoryPage } from './pages/HistoryPage';
 import { HomePage } from './pages/HomePage';
-import { LegalPage } from './pages/LegalPage';
-import { NotFoundPage } from './pages/NotFoundPage';
+
+// Cada página se descarga al visitarla: la portada carga solo lo suyo.
+const named = <T extends string>(load: () => Promise<Record<T, React.ComponentType>>, name: T) => lazy(() => load().then((m) => ({ default: m[name] })));
+const LivePage = named(() => import('./pages/LivePage'), 'LivePage');
+const CalendarPage = named(() => import('./pages/CalendarPage'), 'CalendarPage');
+const HistoryPage = named(() => import('./pages/HistoryPage'), 'HistoryPage');
+const ContactPage = named(() => import('./pages/ContactPage'), 'ContactPage');
+const LegalPage = named(() => import('./pages/LegalPage'), 'LegalPage');
+const NotFoundPage = named(() => import('./pages/NotFoundPage'), 'NotFoundPage');
 
 export default function App() {
   return (
+    <Suspense fallback={<p className="empty" role="status">Cargando…</p>}>
     <Routes>
       <Route element={<Layout />}>
         <Route index element={<HomePage />} />
@@ -21,5 +26,6 @@ export default function App() {
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>
+    </Suspense>
   );
 }

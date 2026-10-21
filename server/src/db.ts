@@ -160,6 +160,12 @@ create table if not exists fetch_log (
 );
 `;
 
+/** Cambios de esquema sobre bases de datos ya creadas (idempotentes). */
+function migrate(db: Db) {
+  const cols = (db.prepare('pragma table_info(draws)').all() as unknown as { name: string }[]).map((c) => c.name);
+  if (!cols.includes('has_club')) db.exec('alter table draws add column has_club integer not null default 0');
+}
+
 export function openDb(file?: string): Db {
   const { DatabaseSync } = sqlite();
   let target = file ?? ':memory:';
@@ -170,6 +176,7 @@ export function openDb(file?: string): Db {
   const db = new DatabaseSync(target);
   db.exec('pragma journal_mode = wal; pragma foreign_keys = on; pragma busy_timeout = 5000;');
   db.exec(SCHEMA);
+  migrate(db);
   return db;
 }
 

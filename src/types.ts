@@ -190,6 +190,10 @@ export interface LiveDraw {
   id: number;
   name: string;
   type: 'knockout' | 'roundrobin';
+  /** Prueba («IM», «DX»…) y, en grupos, «Grupo A» y cuántos de él pasan al cuadro final. */
+  base: string;
+  group?: string;
+  qualify?: number;
   standings?: { rank: number; entrant: LiveEntrant; played: number; won: number; lost: number; matches: string; games: string; points: string; pts: number }[];
   rounds?: { title: string; matches: { a: LiveEntrant; b: LiveEntrant; winner?: 1 | 2; sets: [number, number][]; when?: string; court?: string; note?: string }[] }[];
 }

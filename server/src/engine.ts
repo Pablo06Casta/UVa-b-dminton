@@ -6,6 +6,8 @@ import { intervalsFor, NEVER, priorityFor, tournamentPhase, type Phase } from '.
 import { createPlayer, findByNameLoose, listPlayers, updatePlayer, type Player } from './roster';
 import { nameTokens } from './text';
 import { titleCase } from './rankingParse';
+import { qualifiersPerGroup } from './lib/ts/parse/draws';
+import { invalidatePublicState } from './publicView';
 import { isUvaClub } from './uva';
 import type { OfficialSource } from './source';
 import { transformCalendar } from './calendar';
@@ -202,6 +204,7 @@ export class SyncEngine {
     if (!job) return undefined;
     try {
       await this.run(job, now);
+      invalidatePublicState(this.db);
       this.retry.delete(job.key);
       this.lastJob = { key: job.key, at: nowIso(), ok: true };
     } catch (e) {
@@ -307,32 +310,61 @@ export class SyncEngine {
       .run(info.name, info.startDate ?? null, info.endDate ?? info.startDate ?? null, info.city ?? null, info.venue ?? null, info.level ?? null, info.tz || DEFAULT_TZ, JSON.stringify(days), now.toISOString(), job.guid!);
   }
 
-  /** Cuadros del torneo: solo para saber quién es del club (clasificaciones y cuadros muestran el club). */
+  /**
+   * Cuadros del torneo: grupos (clasificación y partidos) y cuadros finales. De ellos sale quién es del club y lo que se muestra.
+   * La primera lectura (y una completa cada pocas horas) recorre todos; entre medias solo se actualizan los cuadros donde
+   * juega alguien del club y los cuadros finales de esas pruebas, que son los que cambian y los que se publican.
+   */
   private async readDraws(job: Job, now: Date) {
     const guid = job.guid!;
     const p = priorityFor(job.phase, 'draws');
     const roster = listPlayers(this.db);
     const entrants: EntrantLike[] = [];
     const save = this.db.prepare(
-      `insert into draws(tournament_guid, draw_id, name, type, json, updated_at) values(?,?,?,?,?,?)
-       on conflict(tournament_guid, draw_id) do update set name=excluded.name, type=excluded.type, json=excluded.json, updated_at=excluded.updated_at`,
+      `insert into draws(tournament_guid, draw_id, name, type, json, updated_at, has_club) values(?,?,?,?,?,?,?)
+       on conflict(tournament_guid, draw_id) do update set name=excluded.name, type=excluded.type, json=excluded.json, updated_at=excluded.updated_at, has_club=excluded.has_club`,
     );
     const drawList = await this.src.draws(guid, p);
     // Una lista vacía no es «leído»: o aún no se han publicado, o la fuente devolvió otra página. Se reintenta con espera creciente.
     if (drawList.length === 0) throw new Error('La lista de cuadros llegó vacía (sin publicar o página inesperada).'); // (las fuentes reales ya lanzan un error con detalle)
+
+    const stored = new Map(
+      (this.db.prepare('select draw_id, name, type, json, has_club from draws where tournament_guid = ?').all(guid) as unknown as { draw_id: number; name: string; type: string; json: string; has_club: number }[]).map((r) => [r.draw_id, r]),
+    );
+    const fullKey = `draws_full:${guid}`;
+    const fullAt = ms(kvGet<{ at: string }>(this.db, fullKey)?.at);
+    const full = stored.size === 0 || now.getTime() - fullAt >= settings.intervals.drawsFull;
+    const baseOf = (name: string) => name.match(/^(.*?)\s+-\s+(?:Grupo|Group)\s+\S+$/i)?.[1] ?? name;
+    const clubBases = new Set([...stored.values()].filter((r) => r.has_club).map((r) => baseOf(r.name)));
+
     for (const d of drawList) {
+      const prev = stored.get(d.drawId);
+      const wanted = full || !prev || (prev.has_club ? true : d.type === 'knockout' && clubBases.has(baseOf(d.name)));
+      if (!wanted) continue;
       if (d.type === 'roundrobin') {
         const rows = await this.src.standings(guid, d.drawId, p);
-        for (const r of rows) entrants.push({ names: r.names, ids: r.ids, club: r.club });
-        save.run(guid, d.drawId, d.name, d.type, JSON.stringify({ standings: rows }), now.toISOString());
+        const here: EntrantLike[] = rows.map((r) => ({ names: r.names, ids: r.ids, club: r.club }));
+        entrants.push(...here);
+        const hasClub = findClubEntrants(here, roster).length > 0;
+        // Los partidos del grupo solo se piden si hay alguien del club (lo único que se publica).
+        const rounds = hasClub ? await this.src.bracket(guid, d.drawId, p) : undefined;
+        save.run(guid, d.drawId, d.name, d.type, JSON.stringify({ standings: rows, ...(rounds ? { rounds } : {}) }), now.toISOString(), +hasClub);
       } else {
         const rounds = await this.src.bracket(guid, d.drawId, p);
-        for (const round of rounds) {
-          for (const m of round.matches) for (const e of [m.a, m.b]) entrants.push({ names: e.names, ids: e.ids, club: e.club });
-        }
-        save.run(guid, d.drawId, d.name, d.type, JSON.stringify({ rounds }), now.toISOString());
+        const here: EntrantLike[] = rounds.flatMap((round) => round.matches.flatMap((m) => [m.a, m.b].map((e) => ({ names: e.names, ids: e.ids, club: e.club }))));
+        entrants.push(...here);
+        const hasClub = findClubEntrants(here, roster).length > 0;
+        // Cuántos de cada grupo pasan al cuadro, según las plazas «Grupo A #1»; se recuerda cuando ya hay nombres en su lugar.
+        const found = qualifiersPerGroup(rounds);
+        const before = prev ? (JSON.parse(prev.json) as { qualifiers?: Record<string, number> }).qualifiers : undefined;
+        const qualifiers = Object.keys(found).length > 0 ? found : before;
+        save.run(guid, d.drawId, d.name, d.type, JSON.stringify({ rounds, ...(qualifiers ? { qualifiers } : {}) }), now.toISOString(), +hasClub);
       }
     }
+    // Los cuadros que ya no figuran en la lista oficial se retiran.
+    const ids = new Set(drawList.map((d) => d.drawId));
+    for (const id of stored.keys()) if (!ids.has(id)) this.db.prepare('delete from draws where tournament_guid = ? and draw_id = ?').run(guid, id);
+    if (full) kvSet(this.db, fullKey, { at: now.toISOString() });
     this.saveEntrants(guid, entrants, roster, now);
     this.db.prepare('update tournaments set draws_ok_at = ?, last_error = null where guid = ?').run(now.toISOString(), guid);
   }

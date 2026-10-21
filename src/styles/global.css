@@ -2885,3 +2885,239 @@ abbr.est--big {
   margin-right: 0;
   font-size: 0.5em;
 }
+
+/* ---------- Grupos y cuadros: clasificación y esquema del cuadro final ---------- */
+.devent {
+  margin-top: 36px;
+}
+.devent h3 {
+  margin: 0 0 4px;
+  font-family: var(--font-sport);
+  font-size: 1.8rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--uva-ink);
+}
+.devent__sub {
+  margin: 22px 0 12px;
+  font-size: 0.8rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--blue-dark);
+}
+.gcards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr));
+  gap: 16px;
+}
+.gcard {
+  min-width: 0;
+  padding: 14px 14px 10px;
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-top: 4px solid var(--uva);
+  border-radius: var(--radius);
+}
+.gcard__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.gcard__head h4 {
+  margin: 0;
+  font-family: var(--font-sport);
+  font-size: 1.3rem;
+  text-transform: uppercase;
+}
+.gcard__q {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--blue-dark);
+}
+.gcard .standings td,
+.gcard .standings th {
+  padding: 6px 8px;
+}
+.standings tr.is-qualified td:first-child {
+  box-shadow: inset 4px 0 0 #2a9d5c;
+}
+.gcard__matches {
+  margin-top: 8px;
+  font-size: 0.9rem;
+}
+.gcard__matches summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--uva);
+}
+.gcard__matches ul {
+  display: grid;
+  gap: 4px;
+  margin: 8px 0 4px;
+  padding: 0;
+  list-style: none;
+}
+.gcard__matches li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  border-radius: 3px;
+}
+.gcard__matches li.is-uva {
+  background: var(--tint);
+}
+.gcard__matches li > span:last-child {
+  text-align: right;
+}
+.gcard__vs {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  text-align: center;
+  color: var(--muted);
+}
+.gcard__matches .is-winner {
+  font-weight: 800;
+}
+
+/* Esquema del cuadro final */
+.bk {
+  display: flex;
+  gap: 34px;
+  max-width: 100%;
+  padding: 6px 4px 18px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.bk__col {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  width: 236px;
+}
+.bk__title {
+  margin: 0 0 10px;
+  font-size: 0.72rem;
+  letter-spacing: 0.16em;
+  text-align: center;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.bk__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: space-around;
+}
+.bk__pair {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: space-around;
+  gap: 12px;
+  margin: 0;
+  padding: 6px 0;
+  list-style: none;
+}
+.bk__col:not(:last-child) .bk__pair::after {
+  content: '';
+  position: absolute;
+  top: 25%;
+  right: -17px;
+  bottom: 25%;
+  width: 17px;
+  border: 2px solid var(--gray-200);
+  border-left: 0;
+}
+.bk__match {
+  position: relative;
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-left: 4px solid var(--gray-200);
+  border-radius: 3px;
+}
+.bk__match.is-uva {
+  border-left-color: var(--uva);
+  box-shadow: 0 0 0 2px var(--tint);
+}
+.bk__match.is-done {
+  background: var(--gray-50);
+}
+.bk__col:not(:last-child) .bk__match::after,
+.bk__col + .bk__col .bk__match::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 17px;
+  border-top: 2px solid var(--gray-200);
+}
+.bk__col:not(:last-child) .bk__match::after {
+  right: -18px;
+}
+.bk__col + .bk__col .bk__match::before {
+  left: -22px;
+}
+.bk__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0;
+  padding: 5px 8px;
+  font-size: 0.88rem;
+}
+.bk__row + .bk__row {
+  border-top: 1px solid var(--gray-200);
+}
+.bk__row .entrant {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bk__row.is-winner {
+  font-weight: 800;
+  color: var(--uva-ink);
+}
+.bk__row.is-loser {
+  color: var(--muted);
+}
+.entrant--uva {
+  color: var(--uva);
+  font-weight: 800;
+}
+.entrant--tbd {
+  font-style: italic;
+  color: var(--muted);
+}
+.bk__sets {
+  display: inline-flex;
+  flex: none;
+  gap: 6px;
+  font-variant-numeric: tabular-nums;
+}
+.bk__sets b {
+  min-width: 1.4em;
+  text-align: center;
+  font-weight: 400;
+}
+.bk__sets b.is-won {
+  font-weight: 800;
+}
+.bk__wo {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+.bk__meta {
+  margin: 0;
+  padding: 3px 8px;
+  font-size: 0.76rem;
+  color: var(--muted);
+  background: var(--gray-50);
+  border-top: 1px solid var(--gray-200);
+}
