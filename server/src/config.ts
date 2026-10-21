@@ -38,6 +38,8 @@ export const settings = {
   entries: { days: num('ENTRIES_DAYS', 90), far: min('ENTRIES_FAR_MINUTES', 120), soon: min('ENTRIES_SOON_MINUTES', 60), imminent: min('ENTRIES_IMMINENT_MINUTES', 30) },
   /** Detección de cambios: tiempo mínimo entre dos lecturas adelantadas de lo mismo (minutos). La web oficial no avisa; se detecta con lecturas baratas. */
   kickMinGapMs: min('KICK_MIN_GAP_MINUTES', 2),
+  /** Para confirmar un resultado recién visto: segunda lectura del orden de juego pasados al menos estos segundos (con la web oficial no se va más rápido que esto). */
+  confirmGapMs: num('CONFIRM_GAP_SECONDS', 45) * 1000,
   /** Cada cuánto se mira solo la lista de jugadores de un torneo cercano para detectar nuevas inscripciones (minutos): ver `identifyEvery`. */
   watchListMinutes: { far: num('WATCH_LIST_FAR_MINUTES', 30), soon: num('WATCH_LIST_SOON_MINUTES', 15), imminent: num('WATCH_LIST_IMMINENT_MINUTES', 10) },
   /** Torneos que no se leen ni se muestran: se excluyen por nombre (expresión regular, sin distinguir mayúsculas). */

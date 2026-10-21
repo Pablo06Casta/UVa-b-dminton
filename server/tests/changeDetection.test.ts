@@ -65,16 +65,17 @@ describe('detección de cambios en badminton.es', () => {
     expect(t).toBeLessThan(finishedAt + 6); // en pocos minutos, no al cabo de 10
   });
 
-  it('no repite lecturas adelantadas más de una vez cada 2 minutos', () => {
+  it('una lectura adelantada espera al menos 2 minutos desde la última de lo mismo', () => {
     const NOW = new Date('2026-11-07T10:00:00+01:00');
     const db = memDb();
     const engine = new SyncEngine(db, new FakeSource(), () => NOW);
     db.prepare('insert into tournaments(guid, name, start_date, end_date, days_json, info_ok_at, discovered_at, draws_ok_at) values(?,?,?,?,?,?,?,?)').run(
       GUID, 'T', '2026-11-07', '2026-11-07', '["2026-11-07"]', NOW.toISOString(), NOW.toISOString(), min(NOW, -1).toISOString(),
     );
+    const kicked = (engine as unknown as { kicked: Map<string, number> }).kicked;
     engine.kick(`draws:${GUID}`, NOW);
-    expect((engine as unknown as { kicked: Set<string> }).kicked.size).toBe(0); // se leyó hace 1 min
+    expect(kicked.get(`draws:${GUID}`)).toBe(min(NOW, 1).getTime()); // se leyó hace 1 min: toca dentro de 1 min, no ya
     engine.kick(`draws:${GUID}`, min(NOW, 5));
-    expect((engine as unknown as { kicked: Set<string> }).kicked.size).toBe(1);
+    expect(kicked.get(`draws:${GUID}`)).toBe(min(NOW, 1).getTime()); // se conserva el turno más próximo
   });
 });

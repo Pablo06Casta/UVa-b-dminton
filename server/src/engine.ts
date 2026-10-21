@@ -172,21 +172,21 @@ export class SyncEngine {
    * badminton.es no avisa de sus cambios, así que el servidor los detecta con las lecturas baratas que ya hace y, al verlos,
    * adelanta de inmediato la lectura de lo que depende de ello en vez de esperar a su turno.
    */
-  private kicked = new Set<string>();
+  private kicked = new Map<string, number>();
 
-  /** Pide leer cuanto antes `key`, salvo que se haya leído hace menos de `minGap` (para no machacar la web oficial). */
+  /** Pide leer `key` cuanto antes, pero no antes de que pasen `minGap` desde su última lectura (para no machacar la web oficial). */
   kick(key: string, now: Date, minGap = settings.kickMinGapMs) {
     const [kind, guid] = key.split(':');
     const col = kind === 'draws' ? 'draws_ok_at' : kind === 'info' ? 'info_ok_at' : undefined;
     const last = col ? (this.db.prepare(`select ${col} v from tournaments where guid = ?`).get(guid) as unknown as { v: string | null } | undefined)?.v : undefined;
-    const at = col ? ms(last) : kind === 'entries' ? ms(kvGet<EntriesState>(this.db, key)?.doneAt) : 0;
-    if (now.getTime() - at < minGap) return;
-    this.kicked.add(key);
+    const at = col ? ms(last) : kind === 'entries' ? ms(kvGet<EntriesState>(this.db, key)?.doneAt) : kind === 'day' ? ms(kvGet<{ at: string }>(this.db, `ok:${key}`)?.at) : 0;
+    const when = Math.max(now.getTime(), at + minGap);
+    this.kicked.set(key, Math.min(when, this.kicked.get(key) ?? when));
   }
 
   private due(jobs: Job[], nowMs: number): Job[] {
     return jobs
-      .filter((j) => Number.isFinite(j.due) && (j.due <= nowMs || this.kicked.has(j.key)) && (this.retry.get(j.key)?.until ?? 0) <= nowMs)
+      .filter((j) => Number.isFinite(j.due) && (j.due <= nowMs || (this.kicked.get(j.key) ?? Infinity) <= nowMs) && (this.retry.get(j.key)?.until ?? 0) <= nowMs)
       .sort((a, b) => a.rank - b.rank || a.due - b.due);
   }
 
@@ -529,15 +529,18 @@ export class SyncEngine {
     );
     const prevRead = kvGet<{ at: string }>(this.db, `ok:${job.key}`)?.at;
     let finishedNow = 0;
+    let resultPending = false;
     for (const row of rows) {
       if (this.upsertSlot(guid, job.date!, row, now, prevRead)) finishedNow++;
       const m = buildStoredMatch(row, { tournamentGuid: guid, entrants });
-      if (m) this.ingest(m, now);
+      if (m && this.ingest(m, now) === 'pending' && (m.status === 'finished' || m.status === 'walkover' || m.status === 'retired')) resultPending = true;
     }
     // Partidos que acaban de terminar: los cuadros y las clasificaciones cambian con ellos, así que se leen ya (no a su hora).
     if (finishedNow > 0) this.kick(`draws:${guid}`, now);
     kvSet(this.db, `ok:${job.key}`, { at: now.toISOString() });
     this.recomputeEstimate(guid, job.date!, now);
+    // Un resultado nuevo de un partido del club necesita una segunda lectura igual para darse por bueno: se pide ya, sin esperar los 3 min.
+    if (resultPending) this.kick(job.key, now, settings.confirmGapMs);
   }
 
   /** Datos anónimos de horario de TODOS los partidos del día (no solo los del club): base de la estimación. */

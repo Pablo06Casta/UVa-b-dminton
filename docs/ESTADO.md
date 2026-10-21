@@ -125,3 +125,4 @@ badminton.es no avisa cuando publica algo, así que el servidor lo detecta con l
 - Un partido que acaba de terminar (orden de juego, cada 3 min en jornada) → se leen ya los cuadros y clasificaciones.
 - La lista de jugadores de un torneo cercano cambia (huella `listHash`; se mira cada 30/15/10 min según lo cerca que esté, `WATCH_LIST_*_MINUTES`) → se vuelven a leer ya las listas de cada prueba (admisión, cabezas de serie).
 - El torneo cambia de fechas o jornadas → se releen cuadros e inscripciones.
+- Comprobado de extremo a extremo (`server/tests/endToEnd.test.ts`): un resultado nuevo en badminton.es llega al navegador por el flujo de avisos y el estado público en ≈ 3 min (lectura cada 3 min + segunda lectura de confirmación 45 s después; `CONFIRM_GAP_SECONDS`), y los cuadros se releen justo después. En una jornada de 8 h con un partido terminado cada 8 min el servidor hace ≈ 50 lecturas/hora (el espaciado de 2,5 s permitiría 1440).
