@@ -89,6 +89,10 @@ describe('lista del club construida sola', () => {
     const e2 = new SyncEngine(db, source(), () => NOW);
     await e2.tick(NOW);
     expect(by('Luis Ejemplo').public).toBe(false);
+    settings.hiddenPlayers = ['Luis Ejemplo'];
+    createPlayer(db, { name: 'Luis Ejemplo de la Fuente', public: true, consentBy: 'Él', consentAt: '2026-10-01' });
+    await new SyncEngine(db, source(), () => NOW).tick(NOW);
+    expect(listPlayers(db).filter((p) => p.name.startsWith('Luis')).every((p) => !p.public)).toBe(true); // nombre corto frente a completo
     settings.hiddenPlayers = [];
   });
 });

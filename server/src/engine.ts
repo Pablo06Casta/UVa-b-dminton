@@ -50,6 +50,15 @@ const matchRoster = (roster: Player[], rankingName: string): Player | undefined 
   });
 };
 
+/** ¿Es una persona de HIDDEN_PLAYERS? Compara nombres completos o abreviados («Clara Campos» = «Clara Campos Alfaro»), en cualquier sentido. */
+const isHidden = (name: string): boolean => {
+  const t = new Set(nameTokens(name));
+  return settings.hiddenPlayers.some((h) => {
+    const ht = nameTokens(h);
+    return ht.length >= 2 && (ht.every((x) => t.has(x)) || [...t].length >= 2 && [...t].every((x) => ht.includes(x)));
+  });
+};
+
 const ms = (iso?: string | null) => (iso ? Date.parse(iso) : 0);
 
 /**
@@ -248,9 +257,8 @@ export class SyncEngine {
 
   /** Oculta (y retira los avisos de) las personas de HIDDEN_PLAYERS: sin consentimiento no se publica nada suyo. */
   private enforceHidden() {
-    for (const n of settings.hiddenPlayers) {
-      const p = matchRoster(listPlayers(this.db), n);
-      if (p?.public) updatePlayer(this.db, p.id, { public: false, consentBy: null, consentAt: null });
+    for (const p of listPlayers(this.db)) {
+      if (p.public && isHidden(p.name)) updatePlayer(this.db, p.id, { public: false, consentBy: null, consentAt: null });
     }
   }
 
@@ -278,7 +286,7 @@ export class SyncEngine {
       const age = c.birthYear === undefined ? undefined : Number(today.slice(0, 4)) - c.birthYear;
       const isMinor = age !== undefined && age < 18;
       // Sin año de nacimiento no se puede descartar que sea menor: queda oculto hasta que la administración lo revise.
-      const publish = settings.autoRosterConsent === 'declared' && age !== undefined && !isMinor && !settings.hiddenPlayers.some((n) => matchRoster([{ name: n } as Player], name));
+      const publish = settings.autoRosterConsent === 'declared' && age !== undefined && !isMinor && !isHidden(name);
       createPlayer(this.db, {
         name,
         profile: profile ?? null,
