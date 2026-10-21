@@ -25,6 +25,8 @@ export class SourceUnavailableError extends Error {
 
 export interface FetchResult {
   url: string;
+  /** Dirección final tras las redirecciones (la fuente redirige algunas páginas clásicas a la interfaz nueva). */
+  finalUrl?: string;
   status: number;
   body: string;
   hash: string;
@@ -203,7 +205,7 @@ export class PoliteClient {
         this.failures = 0;
         this.openings = 0;
         this.log({ at: new Date().toISOString(), url, status: res.status, ms, bytes: body.length, changed });
-        return { url, status: res.status, body, hash, changed, fromCache: false, fetchedAt: new Date().toISOString(), bytes: body.length, ms };
+        return { url, finalUrl: res.url || url, status: res.status, body, hash, changed, fromCache: false, fetchedAt: new Date().toISOString(), bytes: body.length, ms };
       } catch (e) {
         if (e instanceof HttpError && e.status < 500 && e.status !== 429) throw e;
         last = e;

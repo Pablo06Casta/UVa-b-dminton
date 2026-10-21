@@ -7,6 +7,8 @@ import { openDb } from './db';
 import { SyncEngine } from './engine';
 import { notifyUpcoming, realSender } from './push';
 import { RealSource } from './source';
+import { OfficialLiveReaders } from './officialReaders';
+import { PoliteClient } from './http';
 import { httpConfig } from './config-http';
 
 const db = openDb(path.join(settings.dataDir, 'club.sqlite'));
@@ -28,10 +30,8 @@ backup();
 setInterval(backup, 24 * 3600_000).unref();
 const hub = new Hub(db);
 
-const source = new RealSource();
-if (settings.officialReadEnabled && !source.hasLiveReaders) {
-  console.error('OFFICIAL_READ_ENABLED=true, pero los lectores de las páginas de torneo no están implementados: la lectura en directo no se activa.');
-}
+const client = new PoliteClient({ baseUrl: httpConfig.baseUrl, minIntervalMs: httpConfig.minIntervalMs, timeoutMs: httpConfig.timeoutMs, userAgent: httpConfig.userAgent });
+const source = new RealSource(client, new OfficialLiveReaders(client));
 const features = { live: settings.officialReadEnabled && source.hasLiveReaders, calendar: settings.calendarRefreshEnabled };
 let engine: SyncEngine | undefined;
 if (features.live || features.calendar) {

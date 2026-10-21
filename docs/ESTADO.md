@@ -24,7 +24,7 @@
 
 ## Servidor en directo (`server/`)
 
-Hecho y probado con una fuente simulada (la implementación contra badminton.es de los lectores de torneo está pendiente, ver abajo):
+Hecho y probado con una fuente simulada y con los lectores oficiales conectados (falta la primera ejecución en vivo, ver abajo):
 
 - Lista de jugadores con consentimiento + panel `/admin`; descubrimiento de torneos desde el perfil oficial.
 - Lectura de una vez por torneo, frecuencias por fase (orden de juego cada 5 min en jornada), confirmación de cambios con
@@ -34,12 +34,14 @@ Hecho y probado con una fuente simulada (la implementación contra badminton.es 
 
 Importante:
 
-- **Lectores de páginas de torneo: pendientes.** Se retiró el código que venía de otro repositorio; el calendario tiene lectores
-  propios y verificados, pero los de torneo, cuadros, partidos y perfiles no existen aún. Para escribirlos hace falta ver esas
-  páginas: o bien con autorización de la federación, o bien con páginas guardadas desde el navegador por el club.
+- **Lectores de páginas de torneo: conectados** (`server/src/officialReaders.ts`). Reutilizan, con permiso de su autor, los lectores
+  de «Badminton Live», verificados allí con páginas oficiales reales (42 pruebas de lectores y cliente HTTP, todas en verde).
+  En este repositorio hay 121 pruebas, incluido el ciclo completo con el motor real contra un servidor simulado.
+- **Para que lea los datos hace falta el enlace al perfil oficial de cada jugador** (campo «Perfil» del panel `/admin` o columna
+  `perfil` del CSV): de ahí descubre sus torneos. Sin enlaces no hay descubrimiento. Hoy los 8 jugadores no tienen enlace.
 - **La lectura en directo está DESACTIVADA por defecto** (`OFFICIAL_READ_ENABLED=false`): las rutas de inscritos, cuadros,
   partidos y perfiles están excluidas por el `robots.txt` de badminton.es. Activarla es decisión del club; se recomienda
-  autorización de la FESBA / Federación de Castilla y León. **No se ha ejecutado contra badminton.es** más que el calendario.
+  autorización de la FESBA / Federación de Castilla y León. **No se ha ejecutado contra badminton.es en vivo** más que el calendario.
 - Requiere alojar el servidor (ver `server/README.md`) y definir `VITE_API_URL` en la web.
 
 ## Pendiente

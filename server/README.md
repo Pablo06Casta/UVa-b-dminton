@@ -108,8 +108,10 @@ Todo el código de este servidor es propio del proyecto (cliente HTTP, utilidade
 - **Calendario oficial (listo y verificado):** `src/calendarParse.ts` lee el calendario FESBA y el buscador de torneos
   (páginas públicas permitidas por robots.txt). Comprobado contra las páginas reales: 295 filas FESBA y 117 del buscador →
   136 torneos absolutos, idéntico al resultado anterior. Pruebas con las páginas guardadas en `tests/pages/`.
-- **Lectores de páginas de torneo (pendientes):** información del torneo, lista de cuadros, clasificaciones, cuadros y orden
-  de juego, y perfil de jugador. El motor y la API ya los usan a través de la interfaz `LiveReaders` (`src/source.ts`), y están
-  probados con una fuente simulada, pero **no existe todavía una implementación contra badminton.es**: escribirla exige ver
-  esas páginas (rutas excluidas por su robots.txt). Con `OFFICIAL_READ_ENABLED=true` y sin lectores, el servidor lo avisa y no
-  activa el directo. Ver `docs/ESTADO.md`.
+- **Lectores de páginas de torneo (conectados):** información del torneo, lista de cuadros, clasificaciones, cuadros y orden
+  de juego, y perfil de jugador (`src/officialReaders.ts`). Usan los lectores HTML de «Badminton Live» (`src/lib/ts/parse/`,
+  copiados sin modificar, con permiso de su autor), probados allí con 42 pruebas sobre páginas oficiales reales capturadas.
+  Aquí se comprueban además con páginas ficticias de la misma estructura y con el ciclo completo (perfil → torneo → cuadros →
+  partidos → vista pública), incluida la separación mínima de 2,5 s entre peticiones (`tests/officialReaders.test.ts`,
+  `tests/liveE2E.test.ts`). Con `OFFICIAL_READ_ENABLED=true` el servidor lee a partir de los perfiles de la lista.
+  **Aún no se ha ejecutado contra badminton.es en vivo** desde este entorno; ver `docs/ESTADO.md`.
