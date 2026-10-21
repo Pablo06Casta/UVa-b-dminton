@@ -192,8 +192,10 @@ export class SyncEngine {
         if (profile) updatePlayer(this.db, known.id, { profile });
         continue;
       }
-      const isMinor = c.birthYear !== undefined && Number(today.slice(0, 4)) - c.birthYear < 18;
-      const publish = settings.autoRosterConsent === 'declared' && !isMinor;
+      const age = c.birthYear === undefined ? undefined : Number(today.slice(0, 4)) - c.birthYear;
+      const isMinor = age !== undefined && age < 18;
+      // Sin año de nacimiento no se puede descartar que sea menor: queda oculto hasta que la administración lo revise.
+      const publish = settings.autoRosterConsent === 'declared' && age !== undefined && !isMinor;
       createPlayer(this.db, {
         name,
         profile: profile ?? null,

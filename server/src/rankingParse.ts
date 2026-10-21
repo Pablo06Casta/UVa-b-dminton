@@ -27,7 +27,8 @@ export function parseRankingCategory(html: string): RankingCandidate[] {
     const cells = $(tr).children('td').map((_, td) => clean($(td).text())).get().filter(Boolean);
     const name = clean(a.text());
     const club = cells[cells.length - 1] ?? '';
-    const year = cells.find((c) => /^(19|20)\d{2}$/.test(c));
+    // El año de nacimiento va justo antes de la comunidad y el club; los puntos del ranking también pueden parecer un año.
+    const year = cells.slice(0, -2).filter((c) => /^(19|20)\d{2}$/.test(c)).at(-1);
     if (name && club && club !== name) out.push({ name, playerPath: href.startsWith('/') ? href : `/ranking/${href}`, club, birthYear: year ? Number(year) : undefined });
   });
   return out;

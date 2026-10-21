@@ -11,13 +11,15 @@ const row = (rank: number, name: string, id: number, year: number, club: string)
 const category = `<table><tr><th>Puesto</th><th>Jugador</th></tr>
 ${row(18, 'ANA PRUEBA GIL', 11, 1994, 'Universidad de Valladolid')}
 ${row(20, 'LUIS EJEMPLO DE LA FUENTE', 12, 2010, 'Universidad de Valladolid')}
+${row(25, 'MARTA PUNTOS ALTOS', 14, 2005, 'Universidad de Valladolid').replace('<td>4938</td>', '<td>2058</td>')}
 ${row(30, 'ROSA OTRA SANZ', 13, 1990, 'Club de Otra Ciudad')}</table>`;
 const GUID = 'AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE';
 
 describe('lectura del ranking', () => {
   it('lee jugadores, club, año y ficha; los nombres pasan a formato normal', () => {
     const c = parseRankingCategory(category);
-    expect(c.map((x) => x.name)).toEqual(['ANA PRUEBA GIL', 'LUIS EJEMPLO DE LA FUENTE', 'ROSA OTRA SANZ']);
+    expect(c.map((x) => x.name)).toEqual(['ANA PRUEBA GIL', 'LUIS EJEMPLO DE LA FUENTE', 'MARTA PUNTOS ALTOS', 'ROSA OTRA SANZ']);
+    expect(c[2].birthYear).toBe(2005); // los puntos (2058) no se confunden con el año
     expect(c[0]).toMatchObject({ club: 'Universidad de Valladolid', birthYear: 1994, playerPath: '/ranking/player.aspx?id=1&player=11' });
     expect(titleCase('LUIS EJEMPLO DE LA FUENTE')).toBe('Luis Ejemplo de la Fuente');
   });
@@ -46,7 +48,7 @@ describe('lista del club construida sola', () => {
     const e = new SyncEngine(db, source(), () => NOW);
     expect(await e.tick(NOW)).toBe('roster');
     const players = listPlayers(db);
-    expect(players.map((p) => p.name).sort()).toEqual(['Ana Prueba', 'Luis Ejemplo de la Fuente']); // Rosa es de otro club
+    expect(players.map((p) => p.name).sort()).toEqual(['Ana Prueba', 'Luis Ejemplo de la Fuente', 'Marta Puntos Altos']); // Rosa es de otro club
     expect(players.find((p) => p.name === 'Ana Prueba')!.profileGuid).toBe(GUID); // se completó el perfil
   });
 
