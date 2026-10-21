@@ -11,8 +11,23 @@
     <meta property="og:title" content="Club Bádminton Universidad de Valladolid" />
     <meta property="og:type" content="website" />
     <meta property="og:locale" content="es_ES" />
-    <link rel="icon" type="image/png" href="/images/logo-uva.png" />
+    <link rel="icon" type="image/png" href="/images/logo-uva-96.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
+    <script>
+      // Portada: la imagen principal se pide ya, sin esperar a que cargue la aplicación (es lo más pesado que se ve primero).
+      (function () {
+        var b = '%BASE_URL%', p = location.pathname;
+        if (p === b || p + '/' === b) {
+          var l = document.createElement('link');
+          l.rel = 'preload';
+          l.as = 'image';
+          l.type = 'image/webp';
+          l.setAttribute('imagesrcset', b + 'images/equipo-portada-640.webp 640w, ' + b + 'images/equipo-portada-1024.webp 1024w, ' + b + 'images/equipo-portada-1600.webp 1600w');
+          l.setAttribute('imagesizes', '100vw');
+          document.head.appendChild(l);
+        }
+      })();
+    </script>
     <title>Club Bádminton Universidad de Valladolid</title>
   </head>
   <body>

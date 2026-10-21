@@ -1,4 +1,3 @@
-import officialJson from '../data/calendario-oficial.json';
 import uvaJson from '../data/uva-torneos.json';
 import type { LiveState, Tournament, UvaTournamentsFile } from '../types';
 import { fetchCalendar, fetchLiveState, hasApi } from './api';
@@ -33,16 +32,21 @@ export interface TournamentSource {
   load(): Promise<TournamentData>;
 }
 
-const official = officialJson as { meta: { comprobadoEl: string; fuente: string; nota: string }; tournaments: Tournament[] };
 const uva = uvaJson as UvaTournamentsFile;
 
+/** El calendario incluido en la web (≈ 47 KB) no viaja con el código inicial: solo se descarga si no hay servidor o si este no responde. */
+const loadOfficial = async () => (await import('../data/calendario-oficial.json')).default as { meta: { comprobadoEl: string; fuente: string; nota: string }; tournaments: Tournament[] };
+
 export const localSource: TournamentSource = {
-  load: async () => ({
-    tournaments: mergeUva(official.tournaments, uva.entradas, uva.torneosPropios),
-    checkedAt: official.meta.comprobadoEl,
-    sourceLabel: official.meta.fuente,
-    note: official.meta.nota,
-  }),
+  load: async () => {
+    const official = await loadOfficial();
+    return {
+      tournaments: mergeUva(official.tournaments, uva.entradas, uva.torneosPropios),
+      checkedAt: official.meta.comprobadoEl,
+      sourceLabel: official.meta.fuente,
+      note: official.meta.nota,
+    };
+  },
 };
 
 /**
@@ -52,15 +56,15 @@ export const localSource: TournamentSource = {
 export const apiSource: TournamentSource = {
   load: async () => {
     const [cal, live] = await Promise.allSettled([fetchCalendar(), fetchLiveState()]);
-    const fallback = await localSource.load();
     const calendar = cal.status === 'fulfilled' ? cal.value : undefined;
-    const base = calendar ? mergeUva(calendar.tournaments, uva.entradas, uva.torneosPropios) : fallback.tournaments;
+    const fallback = calendar ? undefined : await localSource.load();
+    const base = calendar ? mergeUva(calendar.tournaments, uva.entradas, uva.torneosPropios) : fallback!.tournaments;
     const tournaments = live.status === 'fulfilled' ? mergeLive(base, live.value) : base;
     return {
       tournaments,
-      checkedAt: calendar?.meta.comprobadoEl ?? fallback.checkedAt,
-      sourceLabel: calendar?.meta.fuente ?? fallback.sourceLabel,
-      note: calendar?.meta.nota ?? fallback.note,
+      checkedAt: calendar?.meta.comprobadoEl ?? fallback?.checkedAt,
+      sourceLabel: calendar?.meta.fuente ?? fallback?.sourceLabel,
+      note: calendar?.meta.nota ?? fallback?.note,
       live: live.status === 'fulfilled' ? live.value : undefined,
       liveError: live.status === 'rejected',
     };

@@ -42,7 +42,7 @@ export function Header() {
     <header className={`site-header${compact ? ' is-compact' : ''}`}>
       <div className="container site-header__inner">
         <Link to="/" className="brand" aria-label={`${club.name} ${club.university}. Ir al inicio`}>
-          <img className="brand__logo" src={asset('/images/logo-uva.png')} alt="" width="48" height="48" />
+          <img className="brand__logo" src={asset('/images/logo-uva-96.webp')} srcSet={`${asset('/images/logo-uva-96.webp')} 1x, ${asset('/images/logo-uva-192.webp')} 2x`} alt="" width="48" height="48" />
           <span className="brand__text">
             <span className="brand__name">{club.name}</span>
             <span className="brand__uni">{club.university}</span>

@@ -23,12 +23,27 @@
     "hero": {
       "src": "/images/equipo-portada.jpg",
       "alt": "Ocho integrantes del equipo del club posan juntos con la sudadera azul de la Universidad de Valladolid en una pista de bádminton cubierta.",
-      "provisional": false
+      "provisional": false,
+      "responsive": {
+        "base": "/images/equipo-portada",
+        "widths": [
+          640,
+          1024,
+          1600
+        ]
+      }
     },
     "about": {
       "src": "/images/presentacion-club.jpg",
       "alt": "Las letras blancas UVa en relieve sobre fondo azul, junto a un volante de bádminton.",
-      "provisional": false
+      "provisional": false,
+      "responsive": {
+        "base": "/images/presentacion-club",
+        "widths": [
+          480,
+          960
+        ]
+      }
     }
   },
   "legal": {

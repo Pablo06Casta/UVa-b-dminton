@@ -69,6 +69,10 @@ Importante:
 - Estimación calibrada con 1.299 partidos reales y probada con 10 torneos terminados (ver `docs/ESTIMACION.md`).
 - Directo: «En juego ahora», agenda por horas (hora estimada **EST**), fin estimado del torneo, y grupos (clasificación + partidos)
   y esquema del cuadro final por prueba, todo actualizado cada minuto si hay partidos hoy.
+- Rendimiento web (móvil con conexión lenta): imágenes WebP en varios tamaños (portada de 165 KB a 28–91 KB según pantalla) con la principal
+  precargada, logotipos pequeños, calendario oficial incluido en la web solo bajo demanda (el código inicial pasa de 18 a 14 KB comprimido),
+  una fuente menos, conexión y primeras peticiones al servidor desde el arranque, y últimos datos guardados en el navegador (30 min) para pintar
+  al instante. Medido con 4G lento y CPU 4× más lenta: la portada pasa de 3,7 s a 2,1 s hasta mostrar la imagen principal y de 550 a 417 KB.
 - Rendimiento: lectura de cuadros solo donde juega el club tras la primera pasada; estado público calculado una vez (caché, ETag y 304);
   caché HTTP acotada; web dividida por páginas.
 

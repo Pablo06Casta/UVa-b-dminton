@@ -30,3 +30,14 @@ export function listenForUpdates(onUpdate: () => void): () => void {
 
 /** Enlace que se comparte: al abrirlo muestra una vista previa del partido y lleva a la web del club. */
 export const shareUrl = (matchId: string) => `${API_URL}/compartir/${encodeURIComponent(matchId)}`;
+
+/** Abre la conexión con el servidor y pide ya estado, noticias y calendario: las respuestas quedan en la caché HTTP (10-60 s) para cuando la interfaz las pida. */
+export function warmUpApi() {
+  if (!hasApi || typeof document === 'undefined') return;
+  const link = document.createElement('link');
+  link.rel = 'preconnect';
+  link.href = API_URL;
+  link.crossOrigin = '';
+  document.head.appendChild(link);
+  for (const path of ['/api/public/state', '/api/public/news', '/api/public/calendar']) void fetch(API_URL + path, { headers: { Accept: 'application/json' } }).catch(() => undefined);
+}

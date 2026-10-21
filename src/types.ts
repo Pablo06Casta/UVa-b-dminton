@@ -1,6 +1,14 @@
 /** Estado de verificación de un contenido. Todo lo que no sea "verified" se muestra como pendiente. */
 export type ContentStatus = 'verified' | 'pending';
 
+/** Imagen del club. `responsive`: versiones WebP `<base>-<ancho>.webp` para cada ancho (el navegador elige la que necesita). */
+export interface ClubImage {
+  src: string;
+  alt: string;
+  provisional: boolean;
+  responsive?: { base: string; widths: number[] };
+}
+
 export interface ClubInfo {
   name: string;
   university: string;
@@ -19,8 +27,8 @@ export interface ClubInfo {
   legal: { holder: string | null; taxId: string | null; address: string | null; email: string | null; dpoEmail: string | null; updated: string };
   /** Imágenes de portada y presentación. `provisional` muestra el aviso "imagen provisional". */
   images: {
-    hero: { src: string; alt: string; provisional: boolean };
-    about: { src: string; alt: string; provisional: boolean };
+    hero: ClubImage;
+    about: ClubImage;
   };
 }
 

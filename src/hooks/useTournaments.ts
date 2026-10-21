@@ -2,6 +2,27 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { hasApi, listenForUpdates } from '../lib/api';
 import { tournamentSource, type TournamentData } from '../lib/tournamentSource';
 
+const CACHE_KEY = 'uva-torneos-v1';
+
+/** Últimos datos recibidos: se pintan al instante al volver a abrir la web y se renuevan enseguida (útil con cobertura irregular o servidor dormido). */
+const CACHE_MAX_AGE_MS = 30 * 60_000; // más viejo que esto, los partidos «en juego» podrían ya no serlo: no se usa
+
+function readCache(): TournamentData | undefined {
+  try {
+    const v = JSON.parse(localStorage.getItem(CACHE_KEY) ?? 'null') as (TournamentData & { cachedAt?: number }) | null;
+    return v && Array.isArray(v.tournaments) && v.tournaments.length > 0 && Date.now() - (v.cachedAt ?? 0) < CACHE_MAX_AGE_MS ? v : undefined;
+  } catch {
+    return undefined;
+  }
+}
+function writeCache(data: TournamentData) {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ ...data, liveError: false, cachedAt: Date.now() }));
+  } catch {
+    /* sin almacenamiento (modo privado, lleno): solo se pierde la carga instantánea */
+  }
+}
+
 type State = { status: 'loading' | 'ready' | 'error'; refreshedAt?: Date; refreshMs: number; reload: () => void } & TournamentData;
 
 /** Refresco periódico con servidor: cada 5 minutos (cada minuto si hay partidos hoy), al volver a la pestaña y cuando el servidor avisa. */
@@ -11,7 +32,10 @@ const todayLocal = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Ma
 
 /** Fuente única de torneos para Inicio, Calendario y Directo. */
 export function useTournaments(): State {
-  const [state, setState] = useState<Omit<State, 'reload' | 'refreshMs'>>({ status: 'loading', tournaments: [] });
+  const [state, setState] = useState<Omit<State, 'reload' | 'refreshMs'>>(() => {
+    const cached = hasApi ? readCache() : undefined;
+    return cached ? { status: 'ready', ...cached } : { status: 'loading', tournaments: [] };
+  });
   const alive = useRef(true);
   const playingToday = useRef(false);
   const today = todayLocal();
@@ -20,7 +44,11 @@ export function useTournaments(): State {
   const load = useCallback(() => {
     tournamentSource
       .load()
-      .then((data) => alive.current && setState({ status: 'ready', refreshedAt: new Date(), ...data }))
+      .then((data) => {
+        if (!alive.current) return;
+        setState({ status: 'ready', refreshedAt: new Date(), ...data });
+        if (hasApi && !data.liveError) writeCache(data);
+      })
       .catch(() => alive.current && setState((s) => (s.status === 'ready' ? s : { status: 'error', tournaments: [] })));
   }, []);
 
