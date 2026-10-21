@@ -1,14 +1,14 @@
-import historyJson from '../data/history.json';
-import { Notice, PageHeader, PendingTag } from '../components/ui';
-import { usePageTitle } from '../hooks/usePageTitle';
-import type { HistoryData } from '../types';
-import { asset } from '../lib/asset';
+import historyJson from "../data/history.json";
+import { Notice, PageHeader, PendingTag } from "../components/ui";
+import { usePageTitle } from "../hooks/usePageTitle";
+import type { HistoryData } from "../types";
+import { asset } from "../lib/asset";
 
 const history = historyJson as HistoryData;
 
 export function HistoryPage() {
-  usePageTitle('Historia');
-  const hasPending = history.sections.some((s) => s.status === 'pending');
+  usePageTitle("Historia");
+  const hasPending = history.sections.some((s) => s.status === "pending");
 
   return (
     <>
@@ -20,26 +20,36 @@ export function HistoryPage() {
         <div className="container container--narrow">
           {hasPending && (
             <Notice title="Algunos apartados siguen pendientes">
-              El contenido procede de la documentación del club y de las fuentes citadas al final. Los apartados sin
-              datos verificados indican qué información falta; no se muestran fechas ni hitos sin respaldo.
+              El contenido procede de la documentación del club y de las fuentes
+              citadas al final. Los apartados sin datos verificados indican qué
+              información falta; no se muestran fechas ni hitos sin respaldo.
             </Notice>
           )}
 
           <ol className="history">
             {history.sections.map((s, i) => (
-              <li key={s.id} className="history__item" aria-labelledby={`h-${s.id}`}>
+              <li
+                key={s.id}
+                className="history__item"
+                aria-labelledby={`h-${s.id}`}
+              >
                 <span className="history__num" aria-hidden="true">
-                  {String(i + 1).padStart(2, '0')}
+                  {String(i + 1).padStart(2, "0")}
                 </span>
                 <div>
                   <h2 id={`h-${s.id}`}>{s.title}</h2>
-                  {s.status === 'pending' ? (
-                    <div className="pending-box">
-                      <PendingTag>Pendiente de completar</PendingTag>
-                      <p>
-                        <strong>Información necesaria:</strong> {s.needed}
-                      </p>
-                    </div>
+                  {s.status === "pending" ? (
+                    <>
+                      {s.paragraphs.map((p) => (
+                        <p key={p}>{p}</p>
+                      ))}
+                      <div className="pending-box">
+                        <PendingTag>Pendiente de completar</PendingTag>
+                        <p>
+                          <strong>Información necesaria:</strong> {s.needed}
+                        </p>
+                      </div>
+                    </>
                   ) : (
                     s.paragraphs.map((p) => <p key={p}>{p}</p>)
                   )}
@@ -57,7 +67,9 @@ export function HistoryPage() {
                     <p className="timeline__date">{e.date}</p>
                     <h3>{e.title}</h3>
                     <p>{e.description}</p>
-                    {e.source && <p className="timeline__source">Fuente: {e.source}</p>}
+                    {e.source && (
+                      <p className="timeline__source">Fuente: {e.source}</p>
+                    )}
                   </li>
                 ))}
               </ol>
@@ -65,7 +77,8 @@ export function HistoryPage() {
               <div className="pending-box">
                 <PendingTag>Pendiente de completar</PendingTag>
                 <p>
-                  La línea temporal se mostrará cuando existan hitos verificados (fecha y fuente) que la justifiquen.
+                  La línea temporal se mostrará cuando existan hitos verificados
+                  (fecha y fuente) que la justifiquen.
                 </p>
               </div>
             )}
@@ -79,7 +92,10 @@ export function HistoryPage() {
                   <li key={f.url}>
                     <a href={f.url} target="_blank" rel="noopener noreferrer">
                       {f.label}
-                      <span className="sr-only"> (se abre en una pestaña nueva)</span>
+                      <span className="sr-only">
+                        {" "}
+                        (se abre en una pestaña nueva)
+                      </span>
                     </a>
                   </li>
                 ))}
@@ -106,7 +122,10 @@ export function HistoryPage() {
             ) : (
               <div className="pending-box">
                 <PendingTag>Pendiente de completar</PendingTag>
-                <p>Fotografías históricas del club, con su año y la autorización de quien las aporte.</p>
+                <p>
+                  Fotografías históricas del club, con su año y la autorización
+                  de quien las aporte.
+                </p>
               </div>
             )}
           </section>
