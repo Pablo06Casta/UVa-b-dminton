@@ -1,0 +1,26 @@
+# Producción en una máquina propia: el servidor del club detrás de Caddy (HTTPS automático).
+services:
+  club:
+    build: ../..
+    restart: unless-stopped
+    env_file: ../../.env
+    environment:
+      DATA_DIR: /data
+    volumes:
+      - club_data:/data
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+    depends_on:
+      - club
+volumes:
+  club_data:
+  caddy_data:
