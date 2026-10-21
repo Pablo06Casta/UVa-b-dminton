@@ -1,4 +1,4 @@
-import { eachDay, todayIn } from './dates';
+import { daysBetween, eachDay, todayIn } from './dates';
 import { SourceUnavailableError } from './http';
 import { settings } from './config';
 import { type Db, kvGet, kvSet, nowIso } from './db';
@@ -104,9 +104,12 @@ export class SyncEngine {
       // La primera lectura de cuadros va antes que el orden de juego: de ahí sale quién es del club.
       jobs.push({ key: `draws:${t.guid}`, kind: 'draws', guid: t.guid, phase, due: t.draws_ok_at ? ms(t.draws_ok_at) + iv.draws : 0, rank: !t.draws_ok_at ? -1 : phase === 'live' ? 1 : 3 });
 
-      if (phase === 'live' || phase === 'recent') {
+      if (phase === 'live' || phase === 'recent' || phase === 'imminent' || phase === 'soon') {
         const days: string[] = JSON.parse(t.days_json);
-        const wanted = phase === 'live' ? days.filter((d) => d === today) : days;
+        const wanted =
+          phase === 'live' ? days.filter((d) => d === today)
+          : phase === 'soon' ? days.filter((d) => daysBetween(today, d) <= 3) // a más distancia aún no hay orden de juego
+          : days;
         for (const date of wanted) {
           const k = `day:${t.guid}:${date}`;
           const lastOk = ms(kvGet<{ at: string }>(this.db, `ok:${k}`)?.at);

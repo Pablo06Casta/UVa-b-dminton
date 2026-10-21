@@ -25,7 +25,7 @@ export const settings = {
   /** Frecuencias de lectura por fase del torneo (minutos). */
   intervals: {
     discovery: min('DISCOVERY_MINUTES', 20),
-    before: { info: min('BEFORE_INFO_MINUTES', 60), draws: min('BEFORE_DRAWS_MINUTES', 60) },
+    before: { info: min('BEFORE_INFO_MINUTES', 60), draws: min('BEFORE_DRAWS_MINUTES', 60), day: min('BEFORE_DAY_MINUTES', 60) },
     imminent: { info: min('IMMINENT_INFO_MINUTES', 20), draws: min('IMMINENT_DRAWS_MINUTES', 20), day: min('IMMINENT_DAY_MINUTES', 20) },
     live: { info: min('LIVE_INFO_MINUTES', 20), draws: min('LIVE_DRAWS_MINUTES', 20), day: min('LIVE_DAY_MINUTES', 15) },
     recent: { info: min('RECENT_INFO_MINUTES', 720), draws: min('RECENT_DRAWS_MINUTES', 60), day: min('RECENT_DAY_MINUTES', 180) },

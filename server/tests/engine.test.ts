@@ -146,3 +146,17 @@ describe('planificación y ciclo completo', () => {
     expect(settings.intervals.live.day).toBe(15 * 60_000);
   });
 });
+
+describe('próximos partidos antes del torneo', () => {
+  it('mira el orden de juego desde 3 días antes, cada hora, y no antes', async () => {
+    const db = memDb();
+    const src = new FakeSource(); // torneo el 2026-11-07
+    createPlayer(db, { name: 'Ana Prueba', profile: PROFILE });
+    const e = new SyncEngine(db, src);
+    for (let i = 0; i < 4; i++) await e.tick(new Date('2026-10-20T10:00:00+02:00'));
+    const at = (iso: string) => e.plan(new Date(iso)).map((j) => j.kind);
+    expect(at('2026-10-31T10:00:00+01:00')).not.toContain('day'); // faltan 7 días
+    expect(at('2026-11-04T10:00:00+01:00')).toContain('day'); // faltan 3 días
+  });
+});
+

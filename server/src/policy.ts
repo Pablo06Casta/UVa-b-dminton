@@ -29,9 +29,11 @@ export function intervalsFor(phase: Phase): Intervals {
   const i = settings.intervals;
   switch (phase) {
     case 'far':
-    case 'soon':
     case 'undated':
       return { info: i.before.info, draws: i.before.draws, day: NEVER };
+    case 'soon':
+      // El orden de juego puede publicarse unos días antes: se mira cada hora (ver plan: solo a ≤ 3 días).
+      return { info: i.before.info, draws: i.before.draws, day: i.before.day };
     case 'imminent':
       return i.imminent;
     case 'live':
