@@ -16,7 +16,8 @@ function Item({ item, highlight }: { item: AgendaItem; highlight?: boolean }) {
   return (
     <li id={`partido-${m.id}`} className={`dayplan__match dayplan__match--${m.state}${m.outcome ? ` dayplan__match--${m.outcome}` : ''}${highlight ? ' is-highlight' : ''}`}>
       <p className="dayplan__time">
-        <time>{m.state === 'scheduled' && m.estimatedStart ? '~' : ''}{at(item.at)}</time>
+        {m.state === 'scheduled' && m.estimatedStart && <abbr className="est" title="Estimación">EST</abbr>}
+        <time>{at(item.at)}</time>
         {moved && <span className="dayplan__was">prog. {at(item.planned!)}</span>}
       </p>
       <div className="dayplan__body">

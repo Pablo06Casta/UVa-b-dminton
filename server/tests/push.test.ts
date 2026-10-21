@@ -46,7 +46,7 @@ describe('avisos antes del partido', () => {
     expect(await notifyUpcoming(db, NOW, s)).toBe(0); // faltan 30 min
     expect(await notifyUpcoming(db, min(9), s)).toBe(0); // faltan 21
     expect(await notifyUpcoming(db, min(11), s)).toBe(1); // faltan 19
-    expect(s.sent[0].payload.title).toBe('Ana Prueba juega en ~19 min');
+    expect(s.sent[0].payload.title).toBe('Ana Prueba juega en unos 19 min');
     expect(s.sent[0].payload.body).toContain('IM · Octavos');
     expect(s.sent[0].payload.url).toContain('/directo?partido=');
     expect(await notifyUpcoming(db, min(15), s)).toBe(0); // ya enviado

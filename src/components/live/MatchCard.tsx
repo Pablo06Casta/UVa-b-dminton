@@ -26,7 +26,7 @@ export function MatchCard({ match: m, tournament, highlight }: { match: UvaMatch
         <p className="mcard__time">
           {m.estimatedStart ? (
             <>
-              <span className="mcard__est">~{clock(m.estimatedStart)}</span> estimado
+              <span className="mcard__est"><abbr className="est" title="Estimación">EST</abbr> {clock(m.estimatedStart)}</span>
               {m.plannedStart && <> · programado {clock(m.plannedStart)}</>}
               {late !== undefined && Math.abs(late) >= 5 && <span className={late > 0 ? 'late' : 'early'}> ({late > 0 ? '+' : ''}{late} min)</span>}
             </>

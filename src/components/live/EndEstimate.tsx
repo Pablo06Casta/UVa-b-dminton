@@ -19,7 +19,7 @@ export function EndEstimate({ tournament: t }: { tournament: Tournament }) {
       {p && (
         <>
           <p className="estimate__time" aria-live="polite">
-            {p.done ? (p.estimatedEnd ? clock(p.estimatedEnd) : '—') : p.estimatedEnd ? <>≈ {clock(p.estimatedEnd)}</> : '—'}
+            {p.done ? (p.estimatedEnd ? clock(p.estimatedEnd) : '—') : p.estimatedEnd ? <><abbr className="est est--big" title="Estimación">EST</abbr> {clock(p.estimatedEnd)}</> : '—'}
           </p>
           {!p.done && p.estimatedEndLow && p.estimatedEndHigh && (
             <p className="estimate__range">Margen probable: entre las {clock(p.estimatedEndLow)} y las {clock(p.estimatedEndHigh)}</p>

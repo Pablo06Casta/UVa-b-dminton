@@ -2849,3 +2849,39 @@ textarea:focus-visible {
     justify-self: start;
   }
 }
+
+/* Etiqueta «EST» (estimación) junto a las horas estimadas */
+abbr.est {
+  margin-right: 6px;
+  padding: 1px 6px;
+  font-family: var(--font-sport);
+  font-size: 0.62em;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-decoration: none;
+  vertical-align: middle;
+  color: var(--blue-dark);
+  background: var(--blue-light);
+  border-radius: 3px;
+}
+abbr.est--big {
+  display: inline-block;
+  margin: 0 14px 0 0;
+  padding: 3px 10px;
+  font-size: clamp(0.95rem, 2vw, 1.35rem);
+  letter-spacing: 0.18em;
+  vertical-align: middle;
+  color: var(--white);
+  background: transparent;
+  border: 2px solid rgba(255, 255, 255, 0.7);
+}
+.dayplan__time {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+.dayplan__time abbr.est {
+  margin-right: 0;
+  font-size: 0.5em;
+}

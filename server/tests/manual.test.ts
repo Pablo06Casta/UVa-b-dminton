@@ -113,7 +113,7 @@ describe('torneos y partidos introducidos por el club', () => {
     const sender: PushSender = { send: async (_s, payload) => void sent.push(JSON.parse(payload).title) };
     expect(await notifyUpcoming(db, new Date('2026-11-07T09:30:00Z'), sender)).toBe(0); // faltan 30 min
     expect(await notifyUpcoming(db, new Date('2026-11-07T09:45:00Z'), sender)).toBe(1); // faltan 15
-    expect(sent[0]).toBe('Ana Prueba juega en ~15 min');
+    expect(sent[0]).toBe('Ana Prueba juega en unos 15 min');
   });
 
   it('el panel lista los torneos manuales y se pueden borrar partidos y torneos', () => {

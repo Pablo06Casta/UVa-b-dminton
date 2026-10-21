@@ -78,8 +78,8 @@ export async function notifyUpcoming(db: Db, now: Date, sender: PushSender): Pro
       if (db.prepare('select 1 from push_sent where sub_id = ? and match_key = ?').get(sub.id, r.key)) continue;
 
       const payload = JSON.stringify({
-        title: `${player.name} juega en ~${Math.max(1, Math.round(minutes))} min`,
-        body: [pub.event, pub.court && `Pista ${pub.court}`, `~${clock(start)}`].filter(Boolean).join(' · '),
+        title: `${player.name} juega en unos ${Math.max(1, Math.round(minutes))} min`,
+        body: [pub.event, pub.court && `Pista ${pub.court}`, `EST ${clock(start)}`].filter(Boolean).join(' · '),
         url: `${settings.siteUrl}/directo?partido=${encodeURIComponent(r.key)}`,
         tag: r.key,
       });
