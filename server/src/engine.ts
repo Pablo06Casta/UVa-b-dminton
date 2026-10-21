@@ -108,10 +108,11 @@ export class SyncEngine {
       jobs.push({ key: `info:${t.guid}`, kind: 'info', guid: t.guid, phase, due: infoDue, rank: phase === 'live' ? 2 : 3 });
       if (!t.info_ok_at || phase === 'past') continue;
       // La primera lectura de cuadros va antes que el orden de juego: de ahí sale quién es del club.
+      const hasDraws = (this.db.prepare('select count(*) n from draws where tournament_guid = ?').get(t.guid) as unknown as { n: number }).n > 0;
       const linked = (this.db.prepare('select count(*) n from tournament_players where tournament_guid = ?').get(t.guid) as unknown as { n: number }).n > 0;
       // Torneos seguidos solo por el calendario (aún sin nadie del club identificado): se revisan cada pocas horas.
       const drawsEvery = !linked && (phase === 'far' || phase === 'soon') ? Math.max(iv.draws, settings.followRefreshMinutes) : iv.draws;
-      jobs.push({ key: `draws:${t.guid}`, kind: 'draws', guid: t.guid, phase, due: t.draws_ok_at ? ms(t.draws_ok_at) + drawsEvery : 0, rank: !t.draws_ok_at ? (soonDays <= 7 ? -3 : -1) : phase === 'live' ? 1 : 3 });
+      jobs.push({ key: `draws:${t.guid}`, kind: 'draws', guid: t.guid, phase, due: t.draws_ok_at && hasDraws ? ms(t.draws_ok_at) + drawsEvery : 0, rank: !t.draws_ok_at ? (soonDays <= 7 ? -3 : -1) : phase === 'live' ? 1 : 3 });
 
       if (phase === 'live' || phase === 'recent' || phase === 'imminent' || phase === 'soon') {
         const days: string[] = JSON.parse(t.days_json);
@@ -268,7 +269,10 @@ export class SyncEngine {
       `insert into draws(tournament_guid, draw_id, name, type, json, updated_at) values(?,?,?,?,?,?)
        on conflict(tournament_guid, draw_id) do update set name=excluded.name, type=excluded.type, json=excluded.json, updated_at=excluded.updated_at`,
     );
-    for (const d of await this.src.draws(guid, p)) {
+    const drawList = await this.src.draws(guid, p);
+    // Una lista vacía no es «leído»: o aún no se han publicado, o la fuente devolvió otra página. Se reintenta con espera creciente.
+    if (drawList.length === 0) throw new Error('La lista de cuadros llegó vacía (sin publicar o página inesperada).');
+    for (const d of drawList) {
       if (d.type === 'roundrobin') {
         const rows = await this.src.standings(guid, d.drawId, p);
         for (const r of rows) entrants.push({ names: r.names, ids: r.ids, club: r.club });

@@ -191,3 +191,21 @@ describe('seguimiento del calendario oficial', () => {
     expect((db.prepare('select guid from tournaments').all() as { guid: string }[]).map((r) => r.guid)).toEqual(['AAAAAAAA-0000-0000-0000-000000000001']);
   });
 });
+
+describe('lista de cuadros vacía', () => {
+  it('no se da por leída: falla con motivo visible y se reintenta cuando hay cuadros', async () => {
+    const db = memDb();
+    const src = new FakeSource();
+    src.drawList = [];
+    createPlayer(db, { name: 'Ana Prueba', profile: PROFILE });
+    const e = new SyncEngine(db, src, () => NOW);
+    for (let i = 0; i < 4; i++) await e.tick(min(i));
+    expect(db.prepare('select draws_ok_at from tournaments').get()).toEqual({ draws_ok_at: null });
+    expect(e.lastJob).toMatchObject({ ok: false });
+    expect(e.lastJob?.error).toMatch(/vacía/);
+    src.drawList = [{ drawId: 1, name: 'IM - Grupo A', type: 'roundrobin' }];
+    for (let i = 0; i < 12; i++) await e.tick(min(3 + i * 5));
+    expect((db.prepare('select draws_ok_at from tournaments').get() as { draws_ok_at: string | null }).draws_ok_at).not.toBeNull();
+    expect(db.prepare('select count(*) n from draws').get()).toEqual({ n: 1 });
+  });
+});
