@@ -84,11 +84,11 @@ actualizar el fichero y publicar, aparecen en la ficha del torneo y en Inicio (�
 
 El formulario valida los campos, comprueba el formato del correo, evita envíos duplicados, incluye
 antispam básico (campo trampa y tiempo mínimo) y exige aceptar la política de privacidad.
-**No simula envíos:** mientras no haya servicio configurado muestra "Tu mensaje NO se ha enviado".
+**No simula envíos:** si el servicio rechaza el mensaje (por ejemplo, formulario sin activar) muestra un error.
 
-Para activarlo, copia `.env.example` a `.env` y rellena `VITE_CONTACT_ENDPOINT` con la URL de un
-servicio que acepte `POST` con JSON (`nombre`, `apellidos`, `email`, `mensaje`) y recompila.
-Se recomienda un servicio con captcha y validación en servidor.
+Por defecto envía por correo a través de FormSubmit (`https://formsubmit.co/ajax/<correo>`). La primera vez, FormSubmit manda un correo
+de activación al destinatario: hay que pulsar «Activate Form». Para usar otro servicio o destinatario, copia `.env.example` a `.env`,
+rellena `VITE_CONTACT_ENDPOINT` con la URL de un servicio que acepte `POST` con JSON (`nombre`, `apellidos`, `email`, `mensaje`) y recompila.
 
 ## Calendario y fuente oficial
 

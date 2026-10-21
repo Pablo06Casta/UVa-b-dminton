@@ -75,7 +75,7 @@ Importante:
 | Historia | Cronología y fuentes incorporadas (`history.json`). Pendiente: origen/fundación del club y fotos históricas. |
 | Participación de la UVa | Torneos donde juegan personas de la UVa (`uva-torneos.json`), con nº de jugadores y nombres autorizados. |
 | Correo y redes | Instagram @uva_bad añadido (contacto y pie). Falta el correo oficial del club en `club.json › email` (mientras esté vacío no se muestra). |
-| Formulario | Servicio de envío (`VITE_CONTACT_ENDPOINT`), correo de destino y captcha. Hoy no envía. |
+| Formulario | Envía por correo a pablitocastaneda06@gmail.com mediante FormSubmit. **Hay que pulsar «Activate Form» en el correo de activación** (una sola vez). Para cambiar de destinatario: `VITE_CONTACT_ENDPOINT`. |
 | Textos legales | Versión de prueba redactada (aviso legal, privacidad, cookies). Faltan los datos del titular en `club.json › legal` (titular, NIF, domicilio, correo, contacto de protección de datos) y una revisión por la Universidad o un asesor jurídico. |
 | Servidor | Alojarlo (Fly.io/VPS con disco), `ADMIN_TOKEN`, claves VAPID, `VITE_API_URL` en la web. |
 | Lectura en directo | Activada por defecto. El `robots.txt` de badminton.es excluye esas rutas; el club asume la decisión. Se recomienda la autorización de la FESBA (`docs/SOLICITUD-AUTORIZACION.md`). |

@@ -14,12 +14,12 @@ export const nav = [
 /**
  * Configuración del formulario de contacto.
  *
- * El formulario solo se considera operativo cuando `endpoint` tiene valor. Mientras esté vacío,
- * la web valida el formulario pero NO simula ningún envío (ver docs/ESTADO.md).
- * Se configura con la variable de entorno VITE_CONTACT_ENDPOINT (ver .env.example).
+ * Por defecto el mensaje llega por correo a través de FormSubmit (formsubmit.co) al correo del responsable de la web.
+ * Para usar otro servicio o destinatario, define VITE_CONTACT_ENDPOINT (ver .env.example). Si el valor fuese vacío
+ * la web validaría el formulario pero NO simularía ningún envío.
  */
 export const contactForm = {
-  endpoint: (import.meta.env.VITE_CONTACT_ENDPOINT as string | undefined)?.trim() ?? '',
+  endpoint: (import.meta.env.VITE_CONTACT_ENDPOINT as string | undefined)?.trim() || 'https://formsubmit.co/ajax/pablitocastaneda06@gmail.com',
   /** Segundos mínimos entre que se carga el formulario y se acepta un envío (antispam básico). */
   minFillSeconds: 3,
   maxMessageLength: 2000,

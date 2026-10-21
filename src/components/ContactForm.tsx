@@ -65,11 +65,18 @@ export function ContactForm() {
           apellidos: values.apellidos.trim(),
           email: values.email.trim(),
           mensaje: values.mensaje.trim(),
+          // Opciones de FormSubmit (el resto de servicios las ignoran): asunto, formato de tabla y sin página de captcha.
+          _subject: `Web del club · mensaje de ${values.nombre.trim()} ${values.apellidos.trim()}`,
+          _template: 'table',
+          _captcha: 'false',
         }),
         signal: controller.signal,
       });
       clearTimeout(timeout);
       if (!res.ok) throw new Error(String(res.status));
+      // Algunos servicios responden 200 con `success: false` (p. ej. formulario sin activar): no es un envío correcto.
+      const body = (await res.json().catch(() => ({}))) as { success?: unknown };
+      if (body.success === false || body.success === 'false') throw new Error('rechazado');
       setValues(empty);
       setSubmitted(false);
       setErrors({});

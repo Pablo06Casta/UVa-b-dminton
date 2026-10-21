@@ -151,7 +151,8 @@ export function LegalPage() {
             <ul>
               <li>GitHub Pages (alojamiento de la web estática).</li>
               <li>Render (alojamiento del servidor del seguimiento en directo) y Upstash (copia de seguridad de la lista de jugadores y los partidos).</li>
-              <li>El servicio de envío de mensajes del formulario, cuando se active, y el servicio de notificaciones del navegador (Google, Mozilla o Apple, según tu navegador) para los avisos push.</li>
+              <li>FormSubmit (formsubmit.co), que recibe el mensaje del formulario de contacto y lo reenvía por correo al responsable de la web.</li>
+              <li>El servicio de notificaciones del navegador (Google, Mozilla o Apple, según tu navegador) para los avisos push.</li>
             </ul>
             <p>
               Alguno de estos proveedores puede tratar datos fuera del Espacio Económico Europeo (por ejemplo, en EE. UU.). En ese caso se
