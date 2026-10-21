@@ -19,7 +19,7 @@ export function Hero() {
         />
         <h1 id="hero-title">
           <span className="hero__title">
-            Club
+            Club{' '}
             <br />
             Bádminton
           </span>{' '}
