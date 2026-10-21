@@ -2,22 +2,22 @@
   {
     "id": "campeonatos",
     "title": "Campeonatos disputados",
-    "value": "5 ámbitos",
+    "value": "Campeonatos",
     "description": "Liga Nacional de Clubes, Campeonatos de España Absoluto, Universitario y Sénior, Campeonato de Europa Sénior y circuitos de formación (Máster, Top TTR y autonómicos).",
     "status": "verified"
   },
   {
     "id": "podios",
     "title": "Podios conseguidos",
-    "value": "10 podios",
-    "description": "En un único Campeonato Regional Absoluto de Castilla y León: 4 oros, 3 platas y 3 bronces.",
+    "value": "Podios",
+    "description": "Medallas de oro, plata y bronce en campeonatos regionales, nacionales y europeos.",
     "status": "verified"
   },
   {
     "id": "medallas",
-    "title": "Medallas y premios",
-    "value": "4 oros",
-    "description": "En el Campeonato de España Sénior de 2026 (Cáceres), además del bronce en el Campeonato de Europa Sénior, primera medalla de una española en esa categoría.",
+    "title": "Medallas y oros conseguidos",
+    "value": "Medallas",
+    "description": "Entre ellas, los oros del Campeonato de España Sénior de 2026 (Cáceres) y el bronce en el Campeonato de Europa Sénior, primera medalla de una española en esa categoría.",
     "status": "verified"
   },
   {

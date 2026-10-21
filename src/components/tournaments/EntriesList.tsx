@@ -3,7 +3,7 @@ import type { TournamentEntry } from '../../types';
 const label: Record<TournamentEntry['status'], string> = {
   admitted: 'Admitido',
   reserve: 'Reserva',
-  excluded: 'Baja / no admitido',
+  excluded: 'No admitido (lista de exclusión)',
   registered: 'Inscrito (sin confirmar)',
 };
 
