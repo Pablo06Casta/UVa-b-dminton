@@ -118,3 +118,10 @@ Importante:
   bloques de estadísticas, tarjetas) y composición de noticias de portales deportivos. No se han
   copiado textos ni lemas.
 - Los datos provisionales se marcan siempre con la etiqueta discontinua "Provisional" / "Pendiente".
+
+## Detección de cambios en badminton.es
+
+badminton.es no avisa cuando publica algo, así que el servidor lo detecta con lecturas baratas y, al verlo, adelanta lo que depende de ello (`SyncEngine.kick`, mínimo 2 min entre lecturas adelantadas de lo mismo, `KICK_MIN_GAP_MINUTES`):
+- Un partido que acaba de terminar (orden de juego, cada 3 min en jornada) → se leen ya los cuadros y clasificaciones.
+- La lista de jugadores de un torneo cercano cambia (huella `listHash`; se mira cada 30/15/10 min según lo cerca que esté, `WATCH_LIST_*_MINUTES`) → se vuelven a leer ya las listas de cada prueba (admisión, cabezas de serie).
+- El torneo cambia de fechas o jornadas → se releen cuadros e inscripciones.

@@ -36,6 +36,10 @@ export const settings = {
   ].join(',')).split(',').map((u) => u.trim()).filter(Boolean),
   /** Inscripción y admisión de la gente del club en torneos futuros: cada cuántos minutos se revisan las listas de inscritos y hasta cuántos días antes. */
   entries: { days: num('ENTRIES_DAYS', 90), far: min('ENTRIES_FAR_MINUTES', 120), soon: min('ENTRIES_SOON_MINUTES', 60), imminent: min('ENTRIES_IMMINENT_MINUTES', 30) },
+  /** Detección de cambios: tiempo mínimo entre dos lecturas adelantadas de lo mismo (minutos). La web oficial no avisa; se detecta con lecturas baratas. */
+  kickMinGapMs: min('KICK_MIN_GAP_MINUTES', 2),
+  /** Cada cuánto se mira solo la lista de jugadores de un torneo cercano para detectar nuevas inscripciones (minutos): ver `identifyEvery`. */
+  watchListMinutes: { far: num('WATCH_LIST_FAR_MINUTES', 30), soon: num('WATCH_LIST_SOON_MINUTES', 15), imminent: num('WATCH_LIST_IMMINENT_MINUTES', 10) },
   /** Torneos que no se leen ni se muestran: se excluyen por nombre (expresión regular, sin distinguir mayúsculas). */
   excludedTournaments: new RegExp(process.env.EXCLUDED_TOURNAMENTS ?? 'liga\\s+nacional', 'i'),
   /** Torneos absolutos del calendario oficial que empiezan en los próximos N días se leen una vez para ver quién del club juega (0 = desactivado). */

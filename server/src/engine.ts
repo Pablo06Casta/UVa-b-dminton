@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { daysBetween, eachDay, todayIn } from './dates';
 import { SourceUnavailableError } from './http';
 import { settings } from './config';
@@ -23,7 +24,7 @@ export type JobKind = 'roster' | 'discover' | 'info' | 'draws' | 'day' | 'calend
  * Reconocer a la gente del club en un torneo antes de que haya cuadros: se lee la lista de jugadores (solo nombres), se eligen los de la
  * lista del club por nombre y cada candidato se confirma con el perfil oficial que enlaza su ficha en el torneo (sin dudas con homónimos).
  */
-interface IdentState { pending: { tsPlayerId: number; rosterId: number }[]; checked: Record<string, 0 | 1>; listAt?: string }
+interface IdentState { pending: { tsPlayerId: number; rosterId: number }[]; checked: Record<string, 0 | 1>; listAt?: string; listHash?: string }
 
 /** Avance de la lectura de inscritos de un torneo: una prueba por lectura, para no bloquear lo urgente. */
 interface EntriesState { events: { eventId: number; name: string }[]; next: number; doneAt?: string }
@@ -137,7 +138,7 @@ export class SyncEngine {
       // Torneos de los próximos días (30 por defecto): ¿hay inscrita gente del club? Se mira la lista de jugadores aunque aún no haya cuadros.
       if (this.src.tournamentPlayers && this.src.playerProfile && settings.followCalendarDays > 0 && (phase === 'far' || phase === 'soon' || phase === 'imminent') && soonDays <= settings.followCalendarDays) {
         const st = kvGet<IdentState>(this.db, `identify:${t.guid}`);
-        const every = settings.entries[phase];
+        const every = settings.watchListMinutes[phase] * 60_000;
         jobs.push({ key: `identify:${t.guid}`, kind: 'identify', guid: t.guid, phase, due: st && st.pending.length > 0 ? 0 : st?.listAt ? ms(st.listAt) + every : 0, rank: 4 });
       }
 
@@ -166,9 +167,26 @@ export class SyncEngine {
     return this.due(jobs, nowMs);
   }
 
+  /**
+   * Trabajos adelantados porque se ha detectado un cambio en badminton.es (un partido terminado, una lista de inscritos nueva...).
+   * badminton.es no avisa de sus cambios, así que el servidor los detecta con las lecturas baratas que ya hace y, al verlos,
+   * adelanta de inmediato la lectura de lo que depende de ello en vez de esperar a su turno.
+   */
+  private kicked = new Set<string>();
+
+  /** Pide leer cuanto antes `key`, salvo que se haya leído hace menos de `minGap` (para no machacar la web oficial). */
+  kick(key: string, now: Date, minGap = settings.kickMinGapMs) {
+    const [kind, guid] = key.split(':');
+    const col = kind === 'draws' ? 'draws_ok_at' : kind === 'info' ? 'info_ok_at' : undefined;
+    const last = col ? (this.db.prepare(`select ${col} v from tournaments where guid = ?`).get(guid) as unknown as { v: string | null } | undefined)?.v : undefined;
+    const at = col ? ms(last) : kind === 'entries' ? ms(kvGet<EntriesState>(this.db, key)?.doneAt) : 0;
+    if (now.getTime() - at < minGap) return;
+    this.kicked.add(key);
+  }
+
   private due(jobs: Job[], nowMs: number): Job[] {
     return jobs
-      .filter((j) => Number.isFinite(j.due) && j.due <= nowMs && (this.retry.get(j.key)?.until ?? 0) <= nowMs)
+      .filter((j) => Number.isFinite(j.due) && (j.due <= nowMs || this.kicked.has(j.key)) && (this.retry.get(j.key)?.until ?? 0) <= nowMs)
       .sort((a, b) => a.rank - b.rank || a.due - b.due);
   }
 
@@ -236,6 +254,7 @@ export class SyncEngine {
     }
     const job = this.plan(now)[0];
     if (!job) return undefined;
+    this.kicked.delete(job.key);
     try {
       await this.run(job, now);
       invalidatePublicState(this.db);
@@ -348,11 +367,17 @@ export class SyncEngine {
   private async readInfo(job: Job, now: Date) {
     const info = await this.src.tournament(job.guid!, priorityFor(job.phase, 'info'));
     const days = info.days.length ? info.days : info.startDate ? eachDay(info.startDate, info.endDate ?? info.startDate) : [];
+    const before = this.db.prepare('select days_json, start_date, info_ok_at from tournaments where guid = ?').get(job.guid!) as unknown as { days_json: string; start_date: string | null; info_ok_at: string | null } | undefined;
     this.db
       .prepare(
         `update tournaments set name=?, start_date=?, end_date=?, city=?, venue=?, level=?, tz=?, days_json=?, info_ok_at=?, last_error=null where guid=?`,
       )
       .run(info.name, info.startDate ?? null, info.endDate ?? info.startDate ?? null, info.city ?? null, info.venue ?? null, info.level ?? null, info.tz || DEFAULT_TZ, JSON.stringify(days), now.toISOString(), job.guid!);
+    // Si el torneo cambia de fechas o publica nuevas jornadas, se vuelven a leer ya los cuadros y las inscripciones.
+    if (before?.info_ok_at && (before.days_json !== JSON.stringify(days) || before.start_date !== (info.startDate ?? null))) {
+      this.kick(`draws:${job.guid}`, now);
+      this.kick(`entries:${job.guid}`, now);
+    }
   }
 
   /**
@@ -423,12 +448,15 @@ export class SyncEngine {
     const roster = listPlayers(this.db).filter((x) => x.profileGuid);
     if (st.pending.length === 0) {
       const list = await this.src.tournamentPlayers!(guid, p);
+      // Huella de la lista de jugadores: si cambia (nuevas inscripciones o bajas), se vuelven a leer ya las listas de cada prueba.
+      const listHash = createHash('sha1').update(list.map((e) => `${e.tsPlayerId}|${e.name}`).sort().join('\n')).digest('hex');
+      if (st.listHash && st.listHash !== listHash) this.kick(`entries:${guid}`, now);
       const pending: IdentState['pending'] = [];
       for (const e of list) {
         if (String(e.tsPlayerId) in st.checked) continue;
         for (const pl of roster) if (findByNameLoose([pl], e.name)) pending.push({ tsPlayerId: e.tsPlayerId, rosterId: pl.id });
       }
-      kvSet(this.db, key, { pending, checked: st.checked, listAt: now.toISOString() } satisfies IdentState);
+      kvSet(this.db, key, { pending, checked: st.checked, listAt: now.toISOString(), listHash } satisfies IdentState);
       return;
     }
     const [next, ...rest] = st.pending;
@@ -442,7 +470,7 @@ export class SyncEngine {
                   on conflict(tournament_guid, ts_player_id) do update set player_id=excluded.player_id, seen_at=excluded.seen_at`)
         .run(guid, next.tsPlayerId, pl.name, null, pl.id, now.toISOString());
     }
-    kvSet(this.db, key, { pending: rest, checked: { ...st.checked, [String(next.tsPlayerId)]: same ? 1 : 0 }, listAt: st.listAt } satisfies IdentState);
+    kvSet(this.db, key, { pending: rest, checked: { ...st.checked, [String(next.tsPlayerId)]: same ? 1 : 0 }, listAt: st.listAt, listHash: st.listHash } satisfies IdentState);
   }
 
   /**
@@ -500,17 +528,20 @@ export class SyncEngine {
       (this.db.prepare('select ts_player_id, player_id from entrants where tournament_guid = ?').all(guid) as unknown as { ts_player_id: number; player_id: number | null }[]).map((r) => [r.ts_player_id, r.player_id ?? undefined]),
     );
     const prevRead = kvGet<{ at: string }>(this.db, `ok:${job.key}`)?.at;
+    let finishedNow = 0;
     for (const row of rows) {
-      this.upsertSlot(guid, job.date!, row, now, prevRead);
+      if (this.upsertSlot(guid, job.date!, row, now, prevRead)) finishedNow++;
       const m = buildStoredMatch(row, { tournamentGuid: guid, entrants });
       if (m) this.ingest(m, now);
     }
+    // Partidos que acaban de terminar: los cuadros y las clasificaciones cambian con ellos, así que se leen ya (no a su hora).
+    if (finishedNow > 0) this.kick(`draws:${guid}`, now);
     kvSet(this.db, `ok:${job.key}`, { at: now.toISOString() });
     this.recomputeEstimate(guid, job.date!, now);
   }
 
   /** Datos anónimos de horario de TODOS los partidos del día (no solo los del club): base de la estimación. */
-  private upsertSlot(guid: string, date: string, r: MatchRow, now: Date, prevRead?: string) {
+  private upsertSlot(guid: string, date: string, r: MatchRow, now: Date, prevRead?: string): boolean {
     const iso = now.toISOString();
     const done = r.status === 'finished' || r.status === 'walkover' || r.status === 'retired';
     const row = this.db.prepare('select started_seen_at, finished_seen_at, duration_min from slots where key = ?').get(r.key) as unknown as
@@ -529,6 +560,7 @@ export class SyncEngine {
            finished_seen_at=coalesce(slots.finished_seen_at, excluded.finished_seen_at), updated_at=excluded.updated_at`,
       )
       .run(r.key, guid, date, r.plannedUtc ?? null, r.orderIndex ?? 0, r.court ?? null, r.eventCode ?? null, r.status, r.durationMin ?? row?.duration_min ?? null, started, prev ?? null, finishedAt, iso);
+    return done && !row?.finished_seen_at;
   }
 
   /** Recalcula la estimación del día y la guarda: hora de fin probable, ritmo, retraso y hora estimada de cada partido. */
