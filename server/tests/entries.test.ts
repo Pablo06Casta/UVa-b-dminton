@@ -3,6 +3,9 @@ import { settings } from '../src/config';
 import { SyncEngine } from '../src/engine';
 import { buildPublicState } from '../src/publicView';
 import { createPlayer } from '../src/roster';
+import { PoliteClient } from '../src/http';
+import { OfficialLiveReaders } from '../src/officialReaders';
+import { RealSource } from '../src/source';
 import { FakeSource, GUID, info, memDb, PROFILE } from './helpers/fakes';
 
 const NOW = new Date('2026-10-21T10:00:00+02:00');
@@ -85,5 +88,15 @@ describe('inscripción y admisión en torneos futuros', () => {
     const linked = db.prepare('select p.name from tournament_players tp join players p on p.id = tp.player_id where tp.tournament_guid = ?').all(GUID.toUpperCase()) as unknown as { name: string }[];
     expect(linked.map((x) => x.name)).toEqual(['Ana Prueba']);
     expect(reads.filter((r) => r.startsWith('event:')).length).toBeGreaterThan(0); // y ya se lee su admisión
+  });
+
+  it('la fuente real expone los lectores de inscritos (si no, el motor nunca los ejecutaría)', () => {
+    const client = new PoliteClient({ baseUrl: 'https://fuente.test', minIntervalMs: 2500, userAgent: 'prueba', fetchImpl: (async () => new Response('')) as typeof fetch });
+    const real = new RealSource(client, new OfficialLiveReaders(client));
+    expect(typeof real.events).toBe('function');
+    expect(typeof real.eventEntries).toBe('function');
+    expect(typeof real.tournamentPlayers).toBe('function');
+    expect(typeof real.playerProfile).toBe('function');
+    expect(new RealSource(client).events).toBeUndefined();
   });
 });

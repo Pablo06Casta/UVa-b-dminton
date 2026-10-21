@@ -61,11 +61,21 @@ export class RealSource implements OfficialSource {
     private readonly live?: LiveReaders,
   ) {
     this.http = http ?? new PoliteClient({ baseUrl: httpConfig.baseUrl, minIntervalMs: httpConfig.minIntervalMs, timeoutMs: httpConfig.timeoutMs, userAgent: httpConfig.userAgent });
+    if (live?.events) this.events = (g, p) => live.events!(g, p);
+    if (live?.eventEntries) this.eventEntries = (g, e, p) => live.eventEntries!(g, e, p);
+    if (live?.tournamentPlayers) this.tournamentPlayers = (g, p) => live.tournamentPlayers!(g, p);
+    if (live?.playerProfile) this.playerProfile = (g, id, p) => live.playerProfile!(g, id, p);
   }
 
   get hasLiveReaders() {
     return !!this.live;
   }
+
+  /** Lectores opcionales (inscritos y admisión): solo existen si los lectores inyectados los tienen; el motor comprueba su presencia. */
+  events?: LiveReaders['events'];
+  eventEntries?: LiveReaders['eventEntries'];
+  tournamentPlayers?: LiveReaders['tournamentPlayers'];
+  playerProfile?: LiveReaders['playerProfile'];
 
   rankingPlayers = (u: string, p: Priority) => (this.live?.rankingPlayers ? this.live.rankingPlayers(u, p) : missing());
   rankingProfile = (path: string, p: Priority) => (this.live?.rankingProfile ? this.live.rankingProfile(path, p) : missing());
