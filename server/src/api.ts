@@ -129,7 +129,14 @@ export function createApp(db: Db, engine: SyncEngine | undefined, hub: Hub) {
       }
 
       if (route === 'GET /api/health') {
-        return send(res, 200, { ok: true, officialReadEnabled: settings.officialReadEnabled, time: nowIso() });
+        const lastError = kvGet<{ at: string; job: string; message: string }>(db, 'last_error');
+        return send(res, 200, {
+          ok: true,
+          officialReadEnabled: settings.officialReadEnabled,
+          time: nowIso(),
+          // Diagnóstico sin datos personales: qué hizo el motor por última vez y el último error.
+          engine: engine ? { lastJob: engine.lastJob ? { job: engine.lastJob.key.split(':')[0], at: engine.lastJob.at, ok: engine.lastJob.ok } : null, lastError: lastError ? { at: lastError.at, job: lastError.job.split(':')[0], message: lastError.message } : null } : null,
+        });
       }
 
       if (route === 'GET /api/public/state') {
