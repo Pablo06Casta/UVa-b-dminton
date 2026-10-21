@@ -69,7 +69,7 @@ Importante:
 | Elemento | Qué hay que aportar / hacer |
 | --- | --- |
 | Fotografía de grupo | Portada con la foto del equipo (hecha). Falta confirmar el consentimiento de las personas que aparecen para publicar su imagen. |
-| Presentación del club | Texto incorporado desde el informe del club (`club.json › about`). Falta una foto complementaria. |
+| Presentación del club | Texto del informe e imagen UVa + volante (hechos). Confirmar con la UVa el uso del logotipo y el nombre. |
 | Integrantes | Sección retirada de la portada por ahora (`TeamSection` sigue en el código). Volver a mostrarla cuando haya nombres, funciones y fotos **con autorización**. |
 | Logros | Incorporados desde el informe del club (`achievements.json`). Cifras no respaldadas (p. ej. «17 medallas») no se muestran. |
 | Historia | Cronología y fuentes incorporadas (`history.json`). Pendiente: origen/fundación del club y fotos históricas. |

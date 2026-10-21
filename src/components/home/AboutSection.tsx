@@ -11,7 +11,7 @@ export function AboutSection() {
       <div className="container">
         <div className="feature">
           <figure className="feature__media">
-            <img src={asset(img.src)} alt={img.alt} loading="lazy" width="1200" height="900" />
+            <img src={asset(img.src)} alt={img.alt} loading="lazy" width="1254" height="1254" />
             {img.provisional && <figcaption className="media-tag">Imagen provisional</figcaption>}
           </figure>
           <div className="feature__panel">

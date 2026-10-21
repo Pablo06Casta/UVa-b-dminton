@@ -26,9 +26,9 @@
       "provisional": false
     },
     "about": {
-      "src": "/images/presentacion-provisional.svg",
-      "alt": "Ilustración provisional de una pista de bádminton vista desde arriba.",
-      "provisional": true
+      "src": "/images/presentacion-club.jpg",
+      "alt": "Las letras blancas UVa en relieve sobre fondo azul, junto a un volante de bádminton.",
+      "provisional": false
     }
   },
   "legal": {
