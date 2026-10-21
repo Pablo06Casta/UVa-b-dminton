@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
+import { CookieNotice } from './CookieNotice';
 import { Footer } from './Footer';
 import { Header } from './Header';
 
@@ -34,6 +35,7 @@ export function Layout() {
         <Outlet />
       </main>
       <Footer />
+      <CookieNotice />
     </>
   );
 }

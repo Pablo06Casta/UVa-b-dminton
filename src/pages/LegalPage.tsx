@@ -185,7 +185,7 @@ export function LegalPage() {
           <Block id="cookies" title="Política de cookies y almacenamiento local">
             <p>
               Esta web <strong>no utiliza cookies</strong> ni herramientas de analítica o publicidad, y las fuentes tipográficas se sirven desde el
-              propio sitio, sin conexión a terceros. Por eso no muestra un banner de cookies.
+              propio sitio, sin conexión a terceros. Por eso el aviso que ves al entrar es meramente informativo: no hay cookies opcionales que aceptar o rechazar.
             </p>
             <p>
               Únicamente, si activas un aviso de partido, el navegador guarda en su almacenamiento local una preferencia (qué jugador y con cuántos

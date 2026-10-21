@@ -3171,3 +3171,33 @@ abbr.est--big {
 .legal__table th {
   background: var(--gray-100, #f3f4f6);
 }
+
+/* ---------- Aviso de cookies ---------- */
+.cookies {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 60;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+  max-width: 880px;
+  margin-inline: auto;
+  padding: 14px 18px;
+  color: var(--white);
+  background: var(--uva-ink);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+}
+.cookies p {
+  flex: 1 1 320px;
+  margin: 0;
+  font-size: 0.92rem;
+}
+.cookies a {
+  color: #c4dcf3;
+  text-decoration: underline;
+}
