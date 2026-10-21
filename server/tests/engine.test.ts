@@ -201,8 +201,7 @@ describe('lista de cuadros vacía', () => {
     const e = new SyncEngine(db, src, () => NOW);
     for (let i = 0; i < 4; i++) await e.tick(min(i));
     expect(db.prepare('select draws_ok_at from tournaments').get()).toEqual({ draws_ok_at: null });
-    expect(e.lastJob).toMatchObject({ ok: false });
-    expect(e.lastJob?.error).toMatch(/vacía/);
+    expect((db.prepare('select last_error from tournaments').get() as { last_error: string | null }).last_error).toMatch(/vacía/);
     src.drawList = [{ drawId: 1, name: 'IM - Grupo A', type: 'roundrobin' }];
     for (let i = 0; i < 12; i++) await e.tick(min(3 + i * 5));
     expect((db.prepare('select draws_ok_at from tournaments').get() as { draws_ok_at: string | null }).draws_ok_at).not.toBeNull();
