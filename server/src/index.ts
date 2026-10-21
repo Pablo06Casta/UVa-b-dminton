@@ -14,6 +14,18 @@ import { OfficialLiveReaders } from './officialReaders';
 import { PoliteClient } from './http';
 import { httpConfig } from './config-http';
 
+/**
+ * El puerto se abre lo primero: así el alojamiento ve el servidor «vivo» y deja de esperar mientras se restaura la base (copia remota)
+ * y se prepara todo lo demás. Hasta entonces solo responde el estado de salud y, al resto, «reintenta en unos segundos».
+ */
+let handler: http.RequestListener = (req, res) => {
+  const health = (req.url ?? '').startsWith('/api/health');
+  res.writeHead(health ? 200 : 503, { 'Content-Type': 'application/json; charset=utf-8', 'Retry-After': '2' });
+  res.end(JSON.stringify(health ? { ok: true, starting: true } : { error: 'Arrancando, reintenta en unos segundos.' }));
+};
+const server = http.createServer((req, res) => handler(req, res));
+server.listen(settings.port, () => console.log(`Servidor del club en http://localhost:${settings.port}`));
+
 const dbFile = path.join(settings.dataDir, 'club.sqlite');
 if (await restoreIfMissing(dbFile)) console.log('Base de datos restaurada desde la copia remota (Upstash).');
 const db = openDb(dbFile);
@@ -65,8 +77,7 @@ if (!settings.adminToken) console.warn('ADMIN_TOKEN sin definir: el panel de adm
 const sender = realSender();
 console.log(sender ? 'Avisos push: activados.' : 'Avisos push: desactivados (faltan VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY y VAPID_SUBJECT).');
 
-const server = http.createServer(createApp(db, engine, hub));
-server.listen(settings.port, () => console.log(`Servidor del club en http://localhost:${settings.port}`));
+handler = createApp(db, engine, hub);
 
 let stopping = false;
 const loop = async () => {
