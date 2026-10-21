@@ -145,7 +145,7 @@ export class SyncEngine {
       pausedUntil: this.pausedUntil > now.getTime() ? new Date(this.pausedUntil).toISOString() : null,
       retrying: [...this.retry.entries()].map(([k, v]) => ({ job: k.split(':')[0], n: v.n, until: new Date(v.until).toISOString() })),
       http,
-      tournaments: (this.db.prepare('select substr(name,1,40) n, start_date d, info_ok_at i, draws_ok_at dr, last_error e, (select count(*) from draws x where x.tournament_guid = t.guid) c from tournaments t where hidden = 0 order by start_date').all() as unknown as Record<string, unknown>[]),
+      tournaments: (this.db.prepare('select substr(name,1,40) n, start_date d, info_ok_at i, draws_ok_at dr, last_error e, (select count(*) from draws x where x.tournament_guid = t.guid) c, (select coalesce(sum(length(json)),0) from draws x where x.tournament_guid = t.guid) jl, (select count(*) from entrants x where x.tournament_guid = t.guid) en, (select count(*) from matches x where x.tournament_guid = t.guid) pm from tournaments t where hidden = 0 order by start_date').all() as unknown as Record<string, unknown>[]),
     };
   }
 
