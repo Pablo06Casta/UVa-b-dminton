@@ -136,6 +136,17 @@ export class SyncEngine {
       .sort((a, b) => a.rank - b.rank || a.due - b.due);
   }
 
+  /** Estado interno para diagnóstico (sin datos personales). */
+  diagnose(now = this.clock()) {
+    const http = (this.src as unknown as { http?: { stats?: () => unknown } }).http?.stats?.();
+    return {
+      next: this.plan(now).slice(0, 3).map((j) => ({ job: j.kind, rank: j.rank })),
+      pausedUntil: this.pausedUntil > now.getTime() ? new Date(this.pausedUntil).toISOString() : null,
+      retrying: [...this.retry.entries()].map(([k, v]) => ({ job: k.split(':')[0], n: v.n, until: new Date(v.until).toISOString() })),
+      http,
+    };
+  }
+
   /** Ejecuta, como máximo, una lectura. Devuelve la clave del trabajo ejecutado. */
   async tick(now = this.clock()): Promise<string | undefined> {
     if (now.getTime() < this.pausedUntil) return undefined;
