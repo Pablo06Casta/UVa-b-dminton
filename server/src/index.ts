@@ -4,6 +4,8 @@ import path from 'node:path';
 import { createApp, Hub } from './api';
 import { settings } from './config';
 import { openDb } from './db';
+import { importPlayersCsv } from './importCsv';
+import { listPlayers } from './roster';
 import { SyncEngine } from './engine';
 import { notifyUpcoming, realSender } from './push';
 import { RealSource } from './source';
@@ -25,6 +27,11 @@ function backup() {
   } catch (e) {
     console.error('copia de seguridad', e);
   }
+}
+// Hosting sin disco persistente (p. ej. Render gratuito): si la base está vacía, se carga la lista del club desde ROSTER_CSV.
+if (process.env.ROSTER_CSV && listPlayers(db).length === 0) {
+  const r = importPlayersCsv(db, process.env.ROSTER_CSV);
+  console.log(`Lista del club cargada desde ROSTER_CSV: ${r.created} jugadores, ${r.errors.length} errores.`);
 }
 backup();
 setInterval(backup, 24 * 3600_000).unref();

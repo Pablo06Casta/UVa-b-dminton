@@ -1,0 +1,28 @@
+# Despliegue en Render (plan gratuito): New → Blueprint → este repositorio.
+services:
+  - type: web
+    name: club-uva-badminton
+    runtime: docker
+    plan: free
+    dockerfilePath: ./server/Dockerfile
+    dockerContext: ./server
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: ADMIN_TOKEN
+        generateValue: true
+      - key: OFFICIAL_READ_ENABLED
+        value: "true"
+      - key: CALENDAR_REFRESH_ENABLED
+        value: "true"
+      - key: SITE_URL
+        value: https://pablo06casta.github.io/UVa-b-dminton
+      - key: CORS_ORIGINS
+        value: https://pablo06casta.github.io
+      - key: PUBLIC_OPPONENTS
+        value: none
+      - key: PUBLIC_DRAW_NAMES
+        value: initials
+      # Opcional: lista del club en CSV (la rellenas tú en Render; no se sube a git).
+      - key: ROSTER_CSV
+        sync: false
