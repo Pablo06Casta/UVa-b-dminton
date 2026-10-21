@@ -3,13 +3,17 @@
 #   DOMAIN=club-uva.duckdns.org SITE_URL=https://pablo06casta.github.io/UVa-b-dminton bash install.sh
 # Opcional: OFFICIAL_READ=false para dejar la lectura de badminton.es desactivada (por defecto, activada).
 set -euo pipefail
+# Sirve también cuando lo ejecuta «Ejecutar comando» de Oracle (como root, sin HOME ni USER).
+export HOME="${HOME:-/root}"
+export USER="${USER:-$(id -un)}"
+if [ "$(id -u)" -eq 0 ] && ! command -v sudo >/dev/null 2>&1; then sudo() { "$@"; }; fi
 
 DOMAIN="${DOMAIN:?Indica DOMAIN (nombre que apunta a la IP de esta máquina)}"
 SITE_URL="${SITE_URL:-https://pablo06casta.github.io/UVa-b-dminton}"
 OFFICIAL_READ="${OFFICIAL_READ:-true}"
 REPO="${REPO:-https://github.com/Pablo06Casta/UVa-b-dminton.git}"
 BRANCH="${BRANCH:-claude/peaceful-ride-r3scdt}"
-DIR="$HOME/UVa-b-dminton"
+DIR="${INSTALL_DIR:-$HOME/UVa-b-dminton}"
 
 echo "==> Memoria de intercambio (la máquina gratuita AMD tiene 1 GB)"
 if ! swapon --show | grep -q .; then
