@@ -10,6 +10,7 @@ import { kvGet } from './db';
 import { buildPublicState, cachedPublicState, invalidatePublicState, type PublicMatch } from './publicView';
 import { pushConfigured, subscribe, unsubscribe } from './push';
 import { buildAccuracy } from './accuracy';
+import { cardVersion, findCard, metaOf, renderPng, shareHtmlPage, type CardKind } from './share';
 import { buildOverview } from './adminView';
 import { importPlayersCsv } from './importCsv';
 import { addManualMatch, createManualTournament, deleteManualMatch, deleteManualTournament, listManual, setManualProgress, updateManualMatch } from './manual';
@@ -203,14 +204,32 @@ export function createApp(db: Db, engine: SyncEngine | undefined, hub: Hub) {
         return send(res, 200, { ok: true }, cors(req));
       }
 
-      const share = /^\/compartir\/(.+)$/.exec(url.pathname);
+      // Imagen (PNG) de la tarjeta: /og/<partido|torneo|resultados>/<id>.png?size=og|square|story
+      const og = /^\/og\/(partido|torneo|resultados)\/(.+)\.png$/.exec(url.pathname);
+      if (req.method === 'GET' && og) {
+        if (limited(req)) throw new HttpFail(429, 'Demasiadas consultas.');
+        const found = findCard(cachedPublicState(db).state, og[1] as CardKind, decodeURIComponent(og[2]));
+        if (!found) throw new HttpFail(404, 'No disponible.');
+        const size = (['og', 'square', 'story'] as const).find((x) => x === url.searchParams.get('size')) ?? 'og';
+        res.writeHead(200, { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=300', 'X-Content-Type-Options': 'nosniff', ...cors(req) });
+        return res.end(renderPng(found, size));
+      }
+
+      // Página que se comparte: etiquetas Open Graph (vista previa en WhatsApp, Telegram, X…) y redirección a la web del club.
+      // /compartir/<partido|torneo|resultados>/<id>; /compartir/<id> sigue valiendo para partidos (enlaces antiguos).
+      const share = /^\/compartir\/(?:(partido|torneo|resultados)\/)?(.+)$/.exec(url.pathname);
       if (req.method === 'GET' && share) {
         if (limited(req)) throw new HttpFail(429, 'Demasiadas consultas.');
-        const id = decodeURIComponent(share[1]);
-        const hit = buildPublicState(db).tournaments.flatMap((t) => t.matches.map((m) => ({ t, m }))).find((x) => x.m.id === id);
-        if (!hit) throw new HttpFail(404, 'Partido no disponible.');
+        const kind = (share[1] ?? 'partido') as CardKind;
+        const id = decodeURIComponent(share[2]);
+        const found = findCard(cachedPublicState(db).state, kind, id);
+        if (!found) throw new HttpFail(404, 'No disponible.');
+        const proto = String(req.headers['x-forwarded-proto'] ?? 'https').split(',')[0];
+        const base = `${proto}://${req.headers['x-forwarded-host'] ?? req.headers.host}`;
+        const m = metaOf(found);
+        const image = `${base}/og/${kind}/${encodeURIComponent(id)}.png?v=${cardVersion(found)}`;
         res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'public, max-age=60' });
-        return res.end(shareHtml(hit.t.name, hit.m, id));
+        return res.end(shareHtmlPage({ title: m.title, description: m.description, image, target: settings.siteUrl ? `${settings.siteUrl}${m.webPath}` : '' }));
       }
 
       if (route === 'GET /admin') {

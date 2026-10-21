@@ -19,6 +19,7 @@
     "check:live": "tsx scripts/check-live.ts"
   },
   "dependencies": {
+    "@resvg/resvg-js": "^2.6.2",
     "cheerio": "^1.2.0",
     "luxon": "^3.7.2",
     "tsx": "^4.20.0",
