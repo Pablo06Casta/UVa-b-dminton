@@ -17,7 +17,10 @@ import { buildStoredMatch, type ClubEntrants, diffMatch, findClubEntrants, match
 
 const DEFAULT_TZ = 'Europe/Madrid';
 
-export type JobKind = 'roster' | 'discover' | 'info' | 'draws' | 'day' | 'calendar';
+export type JobKind = 'roster' | 'discover' | 'info' | 'draws' | 'day' | 'calendar' | 'entries';
+
+/** Avance de la lectura de inscritos de un torneo: una prueba por lectura, para no bloquear lo urgente. */
+interface EntriesState { events: { eventId: number; name: string }[]; next: number; doneAt?: string }
 
 /** Qué puede hacer el motor: el calendario usa solo rutas permitidas; lo «en directo» exige activarlo expresamente. */
 export interface Features {
@@ -124,6 +127,14 @@ export class SyncEngine {
       // Torneos seguidos solo por el calendario (aún sin nadie del club identificado): se revisan cada pocas horas.
       const drawsEvery = !linked && (phase === 'far' || phase === 'soon') ? Math.max(iv.draws, settings.followRefreshMinutes) : iv.draws;
       jobs.push({ key: `draws:${t.guid}`, kind: 'draws', guid: t.guid, phase, due: t.draws_ok_at && hasDraws ? ms(t.draws_ok_at) + drawsEvery : 0, rank: !t.draws_ok_at ? (soonDays <= 7 ? -3 : -1) : phase === 'live' ? 1 : 3 });
+
+      // Inscripción y admisión de la gente del club en torneos futuros (listas de cada prueba), una prueba por lectura.
+      if (linked && this.src.events && this.src.eventEntries && (phase === 'far' || phase === 'soon' || phase === 'imminent') && soonDays <= settings.entries.days) {
+        const st = kvGet<EntriesState>(this.db, `entries:${t.guid}`);
+        const every = settings.entries[phase];
+        const inCycle = !!st && st.next < st.events.length;
+        jobs.push({ key: `entries:${t.guid}`, kind: 'entries', guid: t.guid, phase, due: inCycle ? 0 : st?.doneAt ? ms(st.doneAt) + every : 0, rank: 4 });
+      }
 
       if (phase === 'live' || phase === 'recent' || phase === 'imminent' || phase === 'soon') {
         const days: string[] = JSON.parse(t.days_json);
@@ -248,6 +259,8 @@ export class SyncEngine {
         return this.readDay(job, now);
       case 'calendar':
         return this.readCalendar(now);
+      case 'entries':
+        return this.readEntries(job, now);
     }
   }
 
@@ -384,6 +397,33 @@ export class SyncEngine {
     if (full) kvSet(this.db, fullKey, { at: now.toISOString() });
     this.saveEntrants(guid, entrants, roster, now);
     this.db.prepare('update tournaments set draws_ok_at = ?, last_error = null where guid = ?').run(now.toISOString(), guid);
+  }
+
+  /**
+   * Inscripción y admisión: una lectura por tick. Primero la lista de pruebas del torneo; después, una prueba cada vez, guardando
+   * solo a las personas del club ya vinculadas a este torneo (no se guardan parejas ni rivales).
+   */
+  private async readEntries(job: Job, now: Date) {
+    const guid = job.guid!;
+    const key = `entries:${guid}`;
+    const p = priorityFor(job.phase, 'draws');
+    const st = kvGet<EntriesState>(this.db, key);
+    if (!st || st.next >= st.events.length) {
+      const events = await this.src.events!(guid, p);
+      if (events.length === 0) throw new Error('El torneo aún no publica la lista de pruebas.');
+      kvSet(this.db, key, { events, next: 0 } satisfies EntriesState);
+      return;
+    }
+    const ev = st.events[st.next];
+    const rows = await this.src.eventEntries!(guid, ev.eventId, p);
+    const linked = listPlayers(this.db).filter((x) => (this.db.prepare('select 1 from tournament_players where tournament_guid = ? and player_id = ?').get(guid, x.id) as unknown) !== undefined);
+    this.db.prepare('delete from entries where tournament_guid = ? and event_id = ?').run(guid, ev.eventId);
+    const ins = this.db.prepare('insert or replace into entries(tournament_guid, event_id, event_name, player_id, status, label, seen_at) values(?,?,?,?,?,?,?)');
+    for (const r of rows) {
+      for (const pl of linked) if (r.names.some((n) => findByNameLoose([pl], n))) ins.run(guid, ev.eventId, ev.name, pl.id, r.status, r.label, now.toISOString());
+    }
+    const next = st.next + 1;
+    kvSet(this.db, key, { events: st.events, next, ...(next >= st.events.length ? { doneAt: now.toISOString() } : {}) } satisfies EntriesState);
   }
 
   saveEntrants(guid: string, entrants: EntrantLike[], roster: Player[], now: Date) {

@@ -109,6 +109,8 @@ export interface Tournament {
   draws?: LiveDraw[];
   /** Resultados de la UVa por prueba (medallas y ronda alcanzada). */
   podium?: UvaResult[];
+  /** Inscripción y admisión de personas del club (solo torneos futuros leídos por el servidor). */
+  entries?: TournamentEntry[];
   /** Última lectura correcta de la fuente para este torneo (ISO) y si ya es antigua. */
   checkedAt?: string;
   stale?: boolean;
@@ -175,6 +177,13 @@ export interface UvaResult {
   done: boolean;
 }
 
+/** Inscripción de una persona del club en una prueba y su estado según la lista oficial. */
+export interface TournamentEntry {
+  player: string;
+  event: string;
+  status: 'admitted' | 'reserve' | 'excluded' | 'registered';
+}
+
 /** Estimación estadística del avance del torneo (la calcula el servidor con el ritmo real de los partidos). */
 export interface LiveProgress {
   date: string;
@@ -224,6 +233,6 @@ export interface LiveState {
   pushEnabled: boolean;
   tournaments: {
     id: string; name: string; startDate?: string; endDate?: string; city?: string; venue?: string; level?: string;
-    officialUrl?: string; manual?: boolean; uvaPlayers: string[]; matches: UvaMatch[]; progress?: LiveProgress; draws: LiveDraw[]; results?: UvaResult[]; checkedAt?: string; stale: boolean;
+    officialUrl?: string; manual?: boolean; uvaPlayers: string[]; matches: UvaMatch[]; progress?: LiveProgress; draws: LiveDraw[]; results?: UvaResult[]; entries?: TournamentEntry[]; checkedAt?: string; stale: boolean;
   }[];
 }

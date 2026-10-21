@@ -44,6 +44,15 @@ Importante:
   autorización de la FESBA / Federación de Castilla y León. **No se ha ejecutado contra badminton.es en vivo** más que el calendario.
 - Requiere alojar el servidor (ver `server/README.md`) y definir `VITE_API_URL` en la web.
 
+## Inscripción y admisión en torneos futuros
+
+- El servidor lee la lista de inscritos de cada prueba (una prueba por lectura, cada 6 h / 3 h / 1 h según la cercanía) de los torneos
+  futuros en los que figura alguien del club, y guarda solo el estado de las personas con consentimiento: admitido, reserva, baja o
+  inscrito sin confirmar. No se guardan parejas ni rivales.
+- En el Calendario (tarjeta y ficha) y en Directo se ve «Inscripción y admisión». Cuando se publican, aparecen solos los cuadros
+  y el orden de juego en la misma ficha.
+- Solo aparecen torneos enlazados desde el perfil oficial de cada jugador o jugadora (ver `server/README.md`).
+
 ## Estimación, cuadros y rendimiento
 
 - Estimación calibrada con 1.299 partidos reales y probada con 10 torneos terminados (ver `docs/ESTIMACION.md`).

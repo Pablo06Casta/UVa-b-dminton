@@ -64,6 +64,18 @@ create table if not exists tournament_players (
   primary key (tournament_guid, player_id)
 );
 
+-- Inscripción de jugadores del club en cada prueba y su estado según la lista oficial (admitido, reserva, baja…). No se guardan las parejas.
+create table if not exists entries (
+  tournament_guid text not null,
+  event_id integer not null,
+  event_name text not null,
+  player_id integer not null references players(id) on delete cascade,
+  status text not null,
+  label text,
+  seen_at text not null,
+  primary key (tournament_guid, event_id, player_id)
+);
+
 -- Participantes del torneo que son del club. Solo se guarda el nombre de quienes son del club (minimización).
 create table if not exists entrants (
   tournament_guid text not null,

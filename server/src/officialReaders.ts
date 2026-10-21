@@ -3,6 +3,7 @@ import type { LiveReaders, RosterReaders } from './source';
 import { parseRankingCategory, parseRankingProfileGuid } from './rankingParse';
 import { TsSource, urls } from './lib/ts/source';
 import { parseBracket, parseDrawsList, parseStandingTable } from './lib/ts/parse/draws';
+import { parseEventPage } from './lib/ts/parse/pages';
 
 const XHR = { 'X-Requested-With': 'XMLHttpRequest' };
 
@@ -52,6 +53,23 @@ export class OfficialLiveReaders implements LiveReaders, RosterReaders {
   async day(guid: string, date: string, tz: string, p: Priority) {
     const { data } = await this.src.day(guid, date, tz, p);
     return data;
+  }
+
+  /** Pruebas del torneo: enlaces a `event.aspx?...&event=N` de la página de categorías. */
+  async events(guid: string, p: Priority) {
+    const body = (await this.http.get(`/sport/events.aspx?id=${guid}`, { priority: p })).body;
+    const out: { eventId: number; name: string }[] = [];
+    for (const m of body.matchAll(/<a[^>]+href="[^"]*event\.aspx\?[^"]*?event=(\d+)[^"]*"[^>]*>([\s\S]*?)<\/a>/gi)) {
+      const eventId = Number(m[1]);
+      const name = m[2].replace(/<[^>]+>/g, ' ').replace(/&nbsp;|\s+/g, ' ').trim();
+      if (eventId && name && !out.some((o) => o.eventId === eventId)) out.push({ eventId, name });
+    }
+    return out;
+  }
+
+  async eventEntries(guid: string, eventId: number, p: Priority) {
+    const { entries } = parseEventPage((await this.http.get(urls.event(guid, eventId), { priority: p })).body);
+    return entries.map((e) => ({ names: e.names, status: e.status as 'confirmed' | 'reserve' | 'excluded' | 'unknown', label: e.label }));
   }
 
   async rankingPlayers(url: string, p: Priority) {

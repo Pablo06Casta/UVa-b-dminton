@@ -65,6 +65,16 @@ export interface PublicProgress {
   estimatedEndHigh?: string;
 }
 
+/** Inscripción de una persona del club en una prueba y su estado según la lista oficial. */
+export interface PublicEntry {
+  player: string;
+  event: string;
+  /** admitted = admitido en cuadro o previa; reserve = lista de reserva; excluded = baja o no admitido; registered = inscrito, sin confirmar. */
+  status: 'admitted' | 'reserve' | 'excluded' | 'registered';
+}
+
+const entryStatus = (s: string): PublicEntry['status'] => (s === 'confirmed' ? 'admitted' : s === 'reserve' ? 'reserve' : s === 'excluded' ? 'excluded' : 'registered');
+
 export interface PublicTournament {
   id: string;
   name: string;
@@ -83,6 +93,8 @@ export interface PublicTournament {
   draws: PublicDraw[];
   /** Resultados de la UVa por prueba (medallas y ronda alcanzada). */
   results: PublicResult[];
+  /** Inscripción y admisión de personas del club (solo con consentimiento). */
+  entries: PublicEntry[];
   /** Última lectura correcta de este torneo. Los datos nunca son «en directo» si esta fecha es antigua. */
   checkedAt?: string;
   stale: boolean;
@@ -284,6 +296,12 @@ export function buildPublicState(db: Db, now = new Date()): PublicState {
       progress: est ? toProgress(est) : undefined,
       draws,
       results: uvaResults(draws),
+      entries: (db.prepare('select player_id, event_name, status from entries where tournament_guid = ?').all(t.guid) as unknown as { player_id: number; event_name: string; status: string }[])
+        .flatMap((e) => {
+          const pl = publicPlayers.get(e.player_id);
+          return pl ? [{ player: pl.name, event: e.event_name, status: entryStatus(e.status) }] : [];
+        })
+        .sort((a, b) => a.player.localeCompare(b.player, 'es') || a.event.localeCompare(b.event, 'es')),
       checkedAt,
       stale,
     });

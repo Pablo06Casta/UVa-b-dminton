@@ -24,6 +24,7 @@ export function mergeLive(base: Tournament[], live: LiveState): Tournament[] {
       progress: lt.progress,
       draws: lt.draws,
       podium: lt.results,
+      entries: lt.entries,
       checkedAt: lt.checkedAt,
       stale: lt.stale,
       officialUrl: lt.officialUrl,

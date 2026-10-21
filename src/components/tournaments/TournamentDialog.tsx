@@ -5,6 +5,8 @@ import type { Tournament } from '../../types';
 import { Icon } from '../Icon';
 import { PendingTag } from '../ui';
 import { MatchList } from './MatchList';
+import { DrawsView } from '../live/DrawsView';
+import { EntriesList } from './EntriesList';
 import { UvaResults } from './UvaResults';
 import { StatusBadge, participantsText } from './TournamentCard';
 
@@ -86,6 +88,14 @@ export function TournamentDialog({ tournament: t, onClose }: { tournament: Tourn
                 </dd>
               </div>
             )}
+            {t.entries && t.entries.length > 0 && (
+              <div className="facts__wide">
+                <dt>Inscripción y admisión</dt>
+                <dd>
+                  <EntriesList entries={t.entries} />
+                </dd>
+              </div>
+            )}
             {t.matches && t.matches.length > 0 && (
               <div className="facts__wide">
                 <dt>Partidos de la UVa</dt>
@@ -109,6 +119,8 @@ export function TournamentDialog({ tournament: t, onClose }: { tournament: Tourn
               </div>
             )}
           </dl>
+
+          {t.draws && t.draws.length > 0 && <DrawsView draws={t.draws} updatedAt={t.checkedAt} />}
 
           {t.externalUrl && (
             <a className="btn btn--primary" href={t.externalUrl} target="_blank" rel="noopener noreferrer">

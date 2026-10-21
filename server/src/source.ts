@@ -20,6 +20,15 @@ export interface LiveReaders extends Partial<RosterReaders> {
   standings(guid: string, drawId: number, p: Priority): Promise<StandingRow[]>;
   bracket(guid: string, drawId: number, p: Priority): Promise<BracketRound[]>;
   day(guid: string, date: string, tz: string, p: Priority): Promise<MatchRow[]>;
+  /** Pruebas del torneo (IM, DX…) y, de cada una, la lista de inscritos con su estado (admitido, reserva…). */
+  events?(guid: string, p: Priority): Promise<{ eventId: number; name: string }[]>;
+  eventEntries?(guid: string, eventId: number, p: Priority): Promise<EventEntryRow[]>;
+}
+
+export interface EventEntryRow {
+  names: string[];
+  status: 'confirmed' | 'reserve' | 'excluded' | 'unknown';
+  label: string;
 }
 
 /** Lo que el motor necesita de la fuente oficial. Las pruebas usan una copia simulada. */

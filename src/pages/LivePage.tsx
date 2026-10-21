@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { DayAgenda } from '../components/live/DayAgenda';
 import { DrawsView } from '../components/live/DrawsView';
+import { EntriesList } from '../components/tournaments/EntriesList';
 import { EndEstimate } from '../components/live/EndEstimate';
 import { MatchCard } from '../components/live/MatchCard';
 import { NotifyPanel } from '../components/live/NotifyPanel';
@@ -116,6 +117,12 @@ export function LivePage() {
                 <DayAgenda matches={active.matches ?? []} now={now} highlight={highlight} />
               </section>
 
+              {active.entries && active.entries.length > 0 && (
+                <section className="livenow" aria-labelledby="entries-title">
+                  <h3 id="entries-title">Inscripción y admisión</h3>
+                  <EntriesList entries={active.entries} />
+                </section>
+              )}
               <DrawsView draws={active.draws ?? []} updatedAt={active.checkedAt} />
               {active.officialUrl && (
                 <p className="source-note"><a href={active.officialUrl} target="_blank" rel="noopener noreferrer">Ver el torneo completo en badminton.es<span className="sr-only"> (se abre en una pestaña nueva)</span></a></p>

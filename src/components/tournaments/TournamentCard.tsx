@@ -4,6 +4,7 @@ import { getStatus, hasUvaPlayers, statusLabels } from '../../lib/tournaments';
 import type { Tournament } from '../../types';
 import { Icon } from '../Icon';
 import { PendingTag } from '../ui';
+import { entrySummary } from './EntriesList';
 import { hasMedals } from './UvaResults';
 
 export const tournamentHref = (t: Tournament) => `/calendario?torneo=${encodeURIComponent(t.id)}`;
@@ -64,6 +65,12 @@ export function TournamentCard({ tournament: t }: { tournament: Tournament }) {
             <Icon name="users" size={16} />
             {participantsText(t)}
           </li>
+          {entrySummary(t.entries) && (
+            <li>
+              <Icon name="check" size={16} />
+              {entrySummary(t.entries)}
+            </li>
+          )}
           {t.players && t.players.length > 0 && (
             <li className="meta__players">
               <span className="sr-only">Jugadores de la UVa: </span>

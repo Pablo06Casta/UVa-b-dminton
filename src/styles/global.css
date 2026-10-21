@@ -3251,3 +3251,51 @@ abbr.est--big {
   background: #f7e7a6;
   border-radius: 2px;
 }
+
+/* ---------- Inscripción y admisión ---------- */
+.entries__list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.entries__list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+}
+.entries__chips {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.entry {
+  padding: 2px 9px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border-radius: 2px;
+  border: 1px solid var(--gray-200);
+  background: var(--gray-50);
+}
+.entry--admitted {
+  color: #0d5a2b;
+  background: #dff3e6;
+  border-color: #9fd3b0;
+}
+.entry--reserve {
+  color: #6a4b00;
+  background: #fff1c9;
+  border-color: #e6cf84;
+}
+.entry--excluded {
+  color: var(--danger);
+  background: #fbe5e5;
+  border-color: #e3a5a5;
+}
+.entries__note {
+  margin: 12px 0 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
