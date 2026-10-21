@@ -7,8 +7,7 @@
     "summary": "El club se llevó el oro en individual y en dobles masculino, además de una plata y dos bronces, en el Castilla y León TOP TTR Absoluto-Sénior disputado en el Polideportivo Narciso Alonso Cortés.",
     "tournament": {
       "name": "Castilla y León TOP TTR Valladolid Absoluto-Sénior",
-      "place": "Valladolid · Polideportivo Narciso Alonso Cortés",
-      "url": "https://www.badminton.es/sport/tournament.aspx?id=BD151966-B76B-4B1B-A591-E8DBDFB16D76"
+      "place": "Valladolid · Polideportivo Narciso Alonso Cortés"
     },
     "medals": [
       {
@@ -47,9 +46,52 @@
         "detail": "Bronce tras las semifinales."
       }
     ],
-    "source": {
-      "label": "Resultados oficiales en badminton.es",
-      "url": "https://www.badminton.es/sport/draws.aspx?id=BD151966-B76B-4B1B-A591-E8DBDFB16D76"
-    }
+    "sources": [
+      {
+        "label": "Resultados oficiales en badminton.es",
+        "url": "https://www.badminton.es/sport/draws.aspx?id=BD151966-B76B-4B1B-A591-E8DBDFB16D76"
+      },
+      {
+        "label": "Ficha del torneo en badminton.es",
+        "url": "https://www.badminton.es/sport/tournament.aspx?id=BD151966-B76B-4B1B-A591-E8DBDFB16D76"
+      }
+    ]
+  },
+  {
+    "id": "europeo-senior-2026",
+    "date": "2026-09-26",
+    "tag": "Europeo",
+    "title": "Marta Fernández, bronce en el Campeonato de Europa Sénior de Cagliari",
+    "summary": "La jugadora de la UVa, en su primera participación en un Europeo, se colgó el bronce en individual femenino +35 y fue la única medallista de una expedición española de 76 jugadores.",
+    "tournament": {
+      "name": "Campeonato de Europa Sénior",
+      "place": "Cagliari (Cerdeña, Italia)"
+    },
+    "highlights": [
+      "Debutó con victoria por 21-12 y 21-10.",
+      "En octavos derrotó a la quinta cabeza de serie, francesa, por 21-15 y 21-9.",
+      "En cuartos eliminó a la segunda cabeza de serie, alemana, por 21-18 y 21-17, y aseguró la medalla.",
+      "En semifinales cayó en tres sets muy disputados ante una jugadora francesa.",
+      "También alcanzó los cuartos de final en dobles femenino."
+    ],
+    "medals": [
+      {
+        "place": 3,
+        "event": "IF +35",
+        "eventName": "Individual femenino +35",
+        "who": "Marta Fernández Polo",
+        "detail": "Campeonato de Europa Sénior · Cagliari"
+      }
+    ],
+    "sources": [
+      {
+        "label": "Diario de Valladolid: Marta Fernández, medalla de bronce en el Campeonato de Europa Senior",
+        "url": "https://www.diariodevalladolid.es/deportes/260928/286687/marta-fernandez-medalla-bronce-campeonato-europa-senior-badminton.html"
+      },
+      {
+        "label": "Federación Española de Bádminton: Marta Fernández se mete en las semifinales",
+        "url": "https://www.badminton.es/news/163660/Marta-Fernandez-se-mete-en-las-semifinales-del-Campeonato-de-Europa-Senior-y-asegura-una-medalla-para-el-Planeta-Senior"
+      }
+    ]
   }
 ]

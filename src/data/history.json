@@ -110,10 +110,10 @@
     },
     {
       "id": "europeo-senior",
-      "date": "Fecha por confirmar",
-      "title": "Bronce en el Campeonato de Europa Sénior (Cerdeña)",
-      "description": "Marta Fernández Polo, tercera en el Campeonato de Europa Sénior disputado en Cerdeña (Italia): la primera medalla de una jugadora española en esta categoría.",
-      "source": "Documentación del club"
+      "date": "Septiembre de 2026",
+      "title": "Bronce en el Campeonato de Europa Sénior (Cagliari, Cerdeña)",
+      "description": "Marta Fernández Polo, bronce en individual femenino +35 en el Campeonato de Europa Sénior de Cagliari (Italia), en su primera participación y única medallista de la expedición española.",
+      "source": "Diario de Valladolid"
     }
   ],
   "photos": [],
@@ -137,6 +137,14 @@
     {
       "label": "Club Bádminton Valladolid (blog del club)",
       "url": "https://blog.badmintonvalladolid.com/tag/club-badminton-valladolid/page/2/"
+    },
+    {
+      "label": "Marta Fernández, medalla de bronce en el Campeonato de Europa Senior (Diario de Valladolid)",
+      "url": "https://www.diariodevalladolid.es/deportes/260928/286687/marta-fernandez-medalla-bronce-campeonato-europa-senior-badminton.html"
+    },
+    {
+      "label": "Marta Fernández se mete en las semifinales del Campeonato de Europa Sénior (badminton.es)",
+      "url": "https://www.badminton.es/news/163660/Marta-Fernandez-se-mete-en-las-semifinales-del-Campeonato-de-Europa-Senior-y-asegura-una-medalla-para-el-Planeta-Senior"
     }
   ]
 }

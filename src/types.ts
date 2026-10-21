@@ -245,8 +245,10 @@ export interface NewsItem {
   tag: string;
   title: string;
   summary: string;
-  tournament?: { name: string; place?: string; url?: string };
+  tournament?: { name: string; place?: string };
   /** Resultados del club en la noticia: 1 = oro, 2 = plata, 3 = bronce. */
   medals?: { place: 1 | 2 | 3; event: string; eventName: string; who: string; detail?: string }[];
-  source?: { label: string; url: string };
+  /** Puntos clave de la noticia (camino hasta la medalla, etc.). */
+  highlights?: string[];
+  sources?: { label: string; url: string }[];
 }
