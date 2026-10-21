@@ -122,7 +122,11 @@ export function estimate(slots: Slot[], now: Date, cfg: EstimateConfig = default
   const plannedSlotMin = median(gaps);
 
   const courtIds = new Set(slots.map((s) => s.court).filter((c): c is string => !!c));
-  const courts = Math.max(1, courtIds.size);
+  // Sin pistas publicadas, se deduce cuántas hay de cuántos partidos coinciden a la misma hora programada.
+  const concurrent = new Map<string, number>();
+  for (const s of slots) if (s.plannedUtc) concurrent.set(s.plannedUtc, (concurrent.get(s.plannedUtc) ?? 0) + 1);
+  const inferredCourts = Math.max(1, ...concurrent.values());
+  const courts = courtIds.size > 0 ? courtIds.size : inferredCourts;
 
   const base: Estimate = {
     asOf: now.toISOString(),
@@ -148,7 +152,7 @@ export function estimate(slots: Slot[], now: Date, cfg: EstimateConfig = default
   // Simulación: cada pista queda libre cuando acaba su partido en juego. Si TODOS los pendientes traen pista (pistas
   // preasignadas) cada uno espera a la suya; si no (pista asignada al llamar el partido), entra en la primera libre.
   // Respeta la hora programada como hora mínima de inicio.
-  const courtList = courtIds.size ? [...courtIds] : ['?'];
+  const courtList = courtIds.size ? [...courtIds] : Array.from({ length: courts }, (_, i) => `#${i + 1}`);
   const preassigned = pending.length > 0 && pending.every((s) => s.court && courtIds.has(s.court));
   const simulate = (draw: (e?: string) => number) => {
     const free = new Map<string, number>(courtList.map((c) => [c, nowMs]));
@@ -175,6 +179,11 @@ export function estimate(slots: Slot[], now: Date, cfg: EstimateConfig = default
   };
 
   const det = simulate((e) => meanFor(e));
+  // Mientras no haya empezado ningún partido no hay nada observado: la hora estimada es la programada (nunca más tarde
+  // por una cola imaginaria). Con el torneo en marcha, la simulación aplica los retrasos reales.
+  if (live.length === 0 && finished.length === 0) {
+    for (const s of pending) if (s.plannedUtc && Date.parse(s.plannedUtc) >= nowMs) det.starts[s.key] = Date.parse(s.plannedUtc);
+  }
   const rand = rng(Math.floor(nowMs / (5 * MIN)) + slots.length);
   const ends: number[] = [];
   for (let n = 0; n < cfg.simulations; n++) {

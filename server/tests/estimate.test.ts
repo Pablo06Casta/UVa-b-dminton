@@ -83,3 +83,30 @@ describe('estimación del fin del torneo', () => {
     expect(Date.parse(estimate(mixed, NOW).estimatedEnd!)).toBeLessThan(Date.parse(estimate(allOnOne, NOW).estimatedEnd!));
   });
 });
+
+describe('horas estimadas sin pistas publicadas', () => {
+  const T = (h: number, m = 0) => new Date(Date.UTC(2026, 9, 24, h, m)).toISOString();
+  const slot = (key: string, at: string, over: Partial<Slot> = {}): Slot => ({ key, status: 'scheduled', plannedUtc: at, orderIdx: 0, ...over } as Slot);
+
+  it('antes de empezar el torneo, la hora estimada es la programada (no se acumula una cola)', () => {
+    // 40 partidos programados cada 35 min, 4 a la vez (4 pistas deducidas), sin pistas publicadas.
+    const slots: Slot[] = [];
+    for (let r = 0; r < 10; r++) for (let c = 0; c < 4; c++) slots.push(slot(`m${r}-${c}`, T(7, 35 * r)));
+    const e = estimate(slots, new Date(Date.UTC(2026, 9, 21, 10)));
+    for (const s of slots) expect(e.starts[s.key]).toBe(s.plannedUtc);
+    expect(e.courts).toBe(4);
+  });
+
+  it('con el torneo en marcha, los retrasos reales sí se aplican, pero no más de lo razonable', () => {
+    const slots: Slot[] = [
+      slot('a', T(7), { status: 'finished', durationMin: 30, startedSeenAt: T(7, 20), prevPollAt: T(7, 20), finishedSeenAt: T(7, 50) }),
+      slot('b', T(7), { status: 'finished', durationMin: 30, startedSeenAt: T(7, 20), prevPollAt: T(7, 20), finishedSeenAt: T(7, 50) }),
+      slot('c', T(8)), slot('d', T(8)), slot('e', T(8, 35)), slot('f', T(8, 35)),
+    ];
+    const e = estimate(slots, new Date(Date.UTC(2026, 9, 24, 7, 55)));
+    const delayH = (k: string) => (Date.parse(e.starts[k]) - Date.parse(slots.find((s) => s.key === k)!.plannedUtc!)) / 3_600_000;
+    expect(delayH('c')).toBeLessThan(1); // con 2 pistas deducidas no se apila todo en una
+    expect(delayH('e')).toBeLessThan(1.5);
+    expect(delayH('c')).toBeGreaterThanOrEqual(0);
+  });
+});

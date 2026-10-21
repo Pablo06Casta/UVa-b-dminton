@@ -190,7 +190,13 @@ export class SyncEngine {
     if (now.getTime() < this.pausedUntil) return undefined;
     if (!this.relinked) {
       this.relinked = true;
-      try { this.relinkEntrants(); } catch (e) { console.error('relinkEntrants', e); }
+      try {
+        this.relinkEntrants();
+        // Las estimaciones guardadas pueden venir de una versión anterior: se recalculan con lo ya guardado (sin peticiones).
+        for (const r of this.db.prepare('select distinct tournament_guid g, date d from slots').all() as unknown as { g: string; d: string }[]) this.recomputeEstimate(r.g, r.d, now);
+      } catch (e) {
+        console.error('relinkEntrants', e);
+      }
     }
     const job = this.plan(now)[0];
     if (!job) return undefined;
