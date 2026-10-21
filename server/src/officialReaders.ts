@@ -30,7 +30,15 @@ export class OfficialLiveReaders implements LiveReaders, RosterReaders {
   }
 
   async draws(guid: string, p: Priority) {
-    return parseDrawsList((await this.http.get(urls.draws(guid), { priority: p })).body);
+    const res = await this.http.get(urls.draws(guid), { priority: p });
+    const list = parseDrawsList(res.body);
+    if (list.length === 0) {
+      // Para diagnóstico: qué página llegó realmente (código, dirección final, título y tamaño), sin contenido personal.
+      const title = res.body.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/\s+/g, ' ').trim().slice(0, 80);
+      const e = new Error(`Lista de cuadros vacía: HTTP ${res.status}, ${res.bytes || res.body.length} B, final «${res.finalUrl ?? res.url}», título «${title ?? '-'}»`);
+      throw e;
+    }
+    return list;
   }
 
   async standings(guid: string, drawId: number, p: Priority) {

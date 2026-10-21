@@ -271,7 +271,7 @@ export class SyncEngine {
     );
     const drawList = await this.src.draws(guid, p);
     // Una lista vacía no es «leído»: o aún no se han publicado, o la fuente devolvió otra página. Se reintenta con espera creciente.
-    if (drawList.length === 0) throw new Error('La lista de cuadros llegó vacía (sin publicar o página inesperada).');
+    if (drawList.length === 0) throw new Error('La lista de cuadros llegó vacía (sin publicar o página inesperada).'); // (las fuentes reales ya lanzan un error con detalle)
     for (const d of drawList) {
       if (d.type === 'roundrobin') {
         const rows = await this.src.standings(guid, d.drawId, p);
