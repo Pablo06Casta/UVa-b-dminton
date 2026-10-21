@@ -4,6 +4,7 @@ import path from 'node:path';
 import { createApp, Hub } from './api';
 import { settings } from './config';
 import { openDb } from './db';
+import { remoteConfig, restoreIfMissing, saveSnapshot } from './remoteBackup';
 import { importPlayersCsv } from './importCsv';
 import { listPlayers } from './roster';
 import { SyncEngine } from './engine';
@@ -13,7 +14,9 @@ import { OfficialLiveReaders } from './officialReaders';
 import { PoliteClient } from './http';
 import { httpConfig } from './config-http';
 
-const db = openDb(path.join(settings.dataDir, 'club.sqlite'));
+const dbFile = path.join(settings.dataDir, 'club.sqlite');
+if (await restoreIfMissing(dbFile)) console.log('Base de datos restaurada desde la copia remota (Upstash).');
+const db = openDb(dbFile);
 
 /** Copia de la base de datos (consentimientos, jugadores, partidos): al arrancar y cada 24 h; se conservan las 7 últimas. */
 function backup() {
@@ -35,6 +38,11 @@ if (process.env.ROSTER_CSV && listPlayers(db).length === 0) {
 }
 backup();
 setInterval(backup, 24 * 3600_000).unref();
+if (remoteConfig()) {
+  console.log('Copia remota (Upstash) activada: se guarda cada 5 minutos si hay cambios.');
+  setInterval(() => void saveSnapshot(db), 5 * 60_000).unref();
+  setTimeout(() => void saveSnapshot(db), 60_000).unref();
+}
 const hub = new Hub(db);
 
 const client = new PoliteClient({ baseUrl: httpConfig.baseUrl, minIntervalMs: httpConfig.minIntervalMs, timeoutMs: httpConfig.timeoutMs, userAgent: httpConfig.userAgent });
@@ -82,6 +90,7 @@ if (sender) setInterval(() => void notifyUpcoming(db, new Date(), sender).catch(
 
 const shutdown = () => {
   stopping = true;
+  void saveSnapshot(db);
   server.close(() => process.exit(0));
   setTimeout(() => process.exit(0), 3000).unref();
 };

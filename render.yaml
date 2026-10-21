@@ -26,6 +26,11 @@ services:
         value: none
       - key: PUBLIC_DRAW_NAMES
         value: initials
+      # Copia de la base de datos en Upstash (gratis): evita perder los datos en cada reinicio. Valores de tu cuenta de Upstash.
+      - key: UPSTASH_REDIS_REST_URL
+        sync: false
+      - key: UPSTASH_REDIS_REST_TOKEN
+        sync: false
       # Opcional: lista del club en CSV (la rellenas tú en Render; no se sube a git).
       - key: ROSTER_CSV
         sync: false
