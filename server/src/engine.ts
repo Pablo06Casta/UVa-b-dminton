@@ -11,7 +11,7 @@ import { invalidatePublicState } from './publicView';
 import { isUvaClub } from './uva';
 import type { OfficialSource } from './source';
 import { transformCalendar } from './calendar';
-import { defaultEstimateConfig, estimate, type Slot } from './estimate';
+import { defaultEstimateConfig, estimate, type Estimate, type Slot } from './estimate';
 import type { MatchRow } from './model';
 import { buildStoredMatch, type ClubEntrants, diffMatch, findClubEntrants, matchFingerprint, type EntrantLike, type StoredMatch } from './uva';
 
@@ -535,7 +535,28 @@ export class SyncEngine {
     }));
     const est = estimate(slots, now, { ...defaultEstimateConfig, defaultMatchMin: settings.defaultMatchMin, changeoverMin: settings.changeoverMin });
     kvSet(this.db, `estimate:${guid}`, { date, ...est }, now.toISOString());
+    this.logEstimate(guid, date, est, now);
     return est;
+  }
+
+  /**
+   * Guarda una «foto» de la estimación (hora de fin y hora estimada de cada partido pendiente) para medir después su acierto.
+   * Cada 10 minutos el día del torneo y cada 3 horas los días previos; solo si hay partidos pendientes o es la última foto.
+   */
+  private logEstimate(guid: string, date: string, est: Estimate, now: Date) {
+    if (est.total === 0) return;
+    const today = todayIn(DEFAULT_TZ, now);
+    if (date < today) return; // al recalcular al arrancar días ya pasados no se guarda nada
+    const gap = (date === today ? 10 : 180) * 60_000;
+    const last = this.db.prepare('select max(at) a from estimate_log where tournament_guid = ? and date = ?').get(guid, date) as unknown as { a: string | null };
+    const lastDone = est.done && !(this.db.prepare('select 1 x from estimate_log where tournament_guid = ? and date = ? and remaining = 0').get(guid, date) as unknown);
+    if (last.a && now.getTime() - Date.parse(last.a) < gap && !lastDone) return;
+    const at = now.toISOString();
+    this.db
+      .prepare('insert or ignore into estimate_log(tournament_guid, date, at, est_end, est_end_low, est_end_high, remaining, finished, total) values(?,?,?,?,?,?,?,?,?)')
+      .run(guid, date, at, est.estimatedEnd ?? null, est.estimatedEndLow ?? null, est.estimatedEndHigh ?? null, est.remaining, est.finished, est.total);
+    const ins = this.db.prepare('insert or ignore into estimate_starts(tournament_guid, date, at, slot_key, est_start) values(?,?,?,?,?)');
+    for (const [key, start] of Object.entries(est.starts)) ins.run(guid, date, at, key, start);
   }
 
   /** Calendario oficial de torneos absolutos (solo rutas permitidas). */
@@ -608,6 +629,9 @@ export class SyncEngine {
     const cutoff = new Date(now.getTime() - settings.changeLogDays * 86_400_000).toISOString();
     this.db.prepare('delete from changes where at < ?').run(cutoff);
     this.db.prepare('delete from fetch_log where at < ?').run(new Date(now.getTime() - 7 * 86_400_000).toISOString());
+    const old = new Date(now.getTime() - 60 * 86_400_000).toISOString();
+    this.db.prepare('delete from estimate_log where at < ?').run(old);
+    this.db.prepare('delete from estimate_starts where at < ?').run(old);
   }
 }
 

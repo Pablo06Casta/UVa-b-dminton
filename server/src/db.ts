@@ -132,6 +132,28 @@ create table if not exists slots (
 );
 create index if not exists slots_t on slots(tournament_guid, date);
 
+-- Historial de estimaciones, para medir después lo acertadas que fueron (solo horas y recuentos, sin nombres).
+create table if not exists estimate_log (
+  tournament_guid text not null,
+  date text not null,
+  at text not null,
+  est_end text,
+  est_end_low text,
+  est_end_high text,
+  remaining integer not null,
+  finished integer not null,
+  total integer not null,
+  primary key (tournament_guid, date, at)
+);
+create table if not exists estimate_starts (
+  tournament_guid text not null,
+  date text not null,
+  at text not null,
+  slot_key text not null,
+  est_start text not null,
+  primary key (tournament_guid, date, at, slot_key)
+);
+
 -- Cuadros y clasificaciones tal como los publica la fuente. Con nombres de terceros: solo se sirven anonimizados.
 create table if not exists draws (
   tournament_guid text not null,

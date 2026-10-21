@@ -9,6 +9,7 @@ import type { SyncEngine } from './engine';
 import { kvGet } from './db';
 import { buildPublicState, cachedPublicState, invalidatePublicState, type PublicMatch } from './publicView';
 import { pushConfigured, subscribe, unsubscribe } from './push';
+import { buildAccuracy } from './accuracy';
 import { buildOverview } from './adminView';
 import { importPlayersCsv } from './importCsv';
 import { addManualMatch, createManualTournament, deleteManualMatch, deleteManualTournament, listManual, setManualProgress, updateManualMatch } from './manual';
@@ -162,6 +163,15 @@ export function createApp(db: Db, engine: SyncEngine | undefined, hub: Hub) {
         }
         res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'X-Content-Type-Options': 'nosniff', ...headers });
         return res.end(c.newsBody);
+      }
+
+      if (route === 'GET /api/public/accuracy') {
+        if (limited(req)) throw new HttpFail(429, 'Demasiadas consultas.');
+        // Acierto de la estimación frente a lo ocurrido (solo horas y recuentos, sin nombres). `?days=N` limita a los últimos N días (por defecto 45).
+        const days = Math.min(120, Math.max(1, Number(new URL(req.url ?? '/', 'http://x').searchParams.get('days')) || 45));
+        const since = new Date(Date.now() - days * 86_400_000).toISOString();
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, max-age=60', 'X-Content-Type-Options': 'nosniff', ...cors(req) });
+        return res.end(JSON.stringify({ generatedAt: nowIso(), days: buildAccuracy(db, since) }));
       }
 
       if (route === 'GET /api/public/stream') {
