@@ -56,7 +56,7 @@ Importante:
 
 | Elemento | Qué hay que aportar / hacer |
 | --- | --- |
-| Fotografía de grupo | Foto oficial del equipo para la portada (hoy: ilustración provisional, con aviso visible). |
+| Fotografía de grupo | Portada con la foto del equipo (hecha). Falta confirmar el consentimiento de las personas que aparecen para publicar su imagen. |
 | Presentación del club | Texto incorporado desde el informe del club (`club.json › about`). Falta una foto complementaria. |
 | Integrantes | Nombres, funciones y fotos, **con autorización** para publicarlos. Hoy: tarjetas de marcador. |
 | Logros | Incorporados desde el informe del club (`achievements.json`). Cifras no respaldadas (p. ej. «17 medallas») no se muestran. |

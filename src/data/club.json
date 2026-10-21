@@ -16,9 +16,9 @@
   "address": null,
   "images": {
     "hero": {
-      "src": "/images/hero-provisional.svg",
-      "alt": "Ilustración provisional de una pista de bádminton. Se sustituirá por la fotografía de grupo del equipo.",
-      "provisional": true
+      "src": "/images/equipo-portada.jpg",
+      "alt": "Ocho integrantes del equipo del club posan juntos con la sudadera azul de la Universidad de Valladolid en una pista de bádminton cubierta.",
+      "provisional": false
     },
     "about": {
       "src": "/images/presentacion-provisional.svg",
