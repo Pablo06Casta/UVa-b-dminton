@@ -3,46 +3,140 @@
     {
       "id": "presentacion",
       "title": "Presentación histórica",
-      "paragraphs": [],
-      "status": "pending",
-      "needed": "Texto introductorio sobre la trayectoria del club y su vinculación con la Universidad de Valladolid."
+      "status": "verified",
+      "needed": "",
+      "paragraphs": [
+        "El Club Bádminton Universidad de Valladolid (UVa) es la entidad que representa a la Universidad de Valladolid en el bádminton de competición. Su trayectoria combina el deporte universitario con la competición federada: ha participado en la Liga Nacional de Clubes, en los Campeonatos de España Absoluto, Universitario y Sénior, y en el circuito nacional y autonómico de torneos.",
+        "La Universidad concibe el deporte como parte de la formación del alumnado. El Servicio de Deportes aporta instalaciones, horarios compatibles con los estudios y la organización de competiciones internas como el Trofeo Rector, de las que salen jugadores y jugadoras que después se incorporan al deporte federado."
+      ]
     },
     {
       "id": "origen",
       "title": "Origen y fundación",
-      "paragraphs": [],
       "status": "pending",
+      "paragraphs": [],
       "needed": "Año y circunstancias de la fundación, personas impulsoras y fuente que lo acredite."
     },
     {
       "id": "evolucion",
       "title": "Evolución del equipo",
-      "paragraphs": [],
-      "status": "pending",
-      "needed": "Etapas del club, cambios de categoría, relevos de plantilla y hechos relevantes."
+      "status": "verified",
+      "needed": "",
+      "paragraphs": [
+        "Entre 1996 y 2018, José «Pepe» Fraile fue entrenador, delegado y gestor principal del proyecto, a la vez que seguía compitiendo: acumuló hasta seis campeonatos de España en categoría sénior. Bajo su dirección el equipo logró ascensos de categoría, permanencias en contextos difíciles y numerosas medallas nacionales, con una escuela de juego especialmente sólida en dobles.",
+        "En la Liga Nacional de Clubes, la primera jornada de octubre de 2015 en Huelva mostró lo igualada que es la competición: tres derrotas por márgenes mínimos (3-4 ante el Oviedo B, 3-4 ante el Ibiza BC y 2-5 ante el CB As Neves), con varios partidos decididos en el tercer set. Ese trabajo cristalizó con la fase de ascenso de 2017 y, después, con la segunda posición de la Primera Nacional, que dio el derecho a competir en la División de Honor."
+      ]
     },
     {
       "id": "competiciones",
       "title": "Participación en competiciones",
-      "paragraphs": [],
-      "status": "pending",
-      "needed": "Competiciones en las que ha participado el club (ligas, campeonatos universitarios, torneos)."
+      "status": "verified",
+      "needed": "",
+      "paragraphs": [
+        "Liga Nacional de Clubes (Primera Nacional y fases de ascenso a División de Honor), Campeonatos de España Absolutos, Campeonatos de España Universitarios, Trofeo Rector, Campeonatos de España Sénior y Campeonato de Europa Sénior.",
+        "En la base y el circuito de formación, el club y su entorno participan en torneos Máster N3 y N6, Top TTR (por ejemplo Vitoria o Estella), el Campeonato Absoluto de Castilla y León y torneos autonómicos. La UVa fue sede del Campeonato de España Universitario de Bádminton, del 29 de abril al 1 de mayo."
+      ]
     },
     {
       "id": "logros",
       "title": "Principales logros",
-      "paragraphs": [],
-      "status": "pending",
-      "needed": "Títulos, podios y premios con fecha y competición."
+      "status": "verified",
+      "needed": "",
+      "paragraphs": [
+        "Subcampeonato de España Absoluto de dobles masculino en 2017 (Ronda) para Enrique Fernández y Eduardo Bayón. Campeonato de España Universitario de dobles masculino en 2016 (Los Alcázares) para la misma pareja, y subcampeonato universitario en 2017 (Cartagena) para Enrique Fernández y Javier González. Bronce de Marta Fernández Polo en el Campeonato de Europa Sénior y cuatro oros en el Campeonato de España Sénior de 2026 (Cáceres).",
+        "En el Campeonato de España Universitario, la UVa se midió a la UCAM, cuyo modelo se apoya en un sistema de becas para captar deportistas olímpicos; el club defiende un modelo basado en la fidelización de su propio alumnado."
+      ]
     },
     {
       "id": "actualidad",
       "title": "Situación actual del club",
-      "paragraphs": [],
-      "status": "pending",
-      "needed": "Estado actual del club: plantilla, objetivos de la temporada y actividad."
+      "status": "verified",
+      "needed": "",
+      "paragraphs": [
+        "Los jugadores históricos siguen compitiendo en categoría sénior, y la UVa colabora con el Club Bádminton Valladolid, dedicado a la captación y tecnificación de jugadores y jugadoras jóvenes, que ya ha logrado medallas en campeonatos de España de base.",
+        "La tecnificación se concentra en horario de tarde (miércoles y jueves, de 19:00 a 21:30) en las instalaciones de la Universidad, entre ellas el campus deportivo de Fuente la Mora y las de la calle Ruiz Hernández. En esta web puedes seguir en directo a los jugadores del club en los torneos."
+      ]
     }
   ],
-  "timeline": [],
-  "photos": []
+  "timeline": [
+    {
+      "id": "fraile",
+      "date": "1996-2018",
+      "title": "Etapa de José «Pepe» Fraile",
+      "description": "Entrenador, delegado y gestor principal del proyecto durante más de dos décadas, y campeón de España sénior en seis ocasiones.",
+      "source": "Documentación del club"
+    },
+    {
+      "id": "huelva-2015",
+      "date": "Octubre de 2015",
+      "title": "Primera jornada de la Liga Nacional en Huelva",
+      "description": "Tres derrotas muy ajustadas: 3-4 ante el Oviedo B, 3-4 ante el Ibiza BC y 2-5 ante el CB As Neves.",
+      "source": "Documentación del club"
+    },
+    {
+      "id": "santander-2016",
+      "date": "2016",
+      "title": "Campeonato de España Absoluto (Santander)",
+      "description": "Quinta posición de Enrique Fernández en la prueba individual.",
+      "source": "Documentación del club"
+    },
+    {
+      "id": "ceu-2016",
+      "date": "2016",
+      "title": "Campeones de España Universitarios en dobles masculino",
+      "description": "Eduardo Bayón y Enrique Fernández ganan en Los Alcázares (Murcia) por 21-6 y 21-18 a la Universidad de Málaga en la final. Enrique suma además el bronce en individual.",
+      "source": "Documentación del club"
+    },
+    {
+      "id": "ronda-2017",
+      "date": "5-7 de mayo de 2017",
+      "title": "Subcampeones de España Absolutos de dobles masculino",
+      "description": "En Ronda (Málaga), Enrique Fernández y Eduardo Bayón superan a los cabezas de serie n.º 2 en cuartos (21-19, 23-21) y caen en la final ante Pablo y Javier Abián (21-4, 21-12).",
+      "source": "Documentación del club"
+    },
+    {
+      "id": "ceu-2017",
+      "date": "2017",
+      "title": "Subcampeones de España Universitarios en dobles masculino",
+      "description": "Enrique Fernández y Javier González, en Cartagena, ceden en la final ante la pareja de la UCAM (21-14, 21-15).",
+      "source": "Documentación del club"
+    },
+    {
+      "id": "honor",
+      "date": "Tras 2017",
+      "title": "Ascenso a la División de Honor",
+      "description": "La segunda posición en la Primera Nacional de Clubes da el derecho a competir en la máxima categoría por equipos.",
+      "source": "Documentación del club"
+    },
+    {
+      "id": "caceres-2026",
+      "date": "4 de mayo de 2026",
+      "title": "Cuatro oros en el Campeonato de España Sénior (Cáceres)",
+      "description": "Marta Fernández Polo, campeona individual y de dobles mixtos en 35-40 años, y plata en dobles femenino; su hermano Enrique Fernández Polo suma otros dos oros.",
+      "source": "Tribuna Valladolid"
+    }
+  ],
+  "photos": [],
+  "sources": [
+    {
+      "label": "Normativa del Trofeo Rector (Secretaría General, UVa)",
+      "url": "https://secretariageneral.uva.es/_documentos/IX.29.-Normativa-del-Trofeo-Rector.pdf"
+    },
+    {
+      "label": "Cursos y actividades 2025/26 (Servicio de Deportes, UVa)",
+      "url": "https://deportes.uva.es/export/sites/deportes/_documentos/Cursos-y-Actividades-2025-26.pdf"
+    },
+    {
+      "label": "Valladolid vuelve a coger el Campeonato de España Universitario (badminton.es)",
+      "url": "https://www.badminton.es/news/148539/Valladolid-vuelve-a-a-coger-el-Campeonato-de-Espana-Universitario"
+    },
+    {
+      "label": "Cuatro oros para la UVa en el Campeonato de España sénior de bádminton en Cáceres (Tribuna Valladolid)",
+      "url": "https://www.tribunavalladolid.com/noticias/443514/cuatro-oros-para-la-uva-en-el-campeonato-de-espana-senior-de-badminton-en-caceres"
+    },
+    {
+      "label": "Club Bádminton Valladolid (blog del club)",
+      "url": "https://blog.badmintonvalladolid.com/tag/club-badminton-valladolid/page/2/"
+    }
+  ]
 }

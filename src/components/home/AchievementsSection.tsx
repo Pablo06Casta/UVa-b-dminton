@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import achievementsJson from '../../data/achievements.json';
 import type { Achievement } from '../../types';
 import { SectionHeading, PendingTag } from '../ui';
@@ -28,6 +29,11 @@ export function AchievementsSection() {
             </li>
           ))}
         </ul>
+        {!hasPending && (
+          <p className="stats__note">
+            Datos recopilados de la documentación del club. Consulta la página <Link to="/historia">Historia</Link> para el detalle y las fuentes.
+          </p>
+        )}
         {hasPending && (
           <p className="stats__note">
             Las cifras se publicarán cuando el club facilite datos verificables. Hasta entonces no se muestra ningún

@@ -19,10 +19,9 @@ export function HistoryPage() {
       <div className="section">
         <div className="container container--narrow">
           {hasPending && (
-            <Notice title="Contenido histórico pendiente de completar">
-              El texto definitivo se incorporará cuando el club lo facilite, con fuentes que lo respalden. Mientras
-              tanto, cada apartado indica qué información hay que aportar. No se muestran fechas, victorias ni hitos
-              sin verificar.
+            <Notice title="Algunos apartados siguen pendientes">
+              El contenido procede de la documentación del club y de las fuentes citadas al final. Los apartados sin
+              datos verificados indican qué información falta; no se muestran fechas ni hitos sin respaldo.
             </Notice>
           )}
 
@@ -71,6 +70,22 @@ export function HistoryPage() {
               </div>
             )}
           </section>
+
+          {history.sources && history.sources.length > 0 && (
+            <section aria-labelledby="fuentes-title" className="history__block">
+              <h2 id="fuentes-title">Fuentes</h2>
+              <ul className="sources">
+                {history.sources.map((f) => (
+                  <li key={f.url}>
+                    <a href={f.url} target="_blank" rel="noopener noreferrer">
+                      {f.label}
+                      <span className="sr-only"> (se abre en una pestaña nueva)</span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
 
           <section aria-labelledby="fotos-title" className="history__block">
             <h2 id="fotos-title">Fotografías históricas</h2>

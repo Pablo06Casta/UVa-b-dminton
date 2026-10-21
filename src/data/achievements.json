@@ -2,29 +2,29 @@
   {
     "id": "campeonatos",
     "title": "Campeonatos disputados",
-    "value": null,
-    "description": "Número de campeonatos en los que ha participado el club.",
-    "status": "pending"
+    "value": "5 ámbitos",
+    "description": "Liga Nacional de Clubes, Campeonatos de España Absoluto, Universitario y Sénior, Campeonato de Europa Sénior y circuitos de formación (Máster, Top TTR y autonómicos).",
+    "status": "verified"
   },
   {
     "id": "podios",
     "title": "Podios conseguidos",
-    "value": null,
-    "description": "Podios del club en competiciones oficiales.",
-    "status": "pending"
+    "value": "10 podios",
+    "description": "En un único Campeonato Regional Absoluto de Castilla y León: 4 oros, 3 platas y 3 bronces.",
+    "status": "verified"
   },
   {
     "id": "medallas",
     "title": "Medallas y premios",
-    "value": null,
-    "description": "Medallas y reconocimientos deportivos.",
-    "status": "pending"
+    "value": "4 oros",
+    "description": "En el Campeonato de España Sénior de 2026 (Cáceres), además del bronce en el Campeonato de Europa Sénior, primera medalla de una española en esa categoría.",
+    "status": "verified"
   },
   {
     "id": "resultados",
     "title": "Resultados destacados",
-    "value": null,
-    "description": "Mejores resultados de la trayectoria del club.",
-    "status": "pending"
+    "value": "Subcampeones",
+    "description": "De España Absoluto de dobles masculino (Ronda, 2017) y ascenso a División de Honor tras el subcampeonato de la Primera Nacional de Clubes.",
+    "status": "verified"
   }
 ]

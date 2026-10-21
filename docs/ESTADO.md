@@ -57,10 +57,10 @@ Importante:
 | Elemento | Qué hay que aportar / hacer |
 | --- | --- |
 | Fotografía de grupo | Foto oficial del equipo para la portada (hoy: ilustración provisional, con aviso visible). |
-| Presentación del club | Texto real en `club.json › about` y foto complementaria. |
+| Presentación del club | Texto incorporado desde el informe del club (`club.json › about`). Falta una foto complementaria. |
 | Integrantes | Nombres, funciones y fotos, **con autorización** para publicarlos. Hoy: tarjetas de marcador. |
-| Logros | Datos verificables en `achievements.json` (hoy: "Dato pendiente"). |
-| Historia | Textos, hitos con fecha y fuente, fotos históricas (`history.json`). No se ha inventado nada. |
+| Logros | Incorporados desde el informe del club (`achievements.json`). Cifras no respaldadas (p. ej. «17 medallas») no se muestran. |
+| Historia | Cronología y fuentes incorporadas (`history.json`). Pendiente: origen/fundación del club y fotos históricas. |
 | Participación de la UVa | Torneos donde juegan personas de la UVa (`uva-torneos.json`), con nº de jugadores y nombres autorizados. |
 | Correo y redes | `club.json › email` y `socials`. Mientras estén vacíos no se muestran. |
 | Formulario | Servicio de envío (`VITE_CONTACT_ENDPOINT`), correo de destino y captcha. Hoy no envía. |

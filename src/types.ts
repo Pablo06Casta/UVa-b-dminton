@@ -72,6 +72,8 @@ export interface HistoryData {
   timeline: TimelineEntry[];
   /** Fotografías históricas (cuando se faciliten). */
   photos: { id: string; src: string; alt: string; caption: string; year?: string }[];
+  /** Fuentes consultadas. */
+  sources?: { label: string; url: string }[];
 }
 
 export type TournamentStatus = 'upcoming' | 'ongoing' | 'finished';
