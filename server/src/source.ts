@@ -32,6 +32,8 @@ export interface EventEntryRow {
   names: string[];
   status: 'confirmed' | 'reserve' | 'excluded' | 'unknown';
   label: string;
+  /** Cabeza de serie (nº) según la lista oficial, si la tiene. */
+  seed?: string;
 }
 
 /** Lo que el motor necesita de la fuente oficial. Las pruebas usan una copia simulada. */

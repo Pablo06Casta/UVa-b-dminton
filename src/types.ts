@@ -190,6 +190,9 @@ export interface TournamentEntry {
   player: string;
   event: string;
   status: 'admitted' | 'reserve' | 'excluded' | 'registered';
+  /** Cabeza de serie (nº) en la lista oficial y nº de inscripciones de la prueba. */
+  seed?: number;
+  total?: number;
 }
 
 /** Estimación estadística del avance del torneo (la calcula el servidor con el ritmo real de los partidos). */

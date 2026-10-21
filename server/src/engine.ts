@@ -464,9 +464,9 @@ export class SyncEngine {
     const rows = await this.src.eventEntries!(guid, ev.eventId, p);
     const linked = listPlayers(this.db).filter((x) => (this.db.prepare('select 1 from tournament_players where tournament_guid = ? and player_id = ?').get(guid, x.id) as unknown) !== undefined);
     this.db.prepare('delete from entries where tournament_guid = ? and event_id = ?').run(guid, ev.eventId);
-    const ins = this.db.prepare('insert or replace into entries(tournament_guid, event_id, event_name, player_id, status, label, seen_at) values(?,?,?,?,?,?,?)');
+    const ins = this.db.prepare('insert or replace into entries(tournament_guid, event_id, event_name, player_id, status, label, seed, event_total, seen_at) values(?,?,?,?,?,?,?,?,?)');
     for (const r of rows) {
-      for (const pl of linked) if (r.names.some((n) => findByNameLoose([pl], n))) ins.run(guid, ev.eventId, ev.name, pl.id, r.status, r.label, now.toISOString());
+      for (const pl of linked) if (r.names.some((n) => findByNameLoose([pl], n))) ins.run(guid, ev.eventId, ev.name, pl.id, r.status, r.label, /^\d+$/.test(r.seed ?? '') ? Number(r.seed) : null, rows.length, now.toISOString());
     }
     const next = st.next + 1;
     kvSet(this.db, key, { events: st.events, next, ...(next >= st.events.length ? { doneAt: now.toISOString() } : {}) } satisfies EntriesState);

@@ -71,7 +71,7 @@ export class OfficialLiveReaders implements LiveReaders, RosterReaders {
 
   async eventEntries(guid: string, eventId: number, p: Priority) {
     const { entries } = parseEventPage((await this.http.get(urls.event(guid, eventId), { priority: p })).body);
-    return entries.map((e) => ({ names: e.names, status: e.status as 'confirmed' | 'reserve' | 'excluded' | 'unknown', label: e.label }));
+    return entries.map((e) => ({ names: e.names, status: e.status as 'confirmed' | 'reserve' | 'excluded' | 'unknown', label: e.label, seed: e.seed }));
   }
 
   async rankingPlayers(url: string, p: Priority) {

@@ -3710,3 +3710,10 @@ abbr.est--big {
   gap: 8px 20px;
   margin: 10px 0 0;
 }
+.entry__seed {
+  font-weight: 800;
+}
+.entry__total {
+  font-weight: 500;
+  opacity: 0.8;
+}

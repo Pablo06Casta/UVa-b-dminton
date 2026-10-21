@@ -7,6 +7,9 @@ const label: Record<TournamentEntry['status'], string> = {
   registered: 'Inscrito (sin confirmar)',
 };
 
+/** «IM-N4» → «IM · N4»: prueba y nivel del torneo (los Máster n1-n4 reúnen dos torneos en el mismo fin de semana). */
+export const eventLabel = (event: string) => event.replace(/^([A-Za-z]{2})\s*[-–]\s*(.+)$/, '$1 · $2');
+
 /** Resumen corto para las tarjetas: «3 admitidas · 1 en reserva». */
 export function entrySummary(entries?: TournamentEntry[]): string | undefined {
   if (!entries || entries.length === 0) return undefined;
@@ -33,7 +36,11 @@ export function EntriesList({ entries, note = true }: { entries: TournamentEntry
             <span className="entries__chips">
               {list.map((e) => (
                 <span key={e.event} className={`entry entry--${e.status}`}>
-                  {e.event} · {label[e.status]}
+                  {eventLabel(e.event)}
+                  {e.seed ? <b className="entry__seed"> · Cabeza de serie {e.seed}</b> : null}
+                  {' · '}
+                  {label[e.status]}
+                  {e.total ? <small className="entry__total"> · {e.total} inscritos</small> : null}
                 </span>
               ))}
             </span>
@@ -42,8 +49,8 @@ export function EntriesList({ entries, note = true }: { entries: TournamentEntry
       </ul>
       {note && (
         <p className="entries__note">
-          Según las listas oficiales de inscritos, que se revisan cada pocas horas. Los cuadros y el orden de juego se publican más cerca del torneo y aparecerán aquí
-          automáticamente.
+          Según las listas oficiales de inscritos, que se revisan cada hora aproximadamente. El número de cabeza de serie es el que fija la organización según el ranking.
+          Los cuadros y el orden de juego se publican más cerca del torneo y aparecerán aquí automáticamente.
         </p>
       )}
     </div>

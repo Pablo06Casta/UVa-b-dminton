@@ -21,7 +21,7 @@ function world() {
   src.events = (async () => (reads.push('events'), [{ eventId: 1, name: 'IM' }, { eventId: 3, name: 'DM' }, { eventId: 22, name: 'DX' }])) as never;
   src.eventEntries = (async (_g: string, id: number) => {
     reads.push(`event:${id}`);
-    if (id === 1) return [{ names: ['Ana Prueba'], status: 'confirmed', label: 'Main draw' }, { names: ['Rival Uno'], status: 'confirmed', label: 'Main draw' }];
+    if (id === 1) return [{ names: ['Ana Prueba'], status: 'confirmed', label: 'Main draw', seed: '4' }, { names: ['Rival Uno'], status: 'confirmed', label: 'Main draw' }];
     if (id === 3) return [{ names: ['Ana Prueba', 'Socio Menor'], status: 'reserve', label: 'Reserve' }];
     return [{ names: ['Ana P.'], status: 'unknown', label: '' }, { names: ['Luis Oculto'], status: 'confirmed', label: 'Main draw' }];
   }) as never;
@@ -43,8 +43,8 @@ describe('inscripción y admisión en torneos futuros', () => {
     expect(reads).toEqual(['events', 'event:1', 'event:3', 'event:22']); // una sola vuelta, una prueba por tick
     const [t] = buildPublicState(db, NOW).tournaments;
     expect(t.entries).toEqual([
-      { player: 'Ana Prueba', event: 'DM', status: 'reserve' },
-      { player: 'Ana Prueba', event: 'IM', status: 'admitted' },
+      { player: 'Ana Prueba', event: 'DM', status: 'reserve', total: 1 },
+      { player: 'Ana Prueba', event: 'IM', status: 'admitted', seed: 4, total: 2 }, // cabeza de serie nº 4 y 2 inscripciones en la prueba
     ]);
     // La pareja, los rivales y las personas sin consentimiento no se guardan ni se publican.
     expect(JSON.stringify(t)).not.toMatch(/Socio Menor|Rival Uno|Luis Oculto/);

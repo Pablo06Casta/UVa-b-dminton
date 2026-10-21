@@ -72,6 +72,9 @@ export interface PublicEntry {
   event: string;
   /** admitted = admitido en cuadro o previa; reserve = lista de reserva; excluded = baja o no admitido; registered = inscrito, sin confirmar. */
   status: 'admitted' | 'reserve' | 'excluded' | 'registered';
+  /** Cabeza de serie (nº) según la lista oficial, y cuántas inscripciones tiene la prueba. */
+  seed?: number;
+  total?: number;
 }
 
 const entryStatus = (s: string): PublicEntry['status'] => (s === 'confirmed' ? 'admitted' : s === 'reserve' ? 'reserve' : s === 'excluded' ? 'excluded' : 'registered');
@@ -299,10 +302,10 @@ export function buildPublicState(db: Db, now = new Date()): PublicState {
       progress: est ? toProgress(est) : undefined,
       draws,
       results: uvaResults(draws),
-      entries: (db.prepare('select player_id, event_name, status from entries where tournament_guid = ?').all(t.guid) as unknown as { player_id: number; event_name: string; status: string }[])
+      entries: (db.prepare('select player_id, event_name, status, seed, event_total from entries where tournament_guid = ?').all(t.guid) as unknown as { player_id: number; event_name: string; status: string; seed: number | null; event_total: number | null }[])
         .flatMap((e) => {
           const pl = publicPlayers.get(e.player_id);
-          return pl ? [{ player: pl.name, event: e.event_name, status: entryStatus(e.status) }] : [];
+          return pl ? [{ player: pl.name, event: e.event_name, status: entryStatus(e.status), ...(e.seed ? { seed: e.seed } : {}), ...(e.event_total ? { total: e.event_total } : {}) }] : [];
         })
         .sort((a, b) => a.player.localeCompare(b.player, 'es') || a.event.localeCompare(b.event, 'es')),
       checkedAt,
