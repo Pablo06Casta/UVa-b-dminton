@@ -76,6 +76,21 @@ describe('lista del club construida sola', () => {
     expect(jobs).not.toContain('roster');
     expect(e.plan(new Date(NOW.getTime() + 25 * 3600_000)).map((j) => j.kind)).toContain('roster');
   });
+  it('las personas de HIDDEN_PLAYERS no se publican: ni al crearlas ni si ya estaban visibles', async () => {
+    const db = memDb();
+    settings.hiddenPlayers = ['Ana Prueba'];
+    const prev = createPlayer(db, { name: 'Luis Ejemplo', public: true, consentBy: 'Él mismo', consentAt: '2026-10-01' });
+    const engine = new SyncEngine(db, source(), () => NOW);
+    await engine.tick(NOW);
+    const by = (n: string) => listPlayers(db).find((p) => p.name.startsWith(n))!;
+    expect(by('Ana Prueba').public).toBe(false);
+    expect(prev.public).toBe(true);
+    settings.hiddenPlayers = ['Luis Ejemplo'];
+    const e2 = new SyncEngine(db, source(), () => NOW);
+    await e2.tick(NOW);
+    expect(by('Luis Ejemplo').public).toBe(false);
+    settings.hiddenPlayers = [];
+  });
 });
 
 describe('nombre corto del torneo frente al nombre completo del ranking', () => {

@@ -46,6 +46,8 @@ export const settings = {
   autoRosterHours: num('AUTO_ROSTER_HOURS', 24),
   /** «declared»: los jugadores del club encontrados quedan visibles (consentimiento declarado por la administración). «hidden»: ocultos hasta registrar su consentimiento. */
   autoRosterConsent: (process.env.AUTO_ROSTER_CONSENT === 'declared' ? 'declared' : 'hidden') as 'declared' | 'hidden',
+  /** Personas del club que NO deben publicarse (sin consentimiento), separadas por «;». Se ocultan siempre, aunque ya estén en la lista. */
+  hiddenPlayers: (process.env.HIDDEN_PLAYERS ?? 'Clara Campos').split(';').map((x) => x.trim()).filter(Boolean),
   /** Cuánto se reutiliza el estado público ya calculado (ms). Se descarta antes si cambia algo. 0 = sin caché. */
   publicCacheMs: num(process.env.PUBLIC_CACHE_MS, process.env.VITEST ? 0 : 10_000),
   /** Pasado este tiempo sin una lectura correcta, los datos se marcan como antiguos. */

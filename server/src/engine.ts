@@ -193,6 +193,7 @@ export class SyncEngine {
     if (!this.relinked) {
       this.relinked = true;
       try {
+        this.enforceHidden();
         this.relinkEntrants();
         // Las estimaciones guardadas pueden venir de una versión anterior: se recalculan con lo ya guardado (sin peticiones).
         for (const r of this.db.prepare('select distinct tournament_guid g, date d from slots').all() as unknown as { g: string; d: string }[]) this.recomputeEstimate(r.g, r.d, now);
@@ -245,6 +246,14 @@ export class SyncEngine {
   /* Trabajos                                                          */
   /* ---------------------------------------------------------------- */
 
+  /** Oculta (y retira los avisos de) las personas de HIDDEN_PLAYERS: sin consentimiento no se publica nada suyo. */
+  private enforceHidden() {
+    for (const n of settings.hiddenPlayers) {
+      const p = matchRoster(listPlayers(this.db), n);
+      if (p?.public) updatePlayer(this.db, p.id, { public: false, consentBy: null, consentAt: null });
+    }
+  }
+
   /**
    * Construye la lista del club sola: lee las categorías del ranking oficial, se queda con quienes figuran con el club de la UVa
    * y busca el enlace de su perfil. Quien ya está en la lista no se duplica. Los menores nunca se publican sin consentimiento familiar.
@@ -269,7 +278,7 @@ export class SyncEngine {
       const age = c.birthYear === undefined ? undefined : Number(today.slice(0, 4)) - c.birthYear;
       const isMinor = age !== undefined && age < 18;
       // Sin año de nacimiento no se puede descartar que sea menor: queda oculto hasta que la administración lo revise.
-      const publish = settings.autoRosterConsent === 'declared' && age !== undefined && !isMinor;
+      const publish = settings.autoRosterConsent === 'declared' && age !== undefined && !isMinor && !settings.hiddenPlayers.some((n) => matchRoster([{ name: n } as Player], name));
       createPlayer(this.db, {
         name,
         profile: profile ?? null,
