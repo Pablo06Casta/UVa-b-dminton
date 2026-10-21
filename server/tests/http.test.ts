@@ -100,3 +100,16 @@ describe('cliente HTTP prudente', () => {
     expect((calls[0].init?.headers as Record<string, string>)['User-Agent']).toBe('prueba');
   });
 });
+
+describe('caché acotada', () => {
+  it('no crece sin límite: descarta las copias más antiguas al pasar de unos 24 MB', async () => {
+    const big = 'x'.repeat(5_000_000);
+    const { client } = setup([ok(big)]);
+    for (let i = 0; i < 8; i++) await client.get(`/p${i}`);
+    // las primeras ya no están en caché (una petición con antigüedad mínima vuelve a la red)
+    const first = await client.get('/p0', { minAgeMs: 3_600_000 });
+    expect(first.fromCache).toBe(false);
+    const last = await client.get('/p7', { minAgeMs: 3_600_000 });
+    expect(last.fromCache).toBe(true);
+  });
+});

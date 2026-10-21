@@ -44,6 +44,14 @@ Importante:
   autorización de la FESBA / Federación de Castilla y León. **No se ha ejecutado contra badminton.es en vivo** más que el calendario.
 - Requiere alojar el servidor (ver `server/README.md`) y definir `VITE_API_URL` en la web.
 
+## Estimación, cuadros y rendimiento
+
+- Estimación calibrada con 1.299 partidos reales y probada con 10 torneos terminados (ver `docs/ESTIMACION.md`).
+- Directo: «En juego ahora», agenda por horas (hora estimada **EST**), fin estimado del torneo, y grupos (clasificación + partidos)
+  y esquema del cuadro final por prueba, todo actualizado cada minuto si hay partidos hoy.
+- Rendimiento: lectura de cuadros solo donde juega el club tras la primera pasada; estado público calculado una vez (caché, ETag y 304);
+  caché HTTP acotada; web dividida por páginas.
+
 ## Pendiente
 
 | Elemento | Qué hay que aportar / hacer |

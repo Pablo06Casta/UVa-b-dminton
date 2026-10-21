@@ -85,7 +85,7 @@ describe('planificación y ciclo completo', () => {
     expect(src.calls.filter((c) => c === 'draws')).toHaveLength(1);
   });
 
-  it('frecuencias: orden de juego cada 5 min en jornada; cuadros cada 20 min; nada tras el torneo', async () => {
+  it('frecuencias: orden de juego cada 15 min en jornada; cuadros cada 10 min; nada tras el torneo', async () => {
     const db = memDb();
     const src = new FakeSource();
     createPlayer(db, { name: 'Ana Prueba', profile: PROFILE });
@@ -96,9 +96,9 @@ describe('planificación y ciclo completo', () => {
     // Orden de ejecución: descubrimiento (min 0), información (1), cuadros (2), orden de juego (3).
     expect(dayAt(6)).toBe(false); // se leyó hace poco
     expect(dayAt(3 + settings.intervals.live.day / 60_000)).toBe(true);
-    expect(drawsAt(15)).toBe(false);
-    expect(drawsAt(21)).toBe(false);
-    expect(drawsAt(22)).toBe(true); // cuadros cada 20 min
+    expect(drawsAt(8)).toBe(false);
+    expect(drawsAt(11)).toBe(false);
+    expect(drawsAt(12)).toBe(true); // cuadros cada 10 min
     const nextWeek = new Date(NOW.getTime() + 10 * 86_400_000);
     expect(e.plan(nextWeek).filter((j) => j.kind !== 'discover')).toEqual([]);
   });
@@ -116,9 +116,9 @@ describe('planificación y ciclo completo', () => {
     await e.tick(min(19));
     expect(e.lastJob?.ok).toBe(false);
     expect(db.prepare('select count(*) n from matches').get()).toEqual({ n: 1 }); // datos anteriores intactos
-    const retried = src.calls.length;
-    await e.tick(min(19) /* misma hora: aún en espera */);
-    expect(src.calls.length).toBe(retried);
+    const retried = src.calls.filter((c) => c === 'day').length;
+    await e.tick(min(19) /* misma hora: el trabajo fallido sigue en espera (otros trabajos pendientes sí pueden ejecutarse) */);
+    expect(src.calls.filter((c) => c === 'day').length).toBe(retried);
     expect(db.prepare('select last_error from tournaments').get()).toEqual({ last_error: 'HTTP 503' });
   });
 

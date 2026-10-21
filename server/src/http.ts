@@ -83,6 +83,7 @@ interface Job {
 
 const MAX_ATTEMPTS = 3;
 const BREAKER_THRESHOLD = 5;
+const MAX_CACHE_BYTES = 24_000_000;
 
 /**
  * Cliente HTTP prudente:
@@ -98,6 +99,7 @@ export class PoliteClient {
   private pumping = false;
   private lastAt = 0;
   private cache = new Map<string, CacheEntry>();
+  private cacheBytes = 0;
   private inflight = new Map<string, Promise<FetchResult>>();
   private cookies = new Map<string, Map<string, string>>();
   private failures = 0;
@@ -201,7 +203,7 @@ export class PoliteClient {
         }
         const hash = hashString(body);
         const changed = !prev || prev.hash !== hash;
-        this.cache.set(key, { body, hash, fetchedAt: this.now() });
+        this.remember(key, { body, hash, fetchedAt: this.now() });
         this.failures = 0;
         this.openings = 0;
         this.log({ at: new Date().toISOString(), url, status: res.status, ms, bytes: body.length, changed });
@@ -218,6 +220,19 @@ export class PoliteClient {
       this.openUntil = this.now() + Math.min(30 * 60_000, 5 * 60_000 * 2 ** (this.openings - 1));
     }
     throw last instanceof Error ? last : new Error(String(last));
+  }
+
+  /** Guarda la copia más reciente de cada dirección, sin pasar de ~24 MB en total (se descartan las más antiguas). */
+  private remember(key: string, e: CacheEntry) {
+    this.cache.delete(key);
+    this.cache.set(key, e);
+    this.cacheBytes = 0;
+    for (const v of this.cache.values()) this.cacheBytes += v.body.length;
+    for (const k of this.cache.keys()) {
+      if (this.cacheBytes <= MAX_CACHE_BYTES || this.cache.size <= 1) break;
+      this.cacheBytes -= this.cache.get(k)!.body.length;
+      this.cache.delete(k);
+    }
   }
 
   private storeCookies(host: string, headers: Headers) {
