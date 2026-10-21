@@ -58,8 +58,8 @@ export const settings = {
   drawNames: (process.env.PUBLIC_DRAW_NAMES ?? 'initials') as 'initials' | 'full' | 'off',
   /** Avisos push (VAPID). Sin claves, los avisos quedan desactivados. */
   vapid: { publicKey: process.env.VAPID_PUBLIC_KEY ?? '', privateKey: process.env.VAPID_PRIVATE_KEY ?? '', subject: process.env.VAPID_SUBJECT ?? '' },
-  defaultMatchMin: num(process.env.DEFAULT_MATCH_MINUTES, 35),
-  changeoverMin: num(process.env.CHANGEOVER_MINUTES, 4),
+  defaultMatchMin: process.env.DEFAULT_MATCH_MINUTES ? num(process.env.DEFAULT_MATCH_MINUTES, 0) || undefined : undefined,
+  changeoverMin: num(process.env.CHANGEOVER_MINUTES, 3),
   /** Qué se publica de los rivales: nada o su nombre. Por defecto, nada (datos de terceros, posibles menores). */
   opponents: (process.env.PUBLIC_OPPONENTS ?? 'none') as OpponentPolicy,
   /** Limita las consultas a la API pública por IP y minuto. */

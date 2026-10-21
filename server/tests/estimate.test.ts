@@ -50,7 +50,9 @@ describe('estimación del fin del torneo', () => {
       slot(5, { court: '1', plannedUtc: at(100) }),
     ];
     const e = estimate(slots, NOW);
-    expect(Date.parse(e.starts.s5)).toBeGreaterThan(NOW.getTime() + 30 * 60_000); // empieza cuando se libera la pista 1
+    // Empieza cuando se libera la pista 1: no ya, y no antes de que acabe lo que lleva jugado.
+    expect(Date.parse(e.starts.s5)).toBeGreaterThan(NOW.getTime() + 8 * 60_000);
+    expect(Date.parse(e.starts.s5)).toBeLessThan(NOW.getTime() + 60 * 60_000);
   });
 
   it('da un margen (P10–P90) que contiene la estimación', () => {
@@ -93,8 +95,10 @@ describe('horas estimadas sin pistas publicadas', () => {
     const slots: Slot[] = [];
     for (let r = 0; r < 10; r++) for (let c = 0; c < 4; c++) slots.push(slot(`m${r}-${c}`, T(7, 35 * r)));
     const e = estimate(slots, new Date(Date.UTC(2026, 9, 21, 10)));
-    for (const s of slots) expect(e.starts[s.key]).toBe(s.plannedUtc);
     expect(e.courts).toBe(4);
+    // Los primeros partidos empiezan a su hora programada; los siguientes se retrasan solo lo que dicta el ritmo (sin una cola de horas).
+    for (const s of slots.slice(0, 4)) expect(e.starts[s.key]).toBe(s.plannedUtc);
+    for (const s of slots) expect(Date.parse(e.starts[s.key]) - Date.parse(s.plannedUtc!)).toBeLessThan(45 * 60_000);
   });
 
   it('con el torneo en marcha, los retrasos reales sí se aplican, pero no más de lo razonable', () => {

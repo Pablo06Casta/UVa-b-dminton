@@ -81,8 +81,8 @@ describe('torneos y partidos introducidos por el club', () => {
     setManualProgress(db, guid, { total: 40, finished: 16, live: 4, courts: 4, avgDurationMin: 30, delayMin: 20 }, NOW);
     const [t] = buildPublicState(db, NOW).tournaments;
     expect(t.progress).toMatchObject({ total: 40, finished: 16, live: 4, remaining: 20, courts: 4, basis: 'manual', done: false });
-    // 4 en juego (15 min) + 5 rondas × (30 + 4) = 185 min desde las 10:30 locales
-    expect(Date.parse(t.progress!.estimatedEnd!) - NOW.getTime()).toBe(185 * 60_000);
+    // 4 en juego (15 min) + 5 rondas × (30 + 3) = 180 min desde las 10:30 locales
+    expect(Date.parse(t.progress!.estimatedEnd!) - NOW.getTime()).toBe(180 * 60_000);
     expect(Date.parse(t.progress!.estimatedEndLow!)).toBeLessThan(Date.parse(t.progress!.estimatedEnd!));
     expect(Date.parse(t.progress!.estimatedEndHigh!)).toBeGreaterThan(Date.parse(t.progress!.estimatedEnd!));
     expect(t.matches[0].estimatedStart).toBe('2026-11-07T11:20:00.000Z'); // 12:00 programado + 20 min de retraso

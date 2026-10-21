@@ -22,15 +22,47 @@ export interface Slot {
   finishedSeenAt?: string;
 }
 
+/**
+ * Valores de partida (a priori) medidos en 1.299 partidos reales de 11 jornadas de torneos absolutos españoles (2026):
+ * duración media por prueba y dispersión, y proporción de W.O. Se usan hasta que el torneo en curso aporta datos propios, y
+ * después se mezclan con ellos (ver `estimate`). Se pueden sustituir (las pruebas lo hacen para no «ver» la jornada que evalúan).
+ */
+export interface Priors {
+  /** Minutos de duración media por prueba (IM, IF, DM, DF, DX). */
+  mean: Record<string, number>;
+  /** Duración media de cualquier prueba. */
+  globalMean: number;
+  /** Coeficiente de variación de la duración de un partido (desviación / media). */
+  cv: number;
+  /** Proporción de W.O. («no hay partido»). */
+  walkover: number;
+  /** Variación relativa del ritmo medio entre torneos distintos. */
+  paceTau: number;
+}
+
+export const defaultPriors: Priors = {
+  mean: { IM: 28.3, IF: 26.2, DM: 31.2, DF: 30.9, DX: 29.5 },
+  globalMean: 28.9,
+  cv: 0.32,
+  walkover: 0.074,
+  paceTau: 0.076,
+};
+
 export interface EstimateConfig {
-  /** Duración que se supone si aún no hay partidos terminados de los que aprender. */
-  defaultMatchMin: number;
+  /** Si se indica, escala los valores a priori para que la duración media sea esta (ajuste manual de la administración). */
+  defaultMatchMin?: number;
   /** Tiempo entre un partido y el siguiente en la misma pista. */
   changeoverMin: number;
   simulations: number;
+  priors?: Priors;
+  /** Ensancha o estrecha el margen probable (calibrado con las pruebas). */
+  spread?: number;
+  /** Percentil de la simulación que se da como hora de fin / de inicio (0,5 = mediana; algo más alto = más prudente). */
+  endQuantile?: number;
+  startQuantile?: number;
 }
 
-export const defaultEstimateConfig: EstimateConfig = { defaultMatchMin: 35, changeoverMin: 4, simulations: 300 };
+export const defaultEstimateConfig: EstimateConfig = { changeoverMin: 3, simulations: 400, priors: defaultPriors, spread: 1.3, endQuantile: 0.65, startQuantile: 0.6 };
 
 export interface Estimate {
   asOf: string;
@@ -62,11 +94,8 @@ const median = (xs: number[]) => {
   const m = Math.floor(s.length / 2);
   return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
 };
-const mean = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : undefined);
-const quantile = (xs: number[], q: number) => {
-  const s = [...xs].sort((a, b) => a - b);
-  return s[Math.min(s.length - 1, Math.max(0, Math.round(q * (s.length - 1))))];
-};
+/** Cuantil de un vector ya ordenado. */
+const q = (sorted: ArrayLike<number>, p: number) => sorted[Math.min(sorted.length - 1, Math.max(0, Math.round(p * (sorted.length - 1))))];
 const group = (e?: string) => (e ?? '').slice(0, 2).toUpperCase() || 'XX';
 
 /** Generador pseudoaleatorio con semilla: la misma entrada da siempre la misma estimación. */
@@ -80,8 +109,30 @@ function rng(seed: number) {
   };
 }
 
+/** Normal estándar (Box–Muller). */
+const normal = (rand: () => number) => Math.sqrt(-2 * Math.log(1 - rand())) * Math.cos(2 * Math.PI * rand());
+
+const WALKOVER_WEIGHT = 30; // «partidos virtuales» que pesa la proporción de W.O. a priori
+
+/**
+ * Estima el avance del día: hora de inicio de cada partido pendiente y hora de fin.
+ *
+ * Modelo (todo se aprende de partidos reales, ver `Priors` y `tests/backtest`):
+ *  - La duración de un partido es log-normal; su media depende de la prueba (individual/dobles…) y del ritmo del torneo.
+ *  - El ritmo del torneo (rápido/lento frente a la media) se estima con los partidos ya terminados, mezclado con lo esperable
+ *    (bayesiano): con pocos datos manda lo a priori, con muchos mandan los observados. Su incertidumbre entra en la simulación.
+ *  - Algunos partidos acaban en W.O. (duran 0): su proporción también se aprende del torneo.
+ *  - Un partido en juego no puede acabar antes de lo que ya lleva jugado (se condiciona a eso).
+ *  - Cada pista atiende sus partidos en orden y no empieza antes de la hora programada. Sin pistas publicadas, su número se
+ *    deduce de cuántos partidos coinciden a la misma hora programada.
+ *  - Se repite la jornada `simulations` veces; la hora estimada es la mediana y el margen, los percentiles 10-90.
+ */
 export function estimate(slots: Slot[], now: Date, cfg: EstimateConfig = defaultEstimateConfig): Estimate {
   const nowMs = now.getTime();
+  const base0 = cfg.priors ?? defaultPriors;
+  const scale = cfg.defaultMatchMin ? cfg.defaultMatchMin / base0.globalMean : 1;
+  const priorMean = (e?: string) => (base0.mean[group(e)] ?? base0.globalMean) * scale;
+
   const isDone = (s: Slot) => s.status === 'finished' || s.status === 'walkover' || s.status === 'retired';
   const finished = slots.filter(isDone);
   const live = slots.filter((s) => s.status === 'on_court');
@@ -89,17 +140,20 @@ export function estimate(slots: Slot[], now: Date, cfg: EstimateConfig = default
     .filter((s) => !isDone(s) && s.status !== 'on_court')
     .sort((a, b) => (a.plannedUtc ?? '').localeCompare(b.plannedUtc ?? '') || a.orderIdx - b.orderIdx);
 
-  // Duraciones reales de partidos disputados (los W.O. no cuentan).
+  // ---- Lo observado -------------------------------------------------------------------------------------------------
   const played = finished.filter((s) => s.status !== 'walkover' && s.durationMin && s.durationMin > 0);
-  const all = played.map((s) => s.durationMin!);
-  const byGroup = new Map<string, number[]>();
-  for (const s of played) byGroup.set(group(s.event), [...(byGroup.get(group(s.event)) ?? []), s.durationMin!]);
-  const samplesFor = (e?: string) => {
-    const g = byGroup.get(group(e));
-    return g && g.length >= 4 ? g : all;
-  };
-  const meanFor = (e?: string) => mean(samplesFor(e)) ?? cfg.defaultMatchMin;
-  const basis: Estimate['basis'] = all.length > 0 ? 'observed' : 'default';
+  const n = played.length;
+  const sumObs = played.reduce((a, s) => a + s.durationMin!, 0);
+  const sumExp = played.reduce((a, s) => a + priorMean(s.event), 0);
+  const ratio = n > 0 ? sumObs / sumExp : 1;
+  const k = (base0.cv / base0.paceTau) ** 2; // peso de lo a priori frente a los partidos observados
+  const pace = (k + n * ratio) / (k + n); // ritmo del torneo: 1 = como la media
+  const paceSd = 1 / Math.sqrt(1 / base0.paceTau ** 2 + n / base0.cv ** 2); // incertidumbre relativa del ritmo
+  const resolved = finished.length;
+  const walkovers = finished.filter((s) => s.status === 'walkover').length;
+  const pWalkover = (walkovers + WALKOVER_WEIGHT * base0.walkover) / (resolved + WALKOVER_WEIGHT);
+  const sigma = Math.sqrt(Math.log(1 + base0.cv ** 2));
+  const basis: Estimate['basis'] = n > 0 ? 'observed' : 'default';
 
   // Retraso: inicio observado (entre la lectura anterior y la que lo vio en pista) frente a la hora programada.
   const delays: number[] = [];
@@ -121,20 +175,23 @@ export function estimate(slots: Slot[], now: Date, cfg: EstimateConfig = default
   }
   const plannedSlotMin = median(gaps);
 
+  // Pistas: las publicadas y, como mínimo, cuántos partidos coinciden a la misma hora programada.
   const courtIds = new Set(slots.map((s) => s.court).filter((c): c is string => !!c));
-  // Sin pistas publicadas, se deduce cuántas hay de cuántos partidos coinciden a la misma hora programada.
   const concurrent = new Map<string, number>();
   for (const s of slots) if (s.plannedUtc) concurrent.set(s.plannedUtc, (concurrent.get(s.plannedUtc) ?? 0) + 1);
-  const inferredCourts = Math.max(1, ...concurrent.values());
-  const courts = courtIds.size > 0 ? courtIds.size : inferredCourts;
+  const inferred = Math.max(1, ...concurrent.values());
+  // Pistas por adelantado: solo si TODOS los pendientes con partido real (no W.O.) la traen.
+  const knownCourt = (s: Slot) => !!s.court && courtIds.has(s.court);
+  const preassigned = pending.length > 0 && pending.filter((s) => s.status !== 'walkover').every(knownCourt);
+  const courts = preassigned ? courtIds.size : Math.max(courtIds.size, inferred);
 
-  const base: Estimate = {
+  const result: Estimate = {
     asOf: now.toISOString(),
     total: slots.length,
     finished: finished.length,
     live: live.length,
     remaining: pending.length,
-    avgDurationMin: mean(all) === undefined ? undefined : Math.round(mean(all)! * 10) / 10,
+    avgDurationMin: n > 0 ? Math.round((sumObs / n) * 10) / 10 : undefined,
     plannedSlotMin: plannedSlotMin === undefined ? undefined : Math.round(plannedSlotMin),
     delayMin: delayMin === undefined ? undefined : Math.round(delayMin),
     courts,
@@ -143,74 +200,94 @@ export function estimate(slots: Slot[], now: Date, cfg: EstimateConfig = default
     starts: {},
   };
 
-  if (base.done) {
+  if (result.done) {
     const last = finished.map((s) => s.finishedSeenAt).filter((x): x is string => !!x).sort().at(-1);
-    return { ...base, estimatedEnd: last };
+    return { ...result, estimatedEnd: last };
   }
-  if (slots.length === 0) return base;
+  if (slots.length === 0) return result;
 
-  // Simulación: cada pista queda libre cuando acaba su partido en juego. Si TODOS los pendientes traen pista (pistas
-  // preasignadas) cada uno espera a la suya; si no (pista asignada al llamar el partido), entra en la primera libre.
-  // Respeta la hora programada como hora mínima de inicio.
-  const courtList = courtIds.size ? [...courtIds] : Array.from({ length: courts }, (_, i) => `#${i + 1}`);
-  const preassigned = pending.length > 0 && pending.every((s) => s.court && courtIds.has(s.court));
-  // Sin nada observado (torneo sin empezar), el orden de juego ya trae las horas: cada partido empieza a su hora programada y el
-  // torneo acaba cuando termina el último programado. No se inventa una cola por pistas.
-  const notStarted = live.length === 0 && finished.length === 0;
-  const simulate = (draw: (e?: string) => number) => {
-    if (notStarted && pending.every((s) => s.plannedUtc)) {
-      const starts: Record<string, number> = {};
-      let last = nowMs;
-      for (const s of pending) {
-        const start = Math.max(Date.parse(s.plannedUtc!), nowMs);
-        starts[s.key] = start;
-        last = Math.max(last, start + draw(s.event) * MIN);
-      }
-      return { starts, end: last };
-    }
-    const free = new Map<string, number>(courtList.map((c) => [c, nowMs]));
-    const earliest = () => [...free.entries()].sort((a, b) => a[1] - b[1])[0][0];
-    for (const s of live) {
-      const startedAt = s.startedSeenAt ? Date.parse(s.startedSeenAt) : nowMs;
-      const end = Math.max(nowMs + 2 * MIN, startedAt + draw(s.event) * MIN); // un partido en juego no acaba "ya mismo" ni en el pasado
-      const c = s.court && free.has(s.court) ? s.court : earliest();
-      free.set(c, Math.max(free.get(c)!, end));
-    }
-    const starts: Record<string, number> = {};
-    let last = Math.max(nowMs, ...free.values());
-    for (const s of pending) {
-      const c = preassigned && s.court && free.has(s.court) ? s.court : earliest();
-      const freeAt = free.get(c)!;
-      const planned = s.plannedUtc ? Date.parse(s.plannedUtc) : 0;
-      const start = Math.max(freeAt + (freeAt > nowMs ? cfg.changeoverMin * MIN : 0), planned, nowMs);
-      const end = start + draw(s.event) * MIN;
-      starts[s.key] = start;
-      free.set(c, end);
-      last = Math.max(last, end);
-    }
-    return { starts, end: last };
+  // ---- Simulación ---------------------------------------------------------------------------------------------------
+  const courtIndex = new Map<string, number>();
+  for (const c of courtIds) courtIndex.set(c, courtIndex.size);
+  const nCourts = Math.max(courts, courtIndex.size, 1);
+  const free0 = new Float64Array(nCourts).fill(nowMs);
+  const earliest = (free: Float64Array) => {
+    let b = 0;
+    for (let i = 1; i < free.length; i++) if (free[i] < free[b]) b = i;
+    return b;
   };
 
-  const det = simulate((e) => meanFor(e));
-  // Mientras no haya empezado ningún partido no hay nada observado: la hora estimada es la programada (nunca más tarde
-  // por una cola imaginaria). Con el torneo en marcha, la simulación aplica los retrasos reales.
+  const liveInfo = live.map((s) => {
+    const seen = s.startedSeenAt ? Date.parse(s.startedSeenAt) : nowMs;
+    const prev = s.prevPollAt ? Date.parse(s.prevPollAt) : seen;
+    const startedAt = Math.min(nowMs, (seen + prev) / 2);
+    return { mean: priorMean(s.event), elapsed: Math.max(0, (nowMs - startedAt) / MIN), court: s.court ? courtIndex.get(s.court) : undefined };
+  });
+  const pend = pending.map((s) => ({
+    key: s.key,
+    planned: s.plannedUtc ? Date.parse(s.plannedUtc) : 0,
+    mean: priorMean(s.event),
+    court: preassigned && s.court ? courtIndex.get(s.court) ?? -1 : -1,
+  }));
 
-  const rand = rng(Math.floor(nowMs / (5 * MIN)) + slots.length);
-  const ends: number[] = [];
-  for (let n = 0; n < cfg.simulations; n++) {
-    ends.push(
-      simulate((e) => {
-        const samples = samplesFor(e);
-        if (samples.length >= 3) return samples[Math.floor(rand() * samples.length)];
-        return meanFor(e) * (0.75 + rand() * 0.5);
-      }).end,
-    );
+  const sims = Math.max(50, cfg.simulations);
+  const rand = rng(Math.floor(nowMs / (5 * MIN)) * 31 + slots.length);
+  const ends = new Float64Array(sims);
+  const startsBy = pend.map(() => new Float64Array(sims));
+  const changeover = cfg.changeoverMin * MIN;
+  const free = new Float64Array(nCourts);
+
+  for (let r = 0; r < sims; r++) {
+    free.set(free0);
+    const paceS = pace * Math.exp(paceSd * normal(rand) - (paceSd * paceSd) / 2);
+    const draw = (mean: number) => {
+      const m = Math.max(10, Math.min(90, mean * paceS));
+      return Math.max(10, Math.min(95, m * Math.exp(sigma * normal(rand) - (sigma * sigma) / 2)));
+    };
+    let last = nowMs;
+    for (const l of liveInfo) {
+      const lc = l.court !== undefined ? l.court : earliest(free);
+      let d = draw(l.mean);
+      for (let t = 0; t < 8 && d <= l.elapsed; t++) d = draw(l.mean); // no acaba antes de lo que ya lleva jugado
+      if (d <= l.elapsed) d = l.elapsed + 3 + rand() * 6;
+      const end = nowMs + Math.max(1, d - l.elapsed) * MIN;
+      free[lc] = Math.max(free[lc], end);
+      last = Math.max(last, end);
+    }
+    for (let i = 0; i < pend.length; i++) {
+      const p = pend[i];
+      const c = p.court >= 0 ? p.court : earliest(free);
+      const freeAt = free[c];
+      if (rand() < pWalkover) {
+        // W.O.: se resuelve a la hora programada (o ya) sin ocupar pista.
+        const start = Math.max(p.planned, nowMs);
+        startsBy[i][r] = start;
+        last = Math.max(last, start);
+        continue;
+      }
+      const start = Math.max(freeAt > nowMs ? freeAt + changeover : nowMs, p.planned, nowMs);
+      const end = start + draw(p.mean) * MIN;
+      startsBy[i][r] = start;
+      free[c] = end;
+      last = Math.max(last, end);
+    }
+    ends[r] = last;
   }
-  base.starts = Object.fromEntries(Object.entries(det.starts).map(([k, v]) => [k, new Date(v).toISOString()]));
-  base.estimatedEnd = new Date(median(ends) ?? det.end).toISOString();
-  base.estimatedEndLow = new Date(quantile(ends, 0.1)).toISOString();
-  base.estimatedEndHigh = new Date(quantile(ends, 0.9)).toISOString();
-  return base;
+
+  ends.sort();
+  const spread = cfg.spread ?? 1;
+  const mid = q(ends, cfg.endQuantile ?? 0.5);
+  result.starts = Object.fromEntries(
+    pend.map((p, i) => {
+      const a = startsBy[i].sort();
+      return [p.key, new Date(Math.max(q(a, cfg.startQuantile ?? 0.5), nowMs)).toISOString()];
+    }),
+  );
+  result.estimatedEnd = new Date(mid).toISOString();
+  const median0 = q(ends, 0.5);
+  result.estimatedEndLow = new Date(mid - (median0 - q(ends, 0.1)) * spread).toISOString();
+  result.estimatedEndHigh = new Date(mid + (q(ends, 0.9) - median0) * spread).toISOString();
+  return result;
 }
 
 export interface ManualProgress {
@@ -229,7 +306,7 @@ export interface ManualProgress {
  * Cada ronda dura la duración media más el cambio de pista; los partidos en juego acaban, de media, a mitad de duración.
  */
 export function estimateManual(p: ManualProgress, now: Date, cfg: EstimateConfig = defaultEstimateConfig): Estimate {
-  const avg = p.avgDurationMin && p.avgDurationMin > 0 ? p.avgDurationMin : cfg.defaultMatchMin;
+  const avg = p.avgDurationMin && p.avgDurationMin > 0 ? p.avgDurationMin : (cfg.defaultMatchMin ?? defaultPriors.globalMean);
   const courts = Math.max(1, Math.round(p.courts));
   const remaining = Math.max(0, p.total - p.finished - p.live);
   const done = remaining === 0 && p.live === 0 && p.total > 0;
