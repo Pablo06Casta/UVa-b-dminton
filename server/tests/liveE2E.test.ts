@@ -51,6 +51,7 @@ async function runAll(engine: SyncEngine, times = 14) {
 beforeEach(() => {
   settings.opponents = 'none';
   settings.officialReadEnabled = true;
+  settings.rankingUrls = [];
 });
 
 describe('sincronización completa con los lectores oficiales', () => {

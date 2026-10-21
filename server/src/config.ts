@@ -30,6 +30,15 @@ export const settings = {
     live: { info: min('LIVE_INFO_MINUTES', 20), draws: min('LIVE_DRAWS_MINUTES', 20), day: min('LIVE_DAY_MINUTES', 15) },
     recent: { info: min('RECENT_INFO_MINUTES', 720), draws: min('RECENT_DRAWS_MINUTES', 60), day: min('RECENT_DAY_MINUTES', 180) },
   },
+  /** Páginas del ranking oficial con los jugadores del club (separadas por comas). De ahí se construye la lista del club. */
+  rankingUrls: (process.env.RANKING_URLS ?? [
+    'https://www.badminton.es/ranking/category.aspx?id=54365&category=5939&ogid=9FC486AA-1B7C-4D65-9E14-3C75412D4773',
+    'https://www.badminton.es/ranking/category.aspx?id=54365&category=5940&ogid=9FC486AA-1B7C-4D65-9E14-3C75412D4773',
+    'https://www.badminton.es/ranking/category.aspx?id=54365&category=5789&ogid=9FC486AA-1B7C-4D65-9E14-3C75412D4773',
+  ].join(',')).split(',').map((u) => u.trim()).filter(Boolean),
+  autoRosterHours: num('AUTO_ROSTER_HOURS', 24),
+  /** «declared»: los jugadores del club encontrados quedan visibles (consentimiento declarado por la administración). «hidden»: ocultos hasta registrar su consentimiento. */
+  autoRosterConsent: (process.env.AUTO_ROSTER_CONSENT === 'declared' ? 'declared' : 'hidden') as 'declared' | 'hidden',
   /** Pasado este tiempo sin una lectura correcta, los datos se marcan como antiguos. */
   staleAfterMs: min('STALE_MINUTES', 45),
   /** Lecturas idénticas necesarias para confirmar un cambio de hora, pista o resultado. */

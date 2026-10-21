@@ -36,6 +36,8 @@ export class FakeSource implements OfficialSource {
   standingRows: StandingRow[] = [standing(['Ana Prueba'], [1], 'UNIVERSIDAD DE VALLADOLID'), standing(['Rival Uno'], [2], 'OTRO CLUB')];
   bracketRounds: BracketRound[] = [];
   dayRows: MatchRow[] = [];
+  rankingPlayers?: OfficialSource['rankingPlayers'];
+  rankingProfile?: OfficialSource['rankingProfile'];
   calendarData: { fesba: never[]; finder: never[] } = { fesba: [], finder: [] };
   failWith?: Error;
 

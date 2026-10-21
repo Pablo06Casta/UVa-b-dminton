@@ -2,10 +2,18 @@ import { type FinderRow, finderPageBody, parseFesbaCalendar, parseFinder } from 
 import type { FesbaCalendarRow } from './calendar';
 import { httpConfig } from './config-http';
 import { type Priority, PoliteClient } from './http';
+import type { RankingCandidate } from './rankingParse';
 import type { BracketRound, DrawInfo, MatchRow, StandingRow, TournamentInfo } from './model';
 
 /** Lectores de las páginas de torneo (información, cuadros, clasificaciones, orden de juego y perfiles). */
-export interface LiveReaders {
+export interface RosterReaders {
+  /** Jugadores de una categoría del ranking oficial con su club. */
+  rankingPlayers(url: string, p: Priority): Promise<RankingCandidate[]>;
+  /** GUID del perfil oficial de un jugador, desde su ficha del ranking. */
+  rankingProfile(playerPath: string, p: Priority): Promise<string | undefined>;
+}
+
+export interface LiveReaders extends Partial<RosterReaders> {
   profile(guid: string, p: Priority): Promise<{ name: string; tournamentIds: string[] }>;
   tournament(guid: string, p: Priority): Promise<TournamentInfo>;
   draws(guid: string, p: Priority): Promise<DrawInfo[]>;
@@ -47,6 +55,8 @@ export class RealSource implements OfficialSource {
     return !!this.live;
   }
 
+  rankingPlayers = (u: string, p: Priority) => (this.live?.rankingPlayers ? this.live.rankingPlayers(u, p) : missing());
+  rankingProfile = (path: string, p: Priority) => (this.live?.rankingProfile ? this.live.rankingProfile(path, p) : missing());
   profile = (g: string, p: Priority) => (this.live ? this.live.profile(g, p) : missing());
   tournament = (g: string, p: Priority) => (this.live ? this.live.tournament(g, p) : missing());
   draws = (g: string, p: Priority) => (this.live ? this.live.draws(g, p) : missing());

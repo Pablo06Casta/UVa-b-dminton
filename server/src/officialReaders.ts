@@ -1,5 +1,6 @@
 import type { PoliteClient, Priority } from './http';
-import type { LiveReaders } from './source';
+import type { LiveReaders, RosterReaders } from './source';
+import { parseRankingCategory, parseRankingProfileGuid } from './rankingParse';
 import { TsSource, urls } from './lib/ts/source';
 import { parseBracket, parseDrawsList, parseStandingTable } from './lib/ts/parse/draws';
 
@@ -10,7 +11,7 @@ const XHR = { 'X-Requested-With': 'XMLHttpRequest' };
  * Todas las lecturas pasan por el cliente prudente (una petición cada ≥ 2,5 s, con caché y reintentos).
  * Los lectores de HTML (`lib/ts/parse`) proceden de «Badminton Live» y están probados allí con páginas oficiales reales.
  */
-export class OfficialLiveReaders implements LiveReaders {
+export class OfficialLiveReaders implements LiveReaders, RosterReaders {
   private readonly src: TsSource;
 
   constructor(private readonly http: PoliteClient) {
@@ -43,5 +44,13 @@ export class OfficialLiveReaders implements LiveReaders {
   async day(guid: string, date: string, tz: string, p: Priority) {
     const { data } = await this.src.day(guid, date, tz, p);
     return data;
+  }
+
+  async rankingPlayers(url: string, p: Priority) {
+    return parseRankingCategory((await this.http.get(url, { priority: p })).body);
+  }
+
+  async rankingProfile(playerPath: string, p: Priority) {
+    return parseRankingProfileGuid((await this.http.get(playerPath, { priority: p })).body);
   }
 }

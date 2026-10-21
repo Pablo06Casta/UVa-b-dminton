@@ -3,7 +3,10 @@ import { SourceUnavailableError } from './http';
 import { settings } from './config';
 import { type Db, kvGet, kvSet, nowIso } from './db';
 import { intervalsFor, NEVER, priorityFor, tournamentPhase, type Phase } from './policy';
-import { listPlayers, type Player } from './roster';
+import { createPlayer, listPlayers, updatePlayer, type Player } from './roster';
+import { nameTokens } from './text';
+import { titleCase } from './rankingParse';
+import { isUvaClub } from './uva';
 import type { OfficialSource } from './source';
 import { transformCalendar } from './calendar';
 import { estimate, type Slot } from './estimate';
@@ -12,7 +15,7 @@ import { buildStoredMatch, type ClubEntrants, diffMatch, findClubEntrants, match
 
 const DEFAULT_TZ = 'Europe/Madrid';
 
-export type JobKind = 'discover' | 'info' | 'draws' | 'day' | 'calendar';
+export type JobKind = 'roster' | 'discover' | 'info' | 'draws' | 'day' | 'calendar';
 
 /** Qué puede hacer el motor: el calendario usa solo rutas permitidas; lo «en directo» exige activarlo expresamente. */
 export interface Features {
@@ -35,6 +38,15 @@ interface TournamentRow {
   guid: string; name: string; start_date: string | null; end_date: string | null; tz: string; days_json: string;
   info_ok_at: string | null; draws_ok_at: string | null; hidden: number;
 }
+
+/** Jugador de la lista cuyo nombre (p. ej. «Pablo Martín») está contenido en el del ranking («Pablo Martín Castañeda»). */
+const matchRoster = (roster: Player[], rankingName: string): Player | undefined => {
+  const full = new Set(nameTokens(rankingName));
+  return roster.find((p) => {
+    const t = nameTokens(p.name);
+    return t.length >= 2 && t.every((x) => full.has(x));
+  });
+};
 
 const ms = (iso?: string | null) => (iso ? Date.parse(iso) : 0);
 
@@ -71,6 +83,10 @@ export class SyncEngine {
     }
     if (!this.features.live) return this.due(jobs, nowMs);
 
+    if (this.src.rankingPlayers && settings.rankingUrls.length > 0) {
+      const last = ms(kvGet<{ at: string }>(this.db, 'roster_ok')?.at);
+      jobs.push({ key: 'roster', kind: 'roster', phase: 'far', due: last + settings.autoRosterHours * 3600_000, rank: 3 });
+    }
     const rostered = listPlayers(this.db).filter((p) => p.profileGuid);
     if (rostered.length > 0) {
       const last = ms(kvGet<{ at: string }>(this.db, 'discover_ok')?.at);
@@ -136,6 +152,8 @@ export class SyncEngine {
 
   private async run(job: Job, now: Date) {
     switch (job.kind) {
+      case 'roster':
+        return this.buildRoster(now);
       case 'discover':
         return this.discover(now);
       case 'info':
@@ -152,6 +170,43 @@ export class SyncEngine {
   /* ---------------------------------------------------------------- */
   /* Trabajos                                                          */
   /* ---------------------------------------------------------------- */
+
+  /**
+   * Construye la lista del club sola: lee las categorías del ranking oficial, se queda con quienes figuran con el club de la UVa
+   * y busca el enlace de su perfil. Quien ya está en la lista no se duplica. Los menores nunca se publican sin consentimiento familiar.
+   */
+  private async buildRoster(now: Date) {
+    const found = new Map<string, { name: string; playerPath: string; birthYear?: number }>();
+    for (const url of settings.rankingUrls) {
+      for (const c of await this.src.rankingPlayers!(url, 2)) if (isUvaClub(c.club)) found.set(c.playerPath, c);
+    }
+    const today = now.toISOString().slice(0, 10);
+    let created = 0;
+    for (const c of found.values()) {
+      const name = titleCase(c.name);
+      const roster = listPlayers(this.db);
+      const known = matchRoster(roster, name);
+      if (known?.profileGuid) continue;
+      const profile = await this.src.rankingProfile!(c.playerPath, 2);
+      if (known) {
+        if (profile) updatePlayer(this.db, known.id, { profile });
+        continue;
+      }
+      const isMinor = c.birthYear !== undefined && Number(today.slice(0, 4)) - c.birthYear < 18;
+      const publish = settings.autoRosterConsent === 'declared' && !isMinor;
+      createPlayer(this.db, {
+        name,
+        profile: profile ?? null,
+        isMinor,
+        public: publish,
+        consentBy: publish ? 'Declarado por la administración del club' : null,
+        consentAt: publish ? today : null,
+        notes: 'Añadido automáticamente desde el ranking oficial',
+      });
+      created++;
+    }
+    kvSet(this.db, 'roster_ok', { at: now.toISOString(), found: found.size, created });
+  }
 
   /** Torneos de cada jugador de la lista, desde su perfil oficial. */
   private async discover(now: Date) {
