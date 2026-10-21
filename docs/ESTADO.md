@@ -64,7 +64,7 @@ Importante:
 | Participación de la UVa | Torneos donde juegan personas de la UVa (`uva-torneos.json`), con nº de jugadores y nombres autorizados. |
 | Correo y redes | `club.json › email` y `socials`. Mientras estén vacíos no se muestran. |
 | Formulario | Servicio de envío (`VITE_CONTACT_ENDPOINT`), correo de destino y captcha. Hoy no envía. |
-| Textos legales | Aviso legal y política de privacidad (responsable, finalidad, derechos…) en `LegalPage.tsx`. |
+| Textos legales | Redactados (aviso legal, privacidad, cookies). Faltan los datos del titular en `club.json › legal` (titular, NIF, domicilio, correo, contacto de protección de datos) y una revisión por la Universidad o un asesor jurídico. |
 | Servidor | Alojarlo (Fly.io/VPS con disco), `ADMIN_TOKEN`, claves VAPID, `VITE_API_URL` en la web. |
 | Autorización | Permiso de la FESBA / Federación de Castilla y León para activar la lectura en directo. |
 

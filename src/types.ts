@@ -15,6 +15,8 @@ export interface ClubInfo {
   socials: { label: string; url: string }[];
   /** Dirección / sede habitual. `null` mientras no se facilite. */
   address: string | null;
+  /** Datos del titular para el aviso legal. `null` = pendiente de facilitar (se marca en la página). */
+  legal: { holder: string | null; taxId: string | null; address: string | null; email: string | null; dpoEmail: string | null; updated: string };
   /** Imágenes de portada y presentación. `provisional` muestra el aviso "imagen provisional". */
   images: {
     hero: { src: string; alt: string; provisional: boolean };

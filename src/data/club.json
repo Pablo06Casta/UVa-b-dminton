@@ -25,5 +25,13 @@
       "alt": "Ilustración provisional de una pista de bádminton vista desde arriba.",
       "provisional": true
     }
+  },
+  "legal": {
+    "holder": null,
+    "taxId": null,
+    "address": null,
+    "email": null,
+    "dpoEmail": null,
+    "updated": "2026-10-21"
   }
 }

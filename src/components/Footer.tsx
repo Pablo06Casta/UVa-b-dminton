@@ -53,6 +53,9 @@ export function Footer() {
             <li>
               <Link to="/legal#privacidad">Política de privacidad</Link>
             </li>
+            <li>
+              <Link to="/legal#cookies">Cookies</Link>
+            </li>
           </ul>
         </div>
       </div>

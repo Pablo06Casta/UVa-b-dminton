@@ -3131,3 +3131,36 @@ abbr.est--big {
   font-size: 0.85rem;
   color: var(--muted);
 }
+
+.legal h3 {
+  margin-top: 20px;
+  font-size: 1.05rem;
+}
+.legal p {
+  margin-top: 10px;
+  color: var(--muted);
+}
+.legal__updated {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.legal__table {
+  margin-top: 12px;
+  overflow-x: auto;
+}
+.legal__table table {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+.legal__table th,
+.legal__table td {
+  padding: 8px 10px;
+  border: 1px solid var(--gray-200);
+  text-align: left;
+  vertical-align: top;
+}
+.legal__table th {
+  background: var(--gray-100, #f3f4f6);
+}
