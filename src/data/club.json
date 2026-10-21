@@ -12,7 +12,12 @@
     ]
   },
   "email": null,
-  "socials": [],
+  "socials": [
+    {
+      "label": "Instagram @uva_bad",
+      "url": "https://www.instagram.com/uva_bad/"
+    }
+  ],
   "address": null,
   "images": {
     "hero": {

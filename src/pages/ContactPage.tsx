@@ -44,7 +44,7 @@ export function ContactPage() {
               )}
               {club.socials.map((s) => (
                 <li key={s.url}>
-                  <Icon name="external" />
+                  <Icon name={/instagram/i.test(s.url) ? 'instagram' : 'external'} />
                   <a href={s.url} target="_blank" rel="noopener noreferrer">
                     {s.label}
                     <span className="sr-only"> (se abre en una pestaña nueva)</span>
