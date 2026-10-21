@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SourceUnavailableError } from '../src/http';
+import { NoDrawsError, SourceUnavailableError } from '../src/http';
 import { settings } from '../src/config';
 import { SyncEngine } from '../src/engine';
 import { kvSet } from '../src/db';
@@ -206,5 +206,23 @@ describe('lista de cuadros vacía', () => {
     for (let i = 0; i < 12; i++) await e.tick(min(3 + i * 5));
     expect((db.prepare('select draws_ok_at from tournaments').get() as { draws_ok_at: string | null }).draws_ok_at).not.toBeNull();
     expect(db.prepare('select count(*) n from draws').get()).toEqual({ n: 1 });
+  });
+});
+
+describe('torneo futuro sin cuadros publicados', () => {
+  it('no es un fallo: se anota, no se reintenta con espera creciente y se vuelve a mirar al cabo de 2 h', async () => {
+    const db = memDb();
+    const src = new FakeSource(); // torneo el 2026-11-07
+    src.draws = (async () => { src.calls.push('draws'); throw new NoDrawsError('Lista de cuadros vacía'); }) as never;
+    createPlayer(db, { name: 'Ana Prueba', profile: PROFILE });
+    const far = new Date('2026-10-20T10:00:00+02:00');
+    const e = new SyncEngine(db, src, () => far);
+    for (let i = 0; i < 6; i++) await e.tick(new Date(far.getTime() + i * 5_000));
+    expect(src.calls.filter((c) => c === 'draws')).toHaveLength(1);
+    expect(db.prepare('select last_error from tournaments').get()).toEqual({ last_error: null });
+    expect(e.diagnose(far).retrying).toEqual([]);
+    const at = (m: number) => e.plan(new Date(far.getTime() + m * 60_000)).some((j) => j.kind === 'draws');
+    expect(at(60)).toBe(false);
+    expect(at(121)).toBe(true);
   });
 });

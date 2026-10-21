@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { daysBetween, eachDay, todayIn } from './dates';
-import { SourceUnavailableError } from './http';
+import { NoDrawsError, SourceUnavailableError } from './http';
 import { settings } from './config';
 import { type Db, kvGet, kvSet, nowIso } from './db';
 import { intervalsFor, NEVER, priorityFor, tournamentPhase, type Phase } from './policy';
@@ -133,7 +133,10 @@ export class SyncEngine {
       const linked = (this.db.prepare('select count(*) n from tournament_players where tournament_guid = ?').get(t.guid) as unknown as { n: number }).n > 0;
       // Torneos seguidos solo por el calendario (aún sin nadie del club identificado): se revisan cada pocas horas.
       const drawsEvery = !linked && (phase === 'far' || phase === 'soon') ? Math.max(iv.draws, settings.followRefreshMinutes) : iv.draws;
-      jobs.push({ key: `draws:${t.guid}`, kind: 'draws', guid: t.guid, phase, due: t.draws_ok_at && hasDraws ? ms(t.draws_ok_at) + drawsEvery : 0, rank: !t.draws_ok_at ? (soonDays <= 7 ? -3 : -1) : phase === 'live' ? 1 : 3 });
+      // Sin cuadros publicados todavía (torneo futuro): se vuelve a mirar cada 2 h (cada 30 min el día antes), sin contarlo como error.
+      const noDrawsAt = !hasDraws ? ms(kvGet<{ at: string }>(this.db, `nodraws:${t.guid}`)?.at) : 0;
+      const noDrawsEvery = phase === 'imminent' ? 30 * 60_000 : 120 * 60_000;
+      jobs.push({ key: `draws:${t.guid}`, kind: 'draws', guid: t.guid, phase, due: noDrawsAt ? noDrawsAt + noDrawsEvery : t.draws_ok_at && hasDraws ? ms(t.draws_ok_at) + drawsEvery : 0, rank: !t.draws_ok_at ? (soonDays <= 7 ? -3 : -1) : phase === 'live' ? 1 : 3 });
 
       // Torneos de los próximos días (30 por defecto): ¿hay inscrita gente del club? Se mira la lista de jugadores aunque aún no haya cuadros.
       if (this.src.tournamentPlayers && this.src.playerProfile && settings.followCalendarDays > 0 && (phase === 'far' || phase === 'soon' || phase === 'imminent') && soonDays <= settings.followCalendarDays) {
@@ -394,9 +397,22 @@ export class SyncEngine {
       `insert into draws(tournament_guid, draw_id, name, type, json, updated_at, has_club) values(?,?,?,?,?,?,?)
        on conflict(tournament_guid, draw_id) do update set name=excluded.name, type=excluded.type, json=excluded.json, updated_at=excluded.updated_at, has_club=excluded.has_club`,
     );
-    const drawList = await this.src.draws(guid, p);
-    // Una lista vacía no es «leído»: o aún no se han publicado, o la fuente devolvió otra página. Se reintenta con espera creciente.
+    const waiting = job.phase === 'far' || job.phase === 'soon' || job.phase === 'imminent';
+    let drawList: Awaited<ReturnType<OfficialSource['draws']>> = [];
+    try {
+      drawList = await this.src.draws(guid, p);
+    } catch (e) {
+      if (!(e instanceof NoDrawsError) || !waiting) throw e;
+    }
+    // Torneo aún sin cuadros publicados: no es un fallo. Se anota y se vuelve a mirar más tarde (ver plan), sin reintentos con espera creciente.
+    if (drawList.length === 0 && waiting) {
+      kvSet(this.db, `nodraws:${guid}`, { at: now.toISOString() });
+      this.db.prepare('update tournaments set last_error = null where guid = ?').run(guid);
+      return;
+    }
+    // En un torneo en curso o recién terminado, una lista vacía sí es un fallo: la fuente devolvió otra página. Se reintenta con espera creciente.
     if (drawList.length === 0) throw new Error('La lista de cuadros llegó vacía (sin publicar o página inesperada).'); // (las fuentes reales ya lanzan un error con detalle)
+    this.db.prepare("delete from kv where k = ?").run(`nodraws:${guid}`);
 
     const stored = new Map(
       (this.db.prepare('select draw_id, name, type, json, has_club from draws where tournament_guid = ?').all(guid) as unknown as { draw_id: number; name: string; type: string; json: string; has_club: number }[]).map((r) => [r.draw_id, r]),

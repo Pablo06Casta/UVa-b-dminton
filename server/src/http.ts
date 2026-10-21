@@ -12,6 +12,14 @@ export class HttpError extends Error {
   }
 }
 
+/** La página de cuadros del torneo no lista ninguno: normal en torneos futuros (aún sin publicar); en uno en curso es un fallo real. */
+export class NoDrawsError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'NoDrawsError';
+  }
+}
+
 /** La fuente falla de forma repetida: se hace una pausa antes de volver a intentarlo. */
 export class SourceUnavailableError extends Error {
   constructor(

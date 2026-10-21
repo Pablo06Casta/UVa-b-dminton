@@ -1,4 +1,5 @@
 import type { PoliteClient, Priority } from './http';
+import { NoDrawsError } from './http';
 import type { LiveReaders, RosterReaders } from './source';
 import { parseRankingCategory, parseRankingProfileGuid } from './rankingParse';
 import { TsSource, urls } from './lib/ts/source';
@@ -38,7 +39,7 @@ export class OfficialLiveReaders implements LiveReaders, RosterReaders {
       // Para diagnóstico: qué página llegó realmente (código, dirección final, título y tamaño), sin contenido personal.
       const title = res.body.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/\s+/g, ' ').trim().slice(0, 80);
       const e = new Error(`Lista de cuadros vacía: HTTP ${res.status}, ${res.bytes || res.body.length} B, final «${res.finalUrl ?? res.url}», título «${title ?? '-'}»`);
-      throw e;
+      throw new NoDrawsError(e.message);
     }
     return list;
   }
