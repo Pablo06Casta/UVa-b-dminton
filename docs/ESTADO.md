@@ -27,7 +27,7 @@
 Hecho y probado con una fuente simulada y con los lectores oficiales conectados (falta la primera ejecución en vivo, ver abajo):
 
 - Lista de jugadores con consentimiento + panel `/admin`; descubrimiento de torneos desde el perfil oficial.
-- Lectura de una vez por torneo, frecuencias por fase (orden de juego cada 5 min en jornada), confirmación de cambios con
+- Lectura de una vez por torneo, frecuencias por fase (orden de juego cada 3 min en jornada), confirmación de cambios con
   2 lecturas, registro de cambios, antigüedad de los datos.
 - Estimación de la hora de fin del torneo y de cada partido; cuadros; avisos push N min antes; enlaces para compartir.
 - Web: página **Directo** (en juego / próximos / resultados, hora de fin en grande, cuadros, avisos, compartir).

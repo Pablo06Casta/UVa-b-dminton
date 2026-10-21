@@ -1,6 +1,6 @@
 # Estimación del avance del torneo
 
-Código: `server/src/estimate.ts`. Se recalcula con cada lectura del orden de juego (cada 15 min en jornada) usando solo datos
+Código: `server/src/estimate.ts`. Se recalcula con cada lectura del orden de juego (cada 3 min en jornada) usando solo datos
 anónimos del torneo (hora programada, pista, estado y duración publicada de cada partido).
 
 ## Qué calcula

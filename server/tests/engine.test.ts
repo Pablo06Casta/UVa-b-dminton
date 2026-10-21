@@ -85,7 +85,7 @@ describe('planificación y ciclo completo', () => {
     expect(src.calls.filter((c) => c === 'draws')).toHaveLength(1);
   });
 
-  it('frecuencias: orden de juego cada 15 min en jornada; cuadros cada 10 min; nada tras el torneo', async () => {
+  it('frecuencias: orden de juego cada 3 min en jornada; cuadros cada 10 min; nada tras el torneo', async () => {
     const db = memDb();
     const src = new FakeSource();
     createPlayer(db, { name: 'Ana Prueba', profile: PROFILE });
@@ -94,7 +94,7 @@ describe('planificación y ciclo completo', () => {
     const dayAt = (n: number) => e.plan(min(n)).some((j) => j.kind === 'day');
     const drawsAt = (n: number) => e.plan(min(n)).some((j) => j.kind === 'draws');
     // Orden de ejecución: descubrimiento (min 0), información (1), cuadros (2), orden de juego (3).
-    expect(dayAt(6)).toBe(false); // se leyó hace poco
+    expect(dayAt(5)).toBe(false); // se leyó hace poco
     expect(dayAt(3 + settings.intervals.live.day / 60_000)).toBe(true);
     expect(drawsAt(8)).toBe(false);
     expect(drawsAt(11)).toBe(false);
@@ -144,7 +144,7 @@ describe('planificación y ciclo completo', () => {
     const e = new SyncEngine(db, src);
     for (let i = 0; i < 6; i++) await e.tick(min(i));
     expect(src.calls.filter((c) => c === 'draws' || c === 'day')).toHaveLength(0);
-    expect(settings.intervals.live.day).toBe(15 * 60_000);
+    expect(settings.intervals.live.day).toBe(3 * 60_000);
   });
 });
 

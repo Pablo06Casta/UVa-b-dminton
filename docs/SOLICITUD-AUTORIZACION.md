@@ -26,7 +26,7 @@ oficial que prefieran (API, exportación de datos u otro), para lo siguiente:
 - Desde un único servidor del club, con un `User-Agent` que identifica al club y un correo de contacto.
 - **Una petición como máximo cada 2,5 segundos**, con caché y detección de cambios, y se leería una sola vez por torneo (no una
   por jugador). Parada automática ante respuestas 429 o de error del servidor.
-- Frecuencia: cada pocas horas antes de un torneo, y cada 5 minutos solo durante las jornadas de competición. Fuera de ellas,
+- Frecuencia: cada pocas horas antes de un torneo, y cada 3 minutos solo durante las jornadas de competición. Fuera de ellas,
   prácticamente ninguna. Volumen estimado: [unos cientos] de peticiones por día de torneo.
 - Sin recorrer el sitio completo, sin consultar rankings generales ni buscadores de jugadores.
 

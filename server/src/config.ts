@@ -25,7 +25,7 @@ export const settings = {
     discovery: min('DISCOVERY_MINUTES', 20),
     before: { info: min('BEFORE_INFO_MINUTES', 60), draws: min('BEFORE_DRAWS_MINUTES', 60), day: min('BEFORE_DAY_MINUTES', 60) },
     imminent: { info: min('IMMINENT_INFO_MINUTES', 20), draws: min('IMMINENT_DRAWS_MINUTES', 20), day: min('IMMINENT_DAY_MINUTES', 20) },
-    live: { info: min('LIVE_INFO_MINUTES', 20), draws: min('LIVE_DRAWS_MINUTES', 10), day: min('LIVE_DAY_MINUTES', 15) },
+    live: { info: min('LIVE_INFO_MINUTES', 20), draws: min('LIVE_DRAWS_MINUTES', 10), day: min('LIVE_DAY_MINUTES', 3) },
     recent: { info: min('RECENT_INFO_MINUTES', 720), draws: min('RECENT_DRAWS_MINUTES', 60), day: min('RECENT_DAY_MINUTES', 180) },
   },
   /** Páginas del ranking oficial con los jugadores del club (separadas por comas). De ahí se construye la lista del club. */
