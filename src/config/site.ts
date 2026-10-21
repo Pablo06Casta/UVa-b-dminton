@@ -9,6 +9,8 @@ export const nav = [
   { to: '/calendario', label: 'Calendario' },
   { to: '/historia', label: 'Historia' },
   { to: '/contacto', label: 'Contacto' },
+  // Enlace a otra web: se abre en la misma pestaña (sin la parte «#error…» que traía el enlace de un correo caducado).
+  { to: 'https://pablo06casta.github.io/PABLO-APP/', label: 'Web-cerca', external: true },
 ] as const;
 
 /**

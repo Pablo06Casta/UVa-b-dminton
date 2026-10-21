@@ -17,7 +17,7 @@ export function Footer() {
           <ul>
             {nav.map((item) => (
               <li key={item.to}>
-                <Link to={item.to}>{item.label}</Link>
+                {'external' in item ? <a href={item.to}>{item.label}</a> : <Link to={item.to}>{item.label}</Link>}
               </li>
             ))}
           </ul>

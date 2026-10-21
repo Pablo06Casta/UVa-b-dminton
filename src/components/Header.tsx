@@ -65,9 +65,15 @@ export function Header() {
           <ul>
             {nav.map((item) => (
               <li key={item.to}>
-                <NavLink to={item.to} end={item.to === '/'} className="nav__link">
-                  {item.label}
-                </NavLink>
+                {'external' in item ? (
+                  <a href={item.to} className="nav__link">
+                    {item.label}
+                  </a>
+                ) : (
+                  <NavLink to={item.to} end={item.to === '/'} className="nav__link">
+                    {item.label}
+                  </NavLink>
+                )}
               </li>
             ))}
           </ul>
