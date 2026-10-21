@@ -1,4 +1,4 @@
-import type { LiveState, Tournament } from '../types';
+import type { LiveState, NewsItem, Tournament } from '../types';
 
 /** Dirección del servidor del club (VITE_API_URL). Sin ella, la web funciona solo con sus datos incluidos. */
 export const API_URL = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').trim().replace(/\/$/, '');
@@ -11,6 +11,7 @@ async function getJson<T>(path: string): Promise<T> {
 }
 
 export const fetchLiveState = () => getJson<LiveState>('/api/public/state');
+export const fetchNews = () => getJson<{ news: NewsItem[] }>('/api/public/news');
 export const fetchCalendar = () => getJson<{ meta: { comprobadoEl: string; fuente: string; nota: string }; tournaments: Tournament[] }>('/api/public/calendar');
 export const fetchPushKey = () => getJson<{ enabled: boolean; publicKey: string | null }>('/api/public/push/key');
 

@@ -152,6 +152,18 @@ export function createApp(db: Db, engine: SyncEngine | undefined, hub: Hub) {
         return res.end(c.body);
       }
 
+      if (route === 'GET /api/public/news') {
+        if (limited(req)) throw new HttpFail(429, 'Demasiadas consultas.');
+        const c = cachedPublicState(db);
+        const headers = { ...cors(req), 'Cache-Control': 'public, max-age=60, must-revalidate', ETag: c.newsEtag };
+        if (req.headers['if-none-match'] === c.newsEtag) {
+          res.writeHead(304, headers);
+          return res.end();
+        }
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'X-Content-Type-Options': 'nosniff', ...headers });
+        return res.end(c.newsBody);
+      }
+
       if (route === 'GET /api/public/stream') {
         if (limited(req)) throw new HttpFail(429, 'Demasiadas consultas.');
         res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive', ...cors(req) });

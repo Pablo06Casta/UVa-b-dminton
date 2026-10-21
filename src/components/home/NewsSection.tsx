@@ -10,76 +10,54 @@ const manual = newsJson as NewsItem[];
 const MEDAL = { 1: 'Oro', 2: 'Plata', 3: 'Bronce' } as const;
 const CLASS = { 1: 'gold', 2: 'silver', 3: 'bronze' } as const;
 
-function Tally({ medals }: { medals: NonNullable<NewsItem['medals']> }) {
-  const discs = ([1, 2, 3] as const).map((p) => ({ p, n: medals.filter((m) => m.place === p).length })).filter((d) => d.n > 0);
-  return (
-    <ul className="tally" aria-label="Medallas conseguidas">
-      {discs.map(({ p, n }) => (
-        <li key={p} className={`tally__disc tally__disc--${CLASS[p]}`}>
-          <span className="tally__n">{n}</span>
-          <span className="tally__label">{MEDAL[p]}</span>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
 function Story({ item }: { item: NewsItem }) {
   const medals = [...(item.medals ?? [])].sort((a, b) => a.place - b.place);
   return (
     <article className="nfeat" aria-labelledby={`n-${item.id}`}>
-      <div className="nfeat__side">
-        {medals.length > 0 && <Tally medals={medals} />}
-        {item.tournament && (
-          <p className="nfeat__where">
-            <Icon name="pin" size={16} />
-            <span>
-              {item.tournament.name}
-              {item.tournament.place && <small>{item.tournament.place}</small>}
-            </span>
-          </p>
+      <p className="nfeat__meta">
+        <span className="ntag">{item.tag}</span>
+        <time dateTime={item.date}>{formatDateRange(item.date)}</time>
+        {item.tournament?.place && (
+          <span className="nfeat__where">
+            <Icon name="pin" size={14} />
+            {item.tournament.place}
+          </span>
         )}
-      </div>
-      <div className="nfeat__main">
-        <p className="nfeat__meta">
-          <span className="ntag">{item.tag}</span>
-          <time dateTime={item.date}>{formatDateRange(item.date)}</time>
+      </p>
+      <h3 id={`n-${item.id}`}>{item.title}</h3>
+      <p className="nfeat__summary">{item.summary}</p>
+      {medals.length > 0 && (
+        <ul className="nmedals">
+          {medals.map((m) => (
+            <li key={`${m.event}-${m.who}-${m.place}`} className={`nmedal nmedal--${CLASS[m.place]}`}>
+              <span className="nmedal__place">{MEDAL[m.place]}</span>
+              <span className="nmedal__body">
+                <strong>{m.who}</strong>
+                <span className="nmedal__event"> · {m.eventName}</span>
+                {m.detail && <small>{m.detail}</small>}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {item.highlights && item.highlights.length > 0 && (
+        <ul className="nhigh">
+          {item.highlights.map((h) => (
+            <li key={h}>{h}</li>
+          ))}
+        </ul>
+      )}
+      {item.sources && item.sources.length > 0 && (
+        <p className="nfeat__links">
+          {item.sources.map((s) => (
+            <a key={s.url} href={s.url} target="_blank" rel="noopener noreferrer">
+              {s.label}
+              <Icon name="external" size={14} />
+              <span className="sr-only"> (se abre en una pestaña nueva)</span>
+            </a>
+          ))}
         </p>
-        <h3 id={`n-${item.id}`}>{item.title}</h3>
-        <p className="nfeat__summary">{item.summary}</p>
-        {medals.length > 0 && (
-          <ul className="nmedals">
-            {medals.map((m) => (
-              <li key={`${m.event}-${m.who}-${m.place}`} className={`nmedal nmedal--${CLASS[m.place]}`}>
-                <span className="nmedal__place">{MEDAL[m.place]}</span>
-                <span className="nmedal__body">
-                  <strong>{m.who}</strong>
-                  <span className="nmedal__event"> · {m.eventName}</span>
-                  {m.detail && <small>{m.detail}</small>}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-        {item.highlights && item.highlights.length > 0 && (
-          <ul className="nhigh">
-            {item.highlights.map((h) => (
-              <li key={h}>{h}</li>
-            ))}
-          </ul>
-        )}
-        {item.sources && item.sources.length > 0 && (
-          <p className="nfeat__links">
-            {item.sources.map((s) => (
-              <a key={s.url} href={s.url} target="_blank" rel="noopener noreferrer">
-                {s.label}
-                <Icon name="external" size={15} />
-                <span className="sr-only"> (se abre en una pestaña nueva)</span>
-              </a>
-            ))}
-          </p>
-        )}
-      </div>
+      )}
     </article>
   );
 }

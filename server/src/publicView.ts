@@ -331,7 +331,7 @@ export function buildPublicState(db: Db, now = new Date()): PublicState {
 /* Caché del estado público                                          */
 /* ---------------------------------------------------------------- */
 
-interface CachedState { at: number; state: PublicState; body: string; etag: string }
+interface CachedState { at: number; state: PublicState; body: string; etag: string; newsBody: string; newsEtag: string }
 const cache = new WeakMap<Db, CachedState>();
 
 /** Descarta el estado calculado (hay datos nuevos o ha cambiado la lista). */
@@ -347,7 +347,9 @@ export function cachedPublicState(db: Db, nowMs = Date.now()): CachedState {
   const hit = cache.get(db);
   if (hit && nowMs - hit.at < settings.publicCacheMs) return hit;
   const state = buildPublicState(db, new Date(nowMs));
-  const entry = { at: nowMs, state, body: JSON.stringify(state), etag: `"${state.version}"` };
+  // Las noticias van también en su propia respuesta, muy ligera (el estado completo pesa mucho más), con su propia etiqueta.
+  const newsBody = JSON.stringify({ news: state.news });
+  const entry = { at: nowMs, state, body: JSON.stringify(state), etag: `"${state.version}"`, newsBody, newsEtag: `"n${createHash('sha1').update(newsBody).digest('hex').slice(0, 12)}"` };
   cache.set(db, entry);
   return entry;
 }

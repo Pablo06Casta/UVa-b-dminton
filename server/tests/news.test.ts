@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { settings } from '../src/config';
 import { SyncEngine } from '../src/engine';
 import { buildAutoNews } from '../src/news';
-import { buildPublicState, type PublicTournament } from '../src/publicView';
+import { buildPublicState, cachedPublicState, invalidatePublicState, type PublicTournament } from '../src/publicView';
 import { createPlayer } from '../src/roster';
 import type { BracketRound } from '../src/model';
 import { FakeSource, memDb, PROFILE } from './helpers/fakes';
@@ -70,5 +70,12 @@ describe('noticia de extremo a extremo con el motor', () => {
     expect(state.news[0]).toMatchObject({ tag: 'Podio', title: 'Ana Prueba, medalla de oro en Torneo de prueba' });
     expect(state.news[0].medals?.[0].detail).toBe('Ganó la final por 21-18 17-21 21-19.');
     expect(JSON.stringify(state.news)).not.toMatch(/Rival/);
+
+    // Respuesta ligera solo con las noticias: mismo contenido, etiqueta estable y mucho más pequeña que el estado completo.
+    const c = cachedPublicState(db, day.getTime());
+    expect(JSON.parse(c.newsBody).news).toHaveLength(1);
+    expect(c.newsBody.length).toBeLessThan(c.body.length);
+    invalidatePublicState(db);
+    expect(cachedPublicState(db, day.getTime()).newsEtag).toBe(c.newsEtag);
   });
 });
