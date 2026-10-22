@@ -78,6 +78,18 @@ create table if not exists entries (
   primary key (tournament_guid, event_id, player_id)
 );
 
+-- Partidos terminados de las personas del club según su perfil oficial (≈ las dos últimas temporadas): base del histórico mensual. Solo fecha, torneo y si se ganó.
+create table if not exists history_matches (
+  key text primary key,
+  tournament_guid text not null,
+  tournament_name text not null,
+  date text not null,
+  won integer not null,
+  player_id integer not null references players(id) on delete cascade,
+  seen_at text not null
+);
+create index if not exists history_by_tournament on history_matches(tournament_guid);
+
 -- Participantes del torneo que son del club. Solo se guarda el nombre de quienes son del club (minimización).
 create table if not exists entrants (
   tournament_guid text not null,

@@ -3914,3 +3914,15 @@ abbr.est--big {
     display: block;
   }
 }
+.traj__nodata rect {
+  fill: var(--gray-50);
+}
+.traj__nodata text {
+  fill: var(--gray-500);
+  font-size: 12px;
+  font-style: italic;
+}
+.traj__xtick {
+  stroke: var(--gray-200);
+  stroke-width: 1;
+}

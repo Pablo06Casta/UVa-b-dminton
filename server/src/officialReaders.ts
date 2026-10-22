@@ -70,6 +70,14 @@ export class OfficialLiveReaders implements LiveReaders, RosterReaders {
     return parsePlayerPageProfile((await this.http.get(urls.tournamentPlayer(guid, tsPlayerId), { priority: p })).body);
   }
 
+  /** Partidos terminados del perfil oficial (≈ 100 últimos), solo los del propio jugador con ganador conocido. */
+  async profileMatches(guid: string, isMe: (name: string) => boolean, p: Priority) {
+    const { data } = await this.src.profileMatches(guid, 'Europe/Madrid', (name) => isMe(name), p);
+    return data
+      .filter((m) => m.mySide && m.winner && m.date && m.status === 'finished')
+      .map((m) => ({ key: m.key, tournamentId: m.tournamentId, tournamentName: m.tournamentName, date: m.date!, won: m.winner === m.mySide }));
+  }
+
   async eventEntries(guid: string, eventId: number, p: Priority) {
     const { entries } = parseEventPage((await this.http.get(urls.event(guid, eventId), { priority: p })).body);
     return entries.map((e) => ({ names: e.names, status: e.status as 'confirmed' | 'reserve' | 'excluded' | 'unknown', label: e.label, seed: e.seed }));

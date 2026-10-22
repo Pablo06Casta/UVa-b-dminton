@@ -26,6 +26,16 @@ export interface LiveReaders extends Partial<RosterReaders> {
   /** Jugadores inscritos en el torneo (solo nombre) y el perfil oficial de uno de ellos: así se reconoce a la gente del club sin confundir homónimos. */
   tournamentPlayers?(guid: string, p: Priority): Promise<{ tsPlayerId: number; name: string }[]>;
   playerProfile?(guid: string, tsPlayerId: number, p: Priority): Promise<string | undefined>;
+  /** Partidos terminados del perfil oficial de una persona (≈ 100 últimos): fecha, torneo y si ganó. `isMe` indica qué lado es ella. */
+  profileMatches?(guid: string, isMe: (name: string) => boolean, p: Priority): Promise<HistoryRow[]>;
+}
+
+export interface HistoryRow {
+  key: string;
+  tournamentId: string;
+  tournamentName: string;
+  date: string;
+  won: boolean;
 }
 
 export interface EventEntryRow {
@@ -67,6 +77,7 @@ export class RealSource implements OfficialSource {
     if (live?.eventEntries) this.eventEntries = (g, e, p) => live.eventEntries!(g, e, p);
     if (live?.tournamentPlayers) this.tournamentPlayers = (g, p) => live.tournamentPlayers!(g, p);
     if (live?.playerProfile) this.playerProfile = (g, id, p) => live.playerProfile!(g, id, p);
+    if (live?.profileMatches) this.profileMatches = (g, isMe, p) => live.profileMatches!(g, isMe, p);
   }
 
   get hasLiveReaders() {
@@ -78,6 +89,7 @@ export class RealSource implements OfficialSource {
   eventEntries?: LiveReaders['eventEntries'];
   tournamentPlayers?: LiveReaders['tournamentPlayers'];
   playerProfile?: LiveReaders['playerProfile'];
+  profileMatches?: LiveReaders['profileMatches'];
 
   rankingPlayers = (u: string, p: Priority) => (this.live?.rankingPlayers ? this.live.rankingPlayers(u, p) : missing());
   rankingProfile = (path: string, p: Priority) => (this.live?.rankingProfile ? this.live.rankingProfile(path, p) : missing());

@@ -36,6 +36,8 @@ export const settings = {
   ].join(',')).split(',').map((u) => u.trim()).filter(Boolean),
   /** Inscripción y admisión de la gente del club en torneos futuros: cada cuántos minutos se revisan las listas de inscritos y hasta cuántos días antes. */
   entries: { days: num('ENTRIES_DAYS', 90), far: min('ENTRIES_FAR_MINUTES', 120), soon: min('ENTRIES_SOON_MINUTES', 60), imminent: min('ENTRIES_IMMINENT_MINUTES', 30) },
+  /** Histórico por perfil: partidos terminados de cada persona pública del club (≈ últimas temporadas), una vuelta al día. */
+  historyEnabled: process.env.HISTORY_ENABLED !== 'false',
   /** Histórico: se lee una vez el cuadro de cada torneo ya terminado de los últimos N días (0 = no) para la gráfica de trayectoria del club. */
   backfillDays: num('BACKFILL_DAYS', 400),
   /** Detección de cambios: tiempo mínimo entre dos lecturas adelantadas de lo mismo (minutos). La web oficial no avisa; se detecta con lecturas baratas. */

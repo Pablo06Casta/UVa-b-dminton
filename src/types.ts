@@ -255,6 +255,8 @@ export interface LiveState {
   pushEnabled: boolean;
   /** Noticias generadas solas con los resultados de los torneos terminados. */
   news?: NewsItem[];
+  /** Partidos ganados/perdidos en torneos que no figuran en `tournaments` (últimas temporadas): solo para la gráfica de trayectoria. */
+  history?: { id: string; name: string; date: string; won: number; lost: number }[];
   tournaments: {
     id: string; name: string; startDate?: string; endDate?: string; city?: string; venue?: string; level?: string;
     officialUrl?: string; manual?: boolean; uvaPlayers: string[]; matches: UvaMatch[]; progress?: LiveProgress; draws: LiveDraw[]; results?: UvaResult[]; record?: UvaRecord; entries?: TournamentEntry[]; checkedAt?: string; stale: boolean;

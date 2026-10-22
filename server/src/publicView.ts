@@ -120,6 +120,17 @@ export interface PublicState {
   tournaments: PublicTournament[];
   /** Noticias generadas solas con los resultados de los torneos terminados. */
   news: PublicNews[];
+  /** Partidos ganados y perdidos por el club en torneos que no figuran arriba (≈ últimas temporadas): solo para la gráfica de trayectoria. */
+  history: PublicHistory[];
+}
+
+export interface PublicHistory {
+  id: string;
+  name: string;
+  /** Fecha del primer partido (YYYY-MM-DD). */
+  date: string;
+  won: number;
+  lost: number;
 }
 
 /** Con cifras manuales, la hora estimada es la programada más el retraso medio que anota el club. */
@@ -268,6 +279,10 @@ export function buildPublicState(db: Db, now = new Date()): PublicState {
   const publicIds = new Set(publicPlayers.keys());
   const today = todayIn('Europe/Madrid', now);
 
+  // Partidos terminados según los perfiles oficiales de las personas públicas del club, agrupados por torneo (un partido de dobles cuenta una vez).
+  const hist = new Map(
+    (db.prepare('select h.tournament_guid g, h.tournament_name n, min(h.date) d, sum(h.won) w, sum(1 - h.won) l from history_matches h join players p on p.id = h.player_id where p.public = 1 group by h.tournament_guid').all() as unknown as { g: string; n: string; d: string; w: number; l: number }[]).map((r) => [r.g, r]),
+  );
   const tournaments: PublicTournament[] = [];
   for (const t of db.prepare('select * from tournaments where hidden = 0').all() as unknown as TRow[]) {
     const linked = (db.prepare('select player_id from tournament_players where tournament_guid = ?').all(t.guid) as unknown as { player_id: number }[])
@@ -290,7 +305,10 @@ export function buildPublicState(db: Db, now = new Date()): PublicState {
 
     const draws = buildPublicDraws(db, t.guid, [...publicPlayers.values()]);
     const results = uvaResults(draws);
-    const record = uvaRecord(draws, results);
+    const drawRecord = uvaRecord(draws, results);
+    // Si el perfil oficial ya trae los partidos del torneo, sus cifras mandan (cubre también los jugadores del club sin cuadro leído).
+    const h = hist.get(t.guid);
+    const record = h ? { gold: 0, silver: 0, bronze: 0, ...drawRecord, won: h.w, lost: h.l } : drawRecord;
     tournaments.push({
       id: t.guid,
       name: t.name,
@@ -322,7 +340,10 @@ export function buildPublicState(db: Db, now = new Date()): PublicState {
   const publicList = [...publicPlayers.values()].map((p) => ({ id: p.id, name: p.name, category: p.category ?? undefined }));
   // La versión cambia si cambia cualquier cosa publicable (jugadores o torneos); no depende de la hora de generación.
   const news = buildAutoNews(tournaments, now);
-  const version = createHash('sha1').update(JSON.stringify([publicList, tournaments, news])).digest('hex').slice(0, 12);
+  // Torneos con partidos en los perfiles que no están entre los publicados arriba (solo para la gráfica de trayectoria).
+  const listed = new Set(tournaments.map((t) => t.id));
+  const history: PublicHistory[] = [...hist.values()].filter((r) => !listed.has(r.g)).map((r) => ({ id: r.g, name: r.n, date: r.d, won: r.w, lost: r.l })).sort((a, b) => a.date.localeCompare(b.date));
+  const version = createHash('sha1').update(JSON.stringify([publicList, tournaments, news, history])).digest('hex').slice(0, 12);
   return {
     generatedAt: now.toISOString(),
     officialReadEnabled: settings.officialReadEnabled,
@@ -332,6 +353,7 @@ export function buildPublicState(db: Db, now = new Date()): PublicState {
     pushEnabled: !!(settings.vapid.publicKey && settings.vapid.privateKey && settings.vapid.subject),
     tournaments,
     news,
+    history,
   };
 }
 

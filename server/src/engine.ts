@@ -18,13 +18,16 @@ import { buildStoredMatch, type ClubEntrants, diffMatch, findClubEntrants, match
 
 const DEFAULT_TZ = 'Europe/Madrid';
 
-export type JobKind = 'roster' | 'discover' | 'info' | 'draws' | 'day' | 'calendar' | 'entries' | 'identify';
+export type JobKind = 'roster' | 'discover' | 'info' | 'draws' | 'day' | 'calendar' | 'entries' | 'identify' | 'history';
 
 /**
  * Reconocer a la gente del club en un torneo antes de que haya cuadros: se lee la lista de jugadores (solo nombres), se eligen los de la
  * lista del club por nombre y cada candidato se confirma con el perfil oficial que enlaza su ficha en el torneo (sin dudas con homónimos).
  */
 interface IdentState { pending: { tsPlayerId: number; rosterId: number }[]; checked: Record<string, 0 | 1>; listAt?: string; listHash?: string }
+
+/** Lectura del histórico de partidos por perfil: una persona del club por lectura, una vuelta al día. */
+interface HistoryState { pending: number[]; doneAt?: string }
 
 /** Avance de la lectura de inscritos de un torneo: una prueba por lectura, para no bloquear lo urgente. */
 interface EntriesState { events: { eventId: number; name: string }[]; next: number; doneAt?: string }
@@ -112,6 +115,12 @@ export class SyncEngine {
     if (rostered.length > 0) {
       const last = ms(kvGet<{ at: string }>(this.db, 'discover_ok')?.at);
       jobs.push({ key: 'discover', kind: 'discover', phase: 'far', due: last + settings.intervals.discovery, rank: 4 });
+    }
+
+    // Histórico de partidos de las personas del club (perfil oficial): una persona por lectura, una vuelta al día, solo con lo urgente atendido.
+    if (this.src.profileMatches && settings.historyEnabled && rostered.some((p) => p.public)) {
+      const st = kvGet<HistoryState>(this.db, 'history');
+      jobs.push({ key: 'history', kind: 'history', phase: 'far', due: st && st.pending.length > 0 ? 0 : st?.doneAt ? ms(st.doneAt) + 24 * 3600_000 : 0, rank: 7 });
     }
 
     const rows = this.db.prepare('select * from tournaments where hidden = 0 and manual = 0').all() as unknown as TournamentRow[];
@@ -307,6 +316,8 @@ export class SyncEngine {
         return this.readEntries(job, now);
       case 'identify':
         return this.identify(job, now);
+      case 'history':
+        return this.readHistory(now);
     }
   }
 
@@ -503,6 +514,21 @@ export class SyncEngine {
         .run(guid, next.tsPlayerId, pl.name, null, pl.id, now.toISOString());
     }
     kvSet(this.db, key, { pending: rest, checked: { ...st.checked, [String(next.tsPlayerId)]: same ? 1 : 0 }, listAt: st.listAt, listHash: st.listHash } satisfies IdentState);
+  }
+
+  /** Partidos terminados del perfil oficial de cada persona pública del club: de ahí salen los partidos ganados por mes y torneo. */
+  private async readHistory(now: Date) {
+    const st = kvGet<HistoryState>(this.db, 'history') ?? { pending: [] };
+    const roster = listPlayers(this.db).filter((p) => p.public && p.profileGuid);
+    const pending = st.pending.length > 0 ? st.pending : roster.map((p) => p.id);
+    const [id, ...rest] = pending;
+    const pl = roster.find((p) => p.id === id);
+    if (pl) {
+      const rows = await this.src.profileMatches!(pl.profileGuid!, (name) => !!findByNameLoose([pl], name), 2);
+      const ins = this.db.prepare('insert or ignore into history_matches(key, tournament_guid, tournament_name, date, won, player_id, seen_at) values(?,?,?,?,?,?,?)');
+      for (const r of rows) if (!settings.excludedTournaments.test(r.tournamentName)) ins.run(r.key, r.tournamentId, r.tournamentName, r.date, r.won ? 1 : 0, pl.id, now.toISOString());
+    }
+    kvSet(this.db, 'history', { pending: rest, ...(rest.length === 0 ? { doneAt: now.toISOString() } : st.doneAt ? { doneAt: st.doneAt } : {}) } satisfies HistoryState);
   }
 
   /**

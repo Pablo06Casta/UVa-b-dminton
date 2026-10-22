@@ -1,22 +1,27 @@
 import { describe, expect, it } from 'vitest';
 import type { Tournament } from '../../types';
-import { trajectoryOf } from './TrajectoryChart';
+import { entriesOf, monthlyOf, type TrajectoryEntry } from './TrajectoryChart';
 
-const t = (id: string, startDate: string, record?: Tournament['record']) => ({ id, name: id, startDate, city: 'X', record }) as Tournament;
+const e = (id: string, date: string, won: number, lost = 0, medals: Partial<TrajectoryEntry> = {}): TrajectoryEntry => ({ id, name: id, date, won, lost, gold: 0, silver: 0, bronze: 0, ...medals });
+const NOW = new Date('2026-10-21T10:00:00+02:00');
 
-describe('trayectoria del club', () => {
-  it('ordena por fecha, acumula los partidos ganados y se salta los torneos sin balance', () => {
-    const pts = trajectoryOf([
-      t('c', '2026-05-23', { won: 7, lost: 1, gold: 2, silver: 0, bronze: 0 }),
-      t('sin', '2026-03-01'),
-      t('a', '2025-12-20', { won: 4, lost: 2, gold: 0, silver: 0, bronze: 0 }),
-      t('b', '2026-04-14', { won: 9, lost: 2, gold: 1, silver: 1, bronze: 2 }),
-    ]);
-    expect(pts.map((p) => [p.id, p.won, p.total])).toEqual([['a', 4, 4], ['b', 9, 13], ['c', 7, 20]]);
-    expect(pts[1]).toMatchObject({ gold: 1, silver: 1, bronze: 2, lost: 2 });
+describe('trayectoria mensual de los últimos 5 años', () => {
+  it('abarca 60 meses hasta el mes actual, agrupa por mes y acumula', () => {
+    const m = monthlyOf([e('a', '2025-12-20', 4, 2), e('b', '2025-12-21', 1), e('c', '2026-04-14', 9, 2, { gold: 1, bronze: 2 }), e('fuera', '2021-09-30', 50), e('futuro', '2026-12-01', 7)], NOW);
+    expect(m).toHaveLength(60);
+    expect(m[0].key).toBe('2021-11');
+    expect(m.at(-1)!.key).toBe('2026-10');
+    const dec = m.find((x) => x.key === '2025-12')!;
+    expect([dec.won, dec.lost, dec.items.length, dec.total]).toEqual([5, 2, 2, 5]);
+    const apr = m.find((x) => x.key === '2026-04')!;
+    expect([apr.won, apr.total, apr.gold, apr.bronze]).toEqual([9, 14, 1, 2]);
+    expect(m.at(-1)!.total).toBe(14); // lo anterior a la ventana y lo futuro no cuentan
+    expect(m.find((x) => x.key === '2026-01')!.total).toBe(5); // los meses sin torneos repiten el acumulado
   });
 
-  it('sin ningún balance no hay puntos (la sección no se muestra)', () => {
-    expect(trajectoryOf([t('x', '2026-01-01')])).toEqual([]);
+  it('une torneos publicados, perfiles oficiales y los datos que aporta el club', () => {
+    const t = { id: 'T', name: 'Torneo', startDate: '2026-03-15', city: 'X', record: { won: 3, lost: 1, gold: 0, silver: 1, bronze: 0 } } as Tournament;
+    const all = entriesOf([t, { id: 'sin', name: 'Sin balance', startDate: '2026-01-01', city: 'X' } as Tournament], [{ id: 'H', name: 'Antiguo', date: '2025-02-02', won: 2, lost: 2 }]);
+    expect(all.map((x) => [x.id, x.won])).toEqual([['T', 3], ['H', 2]]);
   });
 });

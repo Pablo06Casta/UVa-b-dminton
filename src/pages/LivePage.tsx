@@ -138,7 +138,7 @@ export function LivePage() {
             </>
           )}
 
-          <TrajectoryChart tournaments={tournaments} />
+          <TrajectoryChart tournaments={tournaments} history={live?.history} />
 
           {live && <NotifyPanel live={live} />}
         </div>
