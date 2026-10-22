@@ -140,7 +140,7 @@ badminton.es no avisa cuando publica algo, así que el servidor lo detecta con l
 ## Imagen de «compartir torneo»: jornada por horas con rivales
 - La tarjeta del torneo lista todos los partidos de la jornada por hora (los terminados con V/D y marcador, el que se juega como AHORA, los pendientes con hora estimada) y el rival con **nombre y primer apellido** (`server/src/shareRivals.ts`), con el consentimiento expreso del club (Pablo, 22/10/2026).
 - Solo viaja en la imagen y en su página de compartir: la API pública (`/api/public/state`) sigue sin rivales (`PUBLIC_OPPONENTS=none`).
-- Salvaguardas: en torneos con categorías de menores (Sub-xx, infantil, juvenil…) no se nombra a rivales (`SHARE_RIVAL_YOUTH=true` lo permite); `SHARE_RIVAL_NAMES=off` lo quita del todo. El texto de privacidad lo recoge.
+- Salvaguardas: no se nombra a rivales de pruebas de menores (Sub-xx, infantil, juvenil… en el nombre de la prueba) ni en torneos solo de menores (`SHARE_RIVAL_YOUTH=true` lo permite); `SHARE_RIVAL_NAMES=off` lo quita del todo. El texto de privacidad lo recoge.
 
 ## Imágenes para Instagram por correo (agente Publicista)
 - Las tarjetas llevan el logotipo oficial de la UVa (`server/src/assets/logo-uva.png`). La tarjeta del torneo, en la víspera y sin orden de juego, lista a las personas del club con prueba, nivel y cabeza de serie.

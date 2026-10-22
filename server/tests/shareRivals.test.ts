@@ -34,12 +34,19 @@ describe('rivales en la imagen del torneo', () => {
     return { db, key: m.key };
   }
 
+  it('no nombra al rival de una prueba de menores aunque el torneo sea mixto', () => {
+    const { db } = seed();
+    db.prepare("update matches set json = replace(json, '\"drawName\":\"IM\"', '\"drawName\":\"IM Sub-15\"')").run();
+    expect(rivalNamesFor(db, GUID, 'Máster Sub-15 y Absoluto')).toEqual({});
+  });
+
   it('da el nombre y el primer apellido del rival por partido; se puede apagar y no se nombra en torneos de menores', () => {
     const { db, key } = seed();
     expect(rivalNamesFor(db, GUID, 'TOP Máster Absoluto')).toEqual({ [key]: 'Rival Uno' });
-    expect(rivalNamesFor(db, GUID, 'Máster Sub-13 y Absoluto')).toEqual({});
+    expect(rivalNamesFor(db, GUID, 'Máster Sub-13 y Absoluto')).toEqual({ [key]: 'Rival Uno' }); // torneo mixto: solo se bloquean las pruebas de menores
+    expect(rivalNamesFor(db, GUID, 'Campeonato Sub-13 y Sub-15')).toEqual({}); // torneo solo de menores
     settings.shareRivalYouth = true;
-    expect(rivalNamesFor(db, GUID, 'Máster Sub-13 y Absoluto')).toEqual({ [key]: 'Rival Uno' });
+    expect(rivalNamesFor(db, GUID, 'Campeonato Sub-13 y Sub-15')).toEqual({ [key]: 'Rival Uno' });
     settings.shareRivalNames = false;
     expect(rivalNamesFor(db, GUID, 'TOP Máster Absoluto')).toEqual({});
   });

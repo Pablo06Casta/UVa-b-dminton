@@ -17,19 +17,23 @@ export function nameAndFirstSurname(full: string): string {
   return out.join(' ');
 }
 
-/** Torneos con categorías de menores («Sub-13», «Sub 17», «infantil»…): ahí los rivales pueden ser menores y no se nombran. */
-export const hasYouthCategories = (tournamentName: string) => /\bsub[\s-]?\d{2}\b|infantil|juvenil|alev[ií]n|benjam[ií]n|cadete/i.test(tournamentName);
+/** Pruebas o torneos de categorías de menores («Sub-13», «Sub 17», «infantil»…): ahí los rivales pueden ser menores y no se nombran. */
+export const hasYouthCategories = (name: string) => /\bsub[\s-]?\d{2}\b|infantil|juvenil|alev[ií]n|benjam[ií]n|cadete/i.test(name);
 
 /**
  * Rivales de los partidos de un torneo para la imagen de «compartir torneo» (nombre y primer apellido), por clave de partido.
- * Solo sale en la imagen, no en la API pública. Con SHARE_RIVAL_NAMES=off, o en torneos con categorías de menores, queda vacío.
+ * Solo sale en la imagen, no en la API pública. Con SHARE_RIVAL_NAMES=off queda vacío; no se nombra a rivales de pruebas de menores
+ * (por el nombre de la prueba o del cuadro) ni, salvo SHARE_RIVAL_YOUTH=true, en torneos cuyo nombre no deja ver la prueba (solo torneos de menores).
  */
 export function rivalNamesFor(db: Db, tournamentGuid: string, tournamentName: string): Record<string, string> {
   if (!settings.shareRivalNames) return {};
-  if (!settings.shareRivalYouth && hasYouthCategories(tournamentName)) return {};
+  // Un torneo con varias categorías («Sub-13, Sub-17 y Absoluto») solo se bloquea en las pruebas que se identifican como de menores.
+  const wholeYouth = !settings.shareRivalYouth && hasYouthCategories(tournamentName) && !/absolut|sénior|senior|\bn[1-9]\b/i.test(tournamentName);
+  if (wholeYouth) return {};
   const out: Record<string, string> = {};
   for (const r of db.prepare('select json from matches where tournament_guid = ?').all(tournamentGuid) as unknown as { json: string }[]) {
     const m = JSON.parse(r.json) as StoredMatch;
+    if (!settings.shareRivalYouth && hasYouthCategories(`${m.drawName} ${m.eventCode ?? ''}`)) continue;
     const uvaOn = m.sides.map((s) => s.players.some((p) => p.uva));
     if (uvaOn[0] === uvaOn[1]) continue; // ninguno o los dos lados son del club: no hay «rival» que nombrar
     const other = m.sides[uvaOn[0] ? 1 : 0].players.filter((p) => !p.uva).map((p) => nameAndFirstSurname(p.name));
