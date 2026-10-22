@@ -14,6 +14,7 @@ import { currentShift } from './calibration';
 import { cardVersion, findCard, metaOf, renderPng, shareHtmlPage, type CardKind, type Found } from './share';
 import { rivalNamesFor } from './shareRivals';
 import { decide, draftFor } from './chronicle';
+import { buildSocial } from './social';
 import { buildOverview } from './adminView';
 import { importPlayersCsv } from './importCsv';
 import { addManualMatch, createManualTournament, deleteManualMatch, deleteManualTournament, listManual, setManualProgress, updateManualMatch } from './manual';
@@ -198,6 +199,16 @@ export function createApp(db: Db, engine: SyncEngine | undefined, hub: Hub) {
         }
         res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'X-Content-Type-Options': 'nosniff', ...headers });
         return res.end(c.newsBody);
+      }
+
+      // Paquete listo para publicar (imágenes + pie de foto de partida): `?when=previa` (torneos de mañana) o `?when=resultados` (fin de semana).
+      if (route === 'GET /api/public/social') {
+        if (limited(req)) throw new HttpFail(429, 'Demasiadas consultas.');
+        const when = url.searchParams.get('when') === 'resultados' ? 'resultados' : 'previa';
+        const proto = String(req.headers['x-forwarded-proto'] ?? 'https').split(',')[0];
+        const base = `${proto}://${req.headers['x-forwarded-host'] ?? req.headers.host}`;
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...cors(req) });
+        return res.end(JSON.stringify({ generatedAt: nowIso(), when, items: buildSocial(cachedPublicState(db).state, when, base) }));
       }
 
       if (route === 'GET /api/public/accuracy') {
