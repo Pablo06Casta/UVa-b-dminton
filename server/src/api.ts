@@ -10,6 +10,7 @@ import { kvGet } from './db';
 import { buildPublicState, cachedPublicState, invalidatePublicState, type PublicMatch } from './publicView';
 import { pushConfigured, subscribe, unsubscribe } from './push';
 import { buildAccuracy } from './accuracy';
+import { currentShift } from './calibration';
 import { cardVersion, findCard, metaOf, renderPng, shareHtmlPage, type CardKind, type Found } from './share';
 import { rivalNamesFor } from './shareRivals';
 import { buildOverview } from './adminView';
@@ -189,7 +190,7 @@ export function createApp(db: Db, engine: SyncEngine | undefined, hub: Hub) {
         const days = Math.min(120, Math.max(1, Number(new URL(req.url ?? '/', 'http://x').searchParams.get('days')) || 45));
         const since = new Date(Date.now() - days * 86_400_000).toISOString();
         res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, max-age=60', 'X-Content-Type-Options': 'nosniff', ...cors(req) });
-        return res.end(JSON.stringify({ generatedAt: nowIso(), days: buildAccuracy(db, since) }));
+        return res.end(JSON.stringify({ generatedAt: nowIso(), calibration: currentShift(db, new Date()), days: buildAccuracy(db, since) }));
       }
 
       if (route === 'GET /api/public/stream') {

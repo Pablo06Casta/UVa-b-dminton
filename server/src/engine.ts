@@ -12,6 +12,7 @@ import { invalidatePublicState } from './publicView';
 import { isUvaClub } from './uva';
 import type { OfficialSource } from './source';
 import { transformCalendar } from './calendar';
+import { applyShift, currentShift } from './calibration';
 import { defaultEstimateConfig, estimate, type Estimate, type Slot } from './estimate';
 import type { MatchRow } from './model';
 import { buildStoredMatch, type ClubEntrants, diffMatch, findClubEntrants, matchFingerprint, type EntrantLike, type StoredMatch } from './uva';
@@ -633,9 +634,11 @@ export class SyncEngine {
       startedSeenAt: (r.started_seen_at as string) ?? undefined, prevPollAt: (r.prev_poll_at as string) ?? undefined, finishedSeenAt: (r.finished_seen_at as string) ?? undefined,
     }));
     const est = estimate(slots, now, { ...defaultEstimateConfig, defaultMatchMin: settings.defaultMatchMin, changeoverMin: settings.changeoverMin });
-    kvSet(this.db, `estimate:${guid}`, { date, ...est }, now.toISOString());
+    // Se registra la estimación en bruto (para medir el modelo) y se publica la corregida con lo aprendido (ver calibration.ts).
+    const shown = applyShift(est, currentShift(this.db, now));
+    kvSet(this.db, `estimate:${guid}`, { date, ...shown }, now.toISOString());
     this.logEstimate(guid, date, est, now);
-    return est;
+    return shown;
   }
 
   /**

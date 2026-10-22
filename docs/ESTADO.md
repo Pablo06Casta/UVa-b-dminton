@@ -145,3 +145,8 @@ badminton.es no avisa cuando publica algo, así que el servidor lo detecta con l
 ## Imágenes para Instagram por correo (agente Publicista)
 - Las tarjetas llevan el logotipo oficial de la UVa (`server/src/assets/logo-uva.png`). La tarjeta del torneo, en la víspera y sin orden de juego, lista a las personas del club con prueba, nivel y cabeza de serie.
 - Dos tareas programadas envían por correo (FormSubmit) los enlaces de las imágenes (cuadrada 1080×1080 y vertical 1080×1920 para stories) y un pie de foto propuesto: **Publicista · Previa** (cada día a las 18:00, solo si mañana empieza un torneo con jugadores del club) y **Publicista · Resultados** (domingos a las 22:00, torneos del fin de semana con resultados).
+
+## Autocorrección de la estimación de horas (`server/src/calibration.ts`)
+- El modelo base (`estimate.ts`) se mide en cada jornada terminada (registro de acierto). Si de forma sistemática llega pronto o tarde, la hora publicada se corrige en sentido contrario: desvío mediano de las jornadas medidas × n/(n+4), con mínimo de 3 jornadas y topes de ±20 min (fin) y ±8 min (inicio). Se registra siempre la estimación en bruto, así que corregir no falsea el aprendizaje.
+- `/api/public/accuracy` incluye `calibration` (`endMin`, `startMin`, `days`) con el desvío aplicado. Hasta tener 3 jornadas terminadas con estimaciones guardadas es 0.
+- Probado en el banco con 11 jornadas reales: añadir regresión por fase de torneo, o dar más peso a los últimos partidos al medir el ritmo, no mejoró (la duración apenas cambia entre grupo y cuadro final: 28,7 vs 29,1 min), por eso no se añadieron.
