@@ -19,6 +19,9 @@ export const SIZES: Record<CardSize, { w: number; h: number }> = { og: { w: 1200
 const FONT_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), 'assets', 'fonts');
 const FONT_FILES = ['BarlowCondensed_700Bold.ttf', 'BarlowCondensed_800ExtraBold.ttf'].map((f) => path.join(FONT_DIR, f));
 
+/** Logotipo oficial de la UVa (el mismo de la web), incrustado en las tarjetas. */
+const LOGO = `data:image/png;base64,${fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), 'assets', 'logo-uva.png')).toString('base64')}`;
+
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 const upper = (s: string) => s.toLocaleUpperCase('es-ES');
 
@@ -77,8 +80,9 @@ function frame(w: number, h: number, chip: Chip | undefined, body: string): stri
 <polygon points="${w - 64},0 ${w - 30},0 ${w - 118},${h} ${w - 152},${h}" fill="#f2c230" fill-opacity=".9"/>
 <rect x="0" y="${h - 14}" width="${w}" height="14" fill="#f2c230"/>
 <g transform="translate(${pad} ${pad})">
-  <rect width="${tile}" height="${tile}" rx="6" fill="#fff" fill-opacity=".1" stroke="#fff" stroke-opacity=".35"/>
-  <text x="${tile / 2}" y="${tile * 0.68}" text-anchor="middle" font-weight="800" font-size="${tile * 0.5}" fill="#fff">UVa</text>
+  <clipPath id="logo"><rect width="${tile}" height="${tile}" rx="8"/></clipPath>
+  <image href="${LOGO}" width="${tile}" height="${tile}" clip-path="url(#logo)"/>
+  <rect width="${tile}" height="${tile}" rx="8" fill="none" stroke="#fff" stroke-opacity=".45" stroke-width="2"/>
   <text x="${tile + 20}" y="${tile * 0.48}" font-weight="800" font-size="${nameSize}" fill="#fff" letter-spacing="1.5">CLUB BÁDMINTON</text>
   <text x="${tile + 20}" y="${tile * 0.88}" font-weight="700" font-size="${nameSize * 0.55}" fill="#c4dcf3" letter-spacing="4">UNIVERSIDAD DE VALLADOLID</text>
 </g>
@@ -234,6 +238,21 @@ export function tournamentSvg(t: PublicTournament, size: CardSize, kind: 'torneo
         y += rg;
       }
       if (dayMatches.length > shown) rows += `<text x="${x}" y="${y}" font-weight="800" font-size="${rs * 0.85}" fill="#c4dcf3" letter-spacing="3">+${dayMatches.length - shown} PARTIDOS MÁS EN LA WEB</text>`;
+    } else if (t.entries.length) {
+      // Víspera del torneo, aún sin orden de juego: quién juega y en qué pruebas (nivel y cabeza de serie).
+      const byPlayer = new Map<string, string[]>();
+      for (const e of t.entries.filter((e) => e.status !== 'excluded')) {
+        const label = `${e.event.replace('-', ' ')}${e.seed ? ` · SERIE ${e.seed}` : ''}`;
+        byPlayer.set(e.player, [...(byPlayer.get(e.player) ?? []), label]);
+      }
+      const list = [...byPlayer].slice(0, vertical ? 9 : 5);
+      rows += `<text x="${x}" y="${y}" font-weight="800" font-size="${rowSize * 0.85}" fill="#f2c230" letter-spacing="4">NUESTROS JUGADORES${byPlayer.size > list.length ? ` · +${byPlayer.size - list.length}` : ''}</text>`;
+      y += rowGap * 0.9;
+      for (const [player, evs] of list.slice(0, rowsFit())) {
+        const nameW = vertical ? 400 : 330;
+        rows += `<text x="${x}" y="${y}" font-weight="800" font-size="${rowSize * 0.9}" fill="#fff">${esc(clip(upper(player), nameW, rowSize * 0.9))}</text><text x="${x + nameW + 20}" y="${y}" font-weight="700" font-size="${rowSize * 0.8}" fill="#8fc2ee">${esc(clip(upper(evs.join('   ')), w - x * 2 - nameW - 150, rowSize * 0.8))}</text>`;
+        y += rowGap * 0.85;
+      }
     } else if (t.uvaPlayers.length) {
       const names = t.uvaPlayers.slice(0, vertical ? 8 : 6);
       rows += `<text x="${x}" y="${y}" font-weight="800" font-size="${rowSize * 0.85}" fill="#f2c230" letter-spacing="4">JUGADORES DE LA UVA${t.uvaPlayers.length > names.length ? ` · +${t.uvaPlayers.length - names.length}` : ''}</text>`;
