@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://pablo06casta.github.io/UVa-b-dminton/sitemap.xml
+Sitemap: https://badmiton-uva.github.io/UVa-b-dminton/sitemap.xml

@@ -16,9 +16,9 @@ services:
       - key: CALENDAR_REFRESH_ENABLED
         value: "true"
       - key: SITE_URL
-        value: https://pablo06casta.github.io/UVa-b-dminton
+        value: https://badmiton-uva.github.io/UVa-b-dminton
       - key: CORS_ORIGINS
-        value: https://pablo06casta.github.io
+        value: https://badmiton-uva.github.io
       # La lista del club se construye sola desde el ranking oficial. «declared»: visibles (consentimiento declarado por la administración); los menores quedan ocultos.
       - key: AUTO_ROSTER_CONSENT
         value: declared

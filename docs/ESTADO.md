@@ -150,3 +150,8 @@ badminton.es no avisa cuando publica algo, así que el servidor lo detecta con l
 - El modelo base (`estimate.ts`) se mide en cada jornada terminada (registro de acierto). Si de forma sistemática llega pronto o tarde, la hora publicada se corrige en sentido contrario: desvío mediano de las jornadas medidas × n/(n+4), con mínimo de 3 jornadas y topes de ±20 min (fin) y ±8 min (inicio). Se registra siempre la estimación en bruto, así que corregir no falsea el aprendizaje.
 - `/api/public/accuracy` incluye `calibration` (`endMin`, `startMin`, `days`) con el desvío aplicado. Hasta tener 3 jornadas terminadas con estimaciones guardadas es 0.
 - Probado en el banco con 11 jornadas reales: añadir regresión por fase de torneo, o dar más peso a los últimos partidos al medir el ritmo, no mejoró (la duración apenas cambia entre grupo y cuadro final: 28,7 vs 29,1 min), por eso no se añadieron.
+
+## Cambio de nombre de la cuenta de GitHub (22/10/2026)
+- La cuenta pasó de `Pablo06Casta` a `badmiton-uva`: la web está ahora en https://badmiton-uva.github.io/UVa-b-dminton/ (la dirección antigua da 404) y Web-cerca en https://badmiton-uva.github.io/PABLO-APP/.
+- El servidor autoriza siempre las dos direcciones (`CLUB_ORIGINS` en `server/src/config.ts`); antes solo la antigua y por eso la web nueva no recibía noticias ni datos en vivo.
+- Pendiente del dueño: en Render, `SITE_URL=https://badmiton-uva.github.io/UVa-b-dminton` y `CORS_ORIGINS=https://badmiton-uva.github.io` (los enlaces de compartir usan `SITE_URL`).

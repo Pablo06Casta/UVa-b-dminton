@@ -6,9 +6,9 @@ Necesita un proceso siempre encendido y disco persistente (Fly.io o un VPS peque
 
 **A. VPS con Docker** (lo más sencillo)
 ```bash
-git clone https://github.com/Pablo06Casta/UVa-b-dminton.git && cd UVa-b-dminton/server
+git clone https://github.com/badmiton-uva/UVa-b-dminton.git && cd UVa-b-dminton/server
 git checkout claude/peaceful-ride-r3scdt
-npm install && npm run setup -- --site=https://pablo06casta.github.io/UVa-b-dminton   # crea .env con token y claves
+npm install && npm run setup -- --site=https://badmiton-uva.github.io/UVa-b-dminton   # crea .env con token y claves
 docker compose up -d            # o, sin Docker: npm start
 ```
 Pon delante un HTTPS (Caddy, Nginx o el del proveedor): los avisos push y la web publicada en HTTPS lo exigen.

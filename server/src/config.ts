@@ -5,6 +5,9 @@ const min = (name: string, d: number) => num(process.env[name], d) * 60_000;
 
 export type OpponentPolicy = 'none' | 'names';
 
+/** Direcciones de la web del club (GitHub Pages: la actual y la anterior al cambio de nombre de la cuenta); siempre autorizadas. */
+const CLUB_ORIGINS = ['https://badmiton-uva.github.io', 'https://pablo06casta.github.io'];
+
 /** Ajustes del servidor. Todo se puede cambiar con variables de entorno (ver .env.example). */
 export const settings = {
   port: num(process.env.PORT, 8787),
@@ -12,7 +15,7 @@ export const settings = {
   /** Token de administración. Sin él, el panel y la API de administración quedan desactivados. */
   adminToken: process.env.ADMIN_TOKEN ?? '',
   /** Orígenes autorizados a leer la API pública (la web del club). `*` solo para pruebas. */
-  corsOrigins: (process.env.CORS_ORIGINS ?? '').split(',').map((s) => s.trim()).filter(Boolean),
+  corsOrigins: [...new Set([...(process.env.CORS_ORIGINS ?? '').split(',').map((s) => s.trim()).filter(Boolean), ...CLUB_ORIGINS])],
 
   /** Lectura automática de badminton.es (cuadros, partidos y perfiles), con peticiones espaciadas. Activada por defecto; `OFFICIAL_READ_ENABLED=false` la desactiva. */
   officialReadEnabled: process.env.OFFICIAL_READ_ENABLED !== 'false',

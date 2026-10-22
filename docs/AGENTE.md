@@ -10,7 +10,7 @@ Para pausarlo: crear ese archivo y subirlo. Para reanudarlo: borrarlo.
 
 ## Qué vigila (cada noche)
 
-1. **Web:** `https://pablo06casta.github.io/UVa-b-dminton/` y sus páginas responden; el enlace «Web-cerca» funciona.
+1. **Web:** `https://badmiton-uva.github.io/UVa-b-dminton/` y sus páginas responden; el enlace «Web-cerca» funciona.
 2. **Servidor:** `/api/health?full=1` (diagnóstico completo; sin `?full=1` es una respuesta pequeña para vigilantes externos) (lectura activa, sin pausa ni circuito abierto, último trabajo reciente, errores), `/api/public/state`, `/api/public/news`.
 3. **Datos al día:** cada torneo con jugadores del club tiene `checkedAt` reciente (hoy: < 10 min; en 1-3 días: < 2 h; más lejos: < 8 h) y no está `stale`.
 4. **Inscripciones y torneos próximos** (30 días) con jugadores del club.
@@ -62,8 +62,8 @@ Para cada torneo/día de `/api/public/accuracy` con `finished=true` que **no fig
 ## Informes
 
 - Si hizo cambios, revirtió algo o hay un problema sin resolver: enviar un correo corto a pablitocastaneda06@gmail.com por el formulario de la web
-  (`POST https://formsubmit.co/ajax/pablitocastaneda06@gmail.com`, con cabeceras `Origin: https://pablo06casta.github.io` y
-  `Referer: https://pablo06casta.github.io/UVa-b-dminton/contacto`), asunto «Agente del club · <resumen>». Si todo está bien, no envía nada.
+  (`POST https://formsubmit.co/ajax/pablitocastaneda06@gmail.com`, con cabeceras `Origin: https://badmiton-uva.github.io` y
+  `Referer: https://badmiton-uva.github.io/UVa-b-dminton/contacto`), asunto «Agente del club · <resumen>». Si todo está bien, no envía nada.
 - La respuesta final de cada ejecución: máximo 8 líneas.
 
 ## Bitácora

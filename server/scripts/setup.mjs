@@ -1,12 +1,12 @@
 // Prepara el servidor en un solo paso: genera ADMIN_TOKEN y las claves de avisos (VAPID) y escribe .env.
-//   npm run setup -- --site=https://pablo06casta.github.io/UVa-b-dminton
+//   npm run setup -- --site=https://badmiton-uva.github.io/UVa-b-dminton
 // Los secretos se guardan solo en .env (no se suben a git) y no se muestran en pantalla.
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import webpush from 'web-push';
 
 const arg = (n) => process.argv.find((a) => a.startsWith(`--${n}=`))?.split('=').slice(1).join('=');
-const site = (arg('site') ?? 'https://pablo06casta.github.io/UVa-b-dminton').replace(/\/$/, '');
+const site = (arg('site') ?? 'https://badmiton-uva.github.io/UVa-b-dminton').replace(/\/$/, '');
 const origin = new URL(site).origin;
 if (fs.existsSync('.env') && !process.argv.includes('--force')) {
   console.error('Ya existe .env: no se sobrescribe. Usa --force para regenerarlo (se perderían las claves actuales).');
