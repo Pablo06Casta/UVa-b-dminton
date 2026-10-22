@@ -87,6 +87,8 @@ async function readJson(req: http.IncomingMessage): Promise<Record<string, unkno
   }
 }
 
+const STARTED_AT = new Date(Date.now() - process.uptime() * 1000).toISOString();
+
 export function createApp(db: Db, engine: SyncEngine | undefined, hub: Hub) {
   const hits = new Map<string, { n: number; reset: number }>();
   const adminHtml = () => fs.readFileSync(path.join(import.meta.dirname, 'admin.html'), 'utf8');
@@ -140,6 +142,9 @@ export function createApp(db: Db, engine: SyncEngine | undefined, hub: Hub) {
           ok: true,
           officialReadEnabled: settings.officialReadEnabled,
           time: nowIso(),
+          // Cuándo arrancó este proceso: si es reciente sin que haya habido un despliegue, el alojamiento lo había dormido o reiniciado.
+          startedAt: STARTED_AT,
+          uptimeMin: Math.round(process.uptime() / 60),
           // Diagnóstico sin datos personales: qué hizo el motor por última vez y el último error.
           engine: !engine || !d ? null : {
             ...(full ? d : { pausedUntil: d.pausedUntil, retrying: d.retrying.length, http: d.http }),
