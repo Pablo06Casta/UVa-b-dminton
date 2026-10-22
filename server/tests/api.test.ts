@@ -25,6 +25,7 @@ afterAll(() => new Promise<void>((r) => server.close(() => r())));
 describe('API', () => {
   it('health y estado público vacío', async () => {
     expect((await json(await call('/api/health'))).ok).toBe(true);
+    expect((await (await call('/api/health')).text()).length).toBeLessThan(1000); // los vigilantes externos rechazan respuestas grandes
     const s = await json(await call('/api/public/state'));
     expect(s.tournaments).toEqual([]);
   });

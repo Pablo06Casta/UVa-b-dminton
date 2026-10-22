@@ -11,7 +11,7 @@ Para pausarlo: crear ese archivo y subirlo. Para reanudarlo: borrarlo.
 ## Qué vigila (cada noche)
 
 1. **Web:** `https://pablo06casta.github.io/UVa-b-dminton/` y sus páginas responden; el enlace «Web-cerca» funciona.
-2. **Servidor:** `/api/health` (lectura activa, sin pausa ni circuito abierto, último trabajo reciente, errores), `/api/public/state`, `/api/public/news`.
+2. **Servidor:** `/api/health?full=1` (diagnóstico completo; sin `?full=1` es una respuesta pequeña para vigilantes externos) (lectura activa, sin pausa ni circuito abierto, último trabajo reciente, errores), `/api/public/state`, `/api/public/news`.
 3. **Datos al día:** cada torneo con jugadores del club tiene `checkedAt` reciente (hoy: < 10 min; en 1-3 días: < 2 h; más lejos: < 8 h) y no está `stale`.
 4. **Inscripciones y torneos próximos** (30 días) con jugadores del club.
 5. **Noticias:** todo torneo con jugadores del club terminado ayer u hoy tiene noticia; los datos coinciden con los cuadros oficiales.

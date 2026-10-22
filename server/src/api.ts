@@ -132,12 +132,20 @@ export function createApp(db: Db, engine: SyncEngine | undefined, hub: Hub) {
 
       if (route === 'GET /api/health') {
         const lastError = kvGet<{ at: string; job: string; message: string }>(db, 'last_error');
+        // Por defecto, una respuesta pequeña (< 1 KB): los vigilantes externos (cron-job.org, etc.) rechazan respuestas grandes. `?full=1` añade el diagnóstico completo.
+        const full = new URL(req.url ?? '/', 'http://x').searchParams.get('full') === '1';
+        const d = engine?.diagnose();
+        const last = engine?.lastJob;
         return send(res, 200, {
           ok: true,
           officialReadEnabled: settings.officialReadEnabled,
           time: nowIso(),
           // Diagnóstico sin datos personales: qué hizo el motor por última vez y el último error.
-          engine: engine ? { ...engine.diagnose(), lastJob: engine.lastJob ? { job: engine.lastJob.key.split(':')[0], at: engine.lastJob.at, ok: engine.lastJob.ok } : null, lastError: lastError ? { at: lastError.at, job: lastError.job.split(':')[0], message: lastError.message } : null } : null,
+          engine: !engine || !d ? null : {
+            ...(full ? d : { pausedUntil: d.pausedUntil, retrying: d.retrying.length, http: d.http }),
+            lastJob: last ? { job: last.key.split(':')[0], at: last.at, ok: last.ok } : null,
+            lastError: lastError ? { at: lastError.at, job: lastError.job.split(':')[0], message: full ? lastError.message : lastError.message.slice(0, 120) } : null,
+          },
         });
       }
 
