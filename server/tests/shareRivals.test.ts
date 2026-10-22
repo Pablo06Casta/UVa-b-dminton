@@ -89,7 +89,7 @@ describe('tarjeta de resultados con podio', () => {
       expect(svg).toContain('LUIS PRUEBA'); // las parejas, una línea por persona
       expect(svg).toContain('EVA PRUEBA');
       expect(svg).toContain('+1 MEDALLA MÁS'); // hay 4 medallas y el podio enseña 3
-      expect(svg).toContain('SÚMATE AL CLUB');
+      expect(svg).toContain('Súmate al club');
     }
   });
 
