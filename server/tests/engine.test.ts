@@ -136,14 +136,15 @@ describe('planificación y ciclo completo', () => {
     expect(await e.tick(min(16))).toBeDefined();
   });
 
-  it('un torneo ya pasado se lee una vez y no se vuelve a consultar', async () => {
+  it('un torneo ya pasado se lee una vez (cuadros) y no se vuelve a consultar', async () => {
     const db = memDb();
     const src = new FakeSource();
     src.infoData = info({ startDate: '2026-09-01', endDate: '2026-09-01', days: ['2026-09-01'] });
     createPlayer(db, { name: 'Ana Prueba', profile: PROFILE });
     const e = new SyncEngine(db, src);
     for (let i = 0; i < 6; i++) await e.tick(min(i));
-    expect(src.calls.filter((c) => c === 'draws' || c === 'day')).toHaveLength(0);
+    expect(src.calls.filter((c) => c === 'day')).toHaveLength(0); // el orden de juego de un torneo pasado nunca se lee
+    expect(src.calls.filter((c) => c === 'draws').length).toBeLessThanOrEqual(1); // los cuadros, una sola vez (histórico)
     expect(settings.intervals.live.day).toBe(3 * 60_000);
   });
 });
@@ -224,5 +225,38 @@ describe('torneo futuro sin cuadros publicados', () => {
     const at = (m: number) => e.plan(new Date(far.getTime() + m * 60_000)).some((j) => j.kind === 'draws');
     expect(at(60)).toBe(false);
     expect(at(121)).toBe(true);
+  });
+});
+
+describe('histórico: torneos ya terminados', () => {
+  const past = () => info({ startDate: '2026-09-01', endDate: '2026-09-01', days: ['2026-09-01'] });
+
+  it('se lee una vez el cuadro de un torneo pasado reciente, en un rato tranquilo, y no se repite', async () => {
+    const db = memDb();
+    const src = new FakeSource();
+    src.infoData = past();
+    createPlayer(db, { name: 'Ana Prueba', profile: PROFILE });
+    const e = new SyncEngine(db, src, () => NOW);
+    for (let i = 0; i < 12; i++) await e.tick(min(i));
+    expect(src.calls.filter((c) => c === 'draws')).toHaveLength(1);
+    for (let i = 0; i < 40; i++) await e.tick(min(30 + i * 30));
+    expect(src.calls.filter((c) => c === 'draws')).toHaveLength(1);
+    expect((db.prepare('select draws_ok_at from tournaments').get() as { draws_ok_at: string | null }).draws_ok_at).not.toBeNull();
+  });
+
+  it('no se lee mientras hay otro torneo en juego, ni si es más antiguo que BACKFILL_DAYS', async () => {
+    const db = memDb();
+    const src = new FakeSource();
+    src.infoData = past();
+    createPlayer(db, { name: 'Ana Prueba', profile: PROFILE });
+    const old = settings.backfillDays;
+    settings.backfillDays = 30; // el torneo es de hace 67 días
+    const e = new SyncEngine(db, src, () => NOW);
+    for (let i = 0; i < 12; i++) await e.tick(min(i));
+    expect(src.calls.filter((c) => c === 'draws')).toHaveLength(0);
+    settings.backfillDays = old;
+    db.prepare("insert into tournaments(guid, name, start_date, end_date, days_json, info_ok_at, discovered_at) values('LIVE', 'En juego', '2026-11-07', '2026-11-07', '[\"2026-11-07\"]', ?, ?)").run(NOW.toISOString(), NOW.toISOString());
+    const pastDraws = () => e.plan(min(60)).some((j) => j.kind === 'draws' && j.phase === 'past');
+    expect(pastDraws()).toBe(false); // hay un torneo en juego: lo urgente va primero
   });
 });

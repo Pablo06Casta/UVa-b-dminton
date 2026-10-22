@@ -3717,3 +3717,200 @@ abbr.est--big {
   font-weight: 500;
   opacity: 0.8;
 }
+
+/* ---------- Directo: trayectoria del club (partidos ganados a lo largo del tiempo) ---------- */
+.traj {
+  margin-top: 40px;
+  padding-top: 28px;
+  border-top: 1px solid var(--gray-200);
+}
+.traj h3 {
+  margin-bottom: 6px;
+  font-family: var(--font-sport);
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--uva-ink);
+}
+.traj__lead {
+  margin: 0 0 16px;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+.traj__stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+  margin: 0 0 16px;
+}
+.traj__stats div {
+  padding: 10px 14px;
+  background: var(--gray-50);
+  border-left: 4px solid var(--uva);
+}
+.traj__stats dt {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.traj__stats dd {
+  margin: 0;
+  font-family: var(--font-sport);
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--uva-ink);
+}
+.traj__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin: 0 0 8px;
+  padding: 0;
+  list-style: none;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.traj__legend li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.traj__sw {
+  display: inline-block;
+  flex: none;
+}
+.traj__sw--bar {
+  width: 14px;
+  height: 10px;
+  background: var(--blue);
+  border-radius: 2px;
+  opacity: 0.55;
+}
+.traj__sw--line {
+  width: 18px;
+  height: 0;
+  border-top: 2px solid var(--uva);
+}
+.traj__sw--medal {
+  width: 11px;
+  height: 11px;
+  background: #c99a06;
+  border: 2px solid var(--white);
+  box-shadow: 0 0 0 1px var(--gray-200);
+  border-radius: 50%;
+}
+.traj__scroll {
+  overflow-x: auto;
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+.traj__svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  font-family: var(--font);
+}
+.traj__grid {
+  stroke: var(--gray-200);
+  stroke-width: 1;
+}
+.traj__tick,
+.traj__xlab,
+.traj__xyear {
+  fill: var(--muted);
+  font-size: 12px;
+}
+.traj__xyear {
+  font-size: 11px;
+  fill: var(--gray-500);
+}
+.traj__bar {
+  fill: var(--blue);
+  opacity: 0.55;
+}
+.traj__line {
+  fill: none;
+  stroke: var(--uva);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.traj__dot {
+  fill: var(--uva);
+  stroke: var(--white);
+  stroke-width: 2;
+}
+.traj__end {
+  fill: var(--uva-ink);
+  font-size: 13px;
+  font-weight: 700;
+}
+.traj__hit {
+  fill: transparent;
+  cursor: pointer;
+  outline: none;
+}
+.traj__hit.is-on {
+  fill: rgba(47, 44, 100, 0.06);
+}
+.traj__hit:focus-visible {
+  stroke: var(--uva);
+  stroke-width: 2;
+}
+.traj__tip rect {
+  fill: var(--uva-ink);
+  opacity: 0.96;
+}
+.traj__tip text {
+  fill: #fff;
+  font-size: 12px;
+}
+.traj__tip text.is-title {
+  font-weight: 700;
+}
+.traj__table {
+  margin-top: 10px;
+  font-size: 0.9rem;
+}
+.traj__table summary {
+  cursor: pointer;
+  color: var(--blue-dark);
+  font-weight: 600;
+}
+.traj__tablewrap {
+  overflow-x: auto;
+  margin-top: 8px;
+}
+.traj__table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.traj__table th,
+.traj__table td {
+  padding: 6px 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--gray-200);
+  white-space: nowrap;
+}
+.traj__table tbody th {
+  font-weight: 600;
+  white-space: normal;
+  min-width: 200px;
+}
+.traj__note {
+  margin: 12px 0 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.traj__hint {
+  display: none;
+  margin: 4px 0 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+@media (max-width: 700px) {
+  .traj__hint {
+    display: block;
+  }
+}

@@ -115,6 +115,9 @@ export class SyncEngine {
     }
 
     const rows = this.db.prepare('select * from tournaments where hidden = 0 and manual = 0').all() as unknown as TournamentRow[];
+    // Los torneos ya terminados solo se leen (una vez, para la trayectoria) cuando no hay ninguno en juego, para no retrasar lo urgente.
+    const quiet = !rows.some((t) => ['live', 'imminent', 'recent'].includes(tournamentPhase({ startDate: t.start_date, endDate: t.end_date }, today)));
+    const backfillAt = ms(kvGet<{ at: string }>(this.db, 'backfill_at')?.at);
     for (const t of rows) {
       if (t.name && settings.excludedTournaments.test(t.name)) {
         this.db.prepare('update tournaments set hidden = 1 where guid = ?').run(t.guid);
@@ -127,7 +130,13 @@ export class SyncEngine {
       const infoDue = t.info_ok_at ? ms(t.info_ok_at) + iv.info : 0;
       // Sin información básica (fechas) no se sabe en qué fase está: se lee ya.
       jobs.push({ key: `info:${t.guid}`, kind: 'info', guid: t.guid, phase, due: infoDue, rank: phase === 'live' ? 2 : 3 });
-      if (!t.info_ok_at || phase === 'past') continue;
+      if (!t.info_ok_at) continue;
+      if (phase === 'past') {
+        if (!t.draws_ok_at && quiet && settings.backfillDays > 0 && t.start_date && daysBetween(t.start_date, today) <= settings.backfillDays) {
+          jobs.push({ key: `draws:${t.guid}`, kind: 'draws', guid: t.guid, phase, due: backfillAt + 10 * 60_000, rank: 6 });
+        }
+        continue;
+      }
       // La primera lectura de cuadros va antes que el orden de juego: de ahí sale quién es del club.
       const hasDraws = (this.db.prepare('select count(*) n from draws where tournament_guid = ?').get(t.guid) as unknown as { n: number }).n > 0;
       const linked = (this.db.prepare('select count(*) n from tournament_players where tournament_guid = ?').get(t.guid) as unknown as { n: number }).n > 0;
@@ -398,11 +407,18 @@ export class SyncEngine {
        on conflict(tournament_guid, draw_id) do update set name=excluded.name, type=excluded.type, json=excluded.json, updated_at=excluded.updated_at, has_club=excluded.has_club`,
     );
     const waiting = job.phase === 'far' || job.phase === 'soon' || job.phase === 'imminent';
+    const past = job.phase === 'past';
+    if (past) kvSet(this.db, 'backfill_at', { at: now.toISOString() }); // una lectura histórica cada 10 min como mucho
     let drawList: Awaited<ReturnType<OfficialSource['draws']>> = [];
     try {
       drawList = await this.src.draws(guid, p);
     } catch (e) {
-      if (!(e instanceof NoDrawsError) || !waiting) throw e;
+      if (!(e instanceof NoDrawsError) || !(waiting || past)) throw e;
+    }
+    // Torneo pasado sin cuadros: no hay nada que recuperar. Se da por leído para no volver a intentarlo.
+    if (drawList.length === 0 && past) {
+      this.db.prepare('update tournaments set draws_ok_at = ?, last_error = null where guid = ?').run(now.toISOString(), guid);
+      return;
     }
     // Torneo aún sin cuadros publicados: no es un fallo. Se anota y se vuelve a mirar más tarde (ver plan), sin reintentos con espera creciente.
     if (drawList.length === 0 && waiting) {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { PublicDraw } from '../src/publicView';
-import { uvaResults } from '../src/results';
+import { uvaRecord, uvaResults } from '../src/results';
 
 const e = (label: string, uva = false) => ({ label, uva });
 const m = (a: string, b: string, winner?: 1 | 2) => ({ a: e(a, a.startsWith('U')), b: e(b, b.startsWith('U')), winner, sets: [] as [number, number][] });
@@ -58,5 +58,25 @@ describe('resultados de la UVa', () => {
 
   it('ignora a quien no es de la UVa', () => {
     expect(uvaResults([ko('IM', [{ title: 'Final', matches: [m('X', 'Y', 1)] }])])).toEqual([]);
+  });
+});
+
+describe('balance de la UVa en un torneo', () => {
+  it('suma partidos ganados y perdidos de grupos y cuadros finales (sin contar «pasa directo» ni a rivales) y las medallas', () => {
+    const group: PublicDraw = {
+      id: 2, name: 'IM - Grupo A', type: 'roundrobin', base: 'IM', group: 'Grupo A', qualify: 1,
+      standings: [
+        { rank: 1, entrant: e('Ua', true), played: 2, won: 2, lost: 0, matches: '2-0', games: '4-0', points: '84-50', pts: 2 },
+        { rank: 2, entrant: e('X'), played: 2, won: 1, lost: 1, matches: '1-1', games: '2-2', points: '60-60', pts: 1 },
+      ],
+    };
+    const bye = { ...m('Ua', 'Bye', 1), b: { label: 'Bye', uva: false, bye: true } };
+    const draw = ko('IM', [
+      { title: 'Semi final', matches: [bye, m('Y', 'Z', 1)] },
+      { title: 'Final', matches: [m('Ua', 'Y', 1)] },
+    ]);
+    const results = uvaResults([group, draw]);
+    expect(uvaRecord([group, draw], results)).toEqual({ won: 3, lost: 0, gold: 1, silver: 0, bronze: 0 }); // 2 del grupo + la final; el «pasa directo» no cuenta
+    expect(uvaRecord([ko('DM', [{ title: 'Final', matches: [m('X', 'Y', 1)] }])], [])).toBeUndefined(); // nadie del club
   });
 });

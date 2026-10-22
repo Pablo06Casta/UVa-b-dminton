@@ -7,6 +7,7 @@ import { EntriesList } from '../components/tournaments/EntriesList';
 import { EndEstimate } from '../components/live/EndEstimate';
 import { MatchCard } from '../components/live/MatchCard';
 import { NotifyPanel } from '../components/live/NotifyPanel';
+import { TrajectoryChart } from '../components/live/TrajectoryChart';
 import { Notice, PageHeader } from '../components/ui';
 import { useTournaments } from '../hooks/useTournaments';
 import { usePageTitle } from '../hooks/usePageTitle';
@@ -136,6 +137,8 @@ export function LivePage() {
               )}
             </>
           )}
+
+          <TrajectoryChart tournaments={tournaments} />
 
           {live && <NotifyPanel live={live} />}
         </div>

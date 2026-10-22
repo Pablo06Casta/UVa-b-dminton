@@ -87,3 +87,34 @@ export function uvaResults(draws: PublicDraw[]): PublicResult[] {
   }
   return out.sort((a, b) => (a.place ?? 9) - (b.place ?? 9) || a.event.localeCompare(b.event, 'es') || a.entrant.localeCompare(b.entrant, 'es'));
 }
+
+/** Balance de la UVa en un torneo: partidos ganados y perdidos (grupos y cuadros finales) y medallas. Solo cuenta jugadores públicos del club. */
+export interface PublicRecord {
+  won: number;
+  lost: number;
+  gold: number;
+  silver: number;
+  bronze: number;
+}
+
+export function uvaRecord(draws: PublicDraw[], results: PublicResult[]): PublicRecord | undefined {
+  let won = 0;
+  let lost = 0;
+  for (const d of draws) {
+    for (const s of d.type === 'roundrobin' ? d.standings ?? [] : []) {
+      if (!s.entrant.uva) continue;
+      won += s.won;
+      lost += s.lost;
+    }
+    for (const r of d.type === 'knockout' ? d.rounds ?? [] : []) {
+      for (const m of r.matches) {
+        if (!m.winner || m.a.bye || m.b.bye) continue; // un «pasa directo» no es un partido ganado
+        if (m.a.uva) m.winner === 1 ? won++ : lost++;
+        if (m.b.uva) m.winner === 2 ? won++ : lost++;
+      }
+    }
+  }
+  const medal = (place: number) => results.filter((r) => r.place === place).length;
+  const rec = { won, lost, gold: medal(1), silver: medal(2), bronze: medal(3) };
+  return rec.won + rec.lost + rec.gold + rec.silver + rec.bronze > 0 ? rec : undefined;
+}

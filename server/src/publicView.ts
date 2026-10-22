@@ -6,7 +6,7 @@ import { tournamentPhase } from './policy';
 import { findByNameLoose, listPlayers, type Player } from './roster';
 import { isUvaClub } from './uva';
 import type { Estimate } from './estimate';
-import { uvaResults, type PublicResult } from './results';
+import { uvaRecord, uvaResults, type PublicRecord, type PublicResult } from './results';
 import { buildAutoNews, type PublicNews } from './news';
 import type { StoredMatch } from './uva';
 
@@ -97,6 +97,8 @@ export interface PublicTournament {
   draws: PublicDraw[];
   /** Resultados de la UVa por prueba (medallas y ronda alcanzada). */
   results: PublicResult[];
+  /** Balance de la UVa en el torneo (partidos ganados/perdidos y medallas): base de la gráfica de trayectoria. */
+  record?: PublicRecord;
   /** Inscripción y admisión de personas del club (solo con consentimiento). */
   entries: PublicEntry[];
   /** Última lectura correcta de este torneo. Los datos nunca son «en directo» si esta fecha es antigua. */
@@ -287,6 +289,8 @@ export function buildPublicState(db: Db, now = new Date()): PublicState {
     const stale = !t.manual && settings.officialReadEnabled && watching && (!checkedAt || now.getTime() - Date.parse(checkedAt) > settings.staleAfterMs);
 
     const draws = buildPublicDraws(db, t.guid, [...publicPlayers.values()]);
+    const results = uvaResults(draws);
+    const record = uvaRecord(draws, results);
     tournaments.push({
       id: t.guid,
       name: t.name,
@@ -301,7 +305,8 @@ export function buildPublicState(db: Db, now = new Date()): PublicState {
       matches,
       progress: est ? toProgress(est) : undefined,
       draws,
-      results: uvaResults(draws),
+      results,
+      ...(record ? { record } : {}),
       entries: (db.prepare('select player_id, event_name, status, seed, event_total from entries where tournament_guid = ?').all(t.guid) as unknown as { player_id: number; event_name: string; status: string; seed: number | null; event_total: number | null }[])
         .flatMap((e) => {
           const pl = publicPlayers.get(e.player_id);
