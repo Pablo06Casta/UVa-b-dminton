@@ -76,6 +76,10 @@ export const settings = {
   changeoverMin: num(process.env.CHANGEOVER_MINUTES, 3),
   /** Qué se publica de los rivales: nada o su nombre. Por defecto, nada (datos de terceros, posibles menores). */
   opponents: (process.env.PUBLIC_OPPONENTS ?? 'none') as OpponentPolicy,
+  /** Imagen de «compartir torneo»: el rival sale con nombre y primer apellido (con el consentimiento del club). `SHARE_RIVAL_NAMES=off` lo quita. */
+  shareRivalNames: process.env.SHARE_RIVAL_NAMES !== 'off',
+  /** Por defecto no se nombra a rivales en torneos con categorías de menores (Sub-13, Sub-17…). `SHARE_RIVAL_YOUTH=true` lo permite. */
+  shareRivalYouth: process.env.SHARE_RIVAL_YOUTH === 'true',
   /** Limita las consultas a la API pública por IP y minuto. */
   publicRatePerMinute: num(process.env.PUBLIC_RATE_PER_MINUTE, 120),
   /** Días que se conservan las entradas del registro de cambios. */

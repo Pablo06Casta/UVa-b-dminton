@@ -8,7 +8,8 @@ import type { PublicMatch, PublicState, PublicTournament } from './publicView';
 
 /**
  * Tarjetas para compartir (partido, torneo, resultados) como imagen PNG y como página con etiquetas Open Graph.
- * Todo sale de los datos públicos ya filtrados (jugadores con consentimiento; rivales solo si PUBLIC_OPPONENTS=names).
+ * Todo sale de los datos públicos ya filtrados (jugadores con consentimiento). Rivales: en el partido, solo si PUBLIC_OPPONENTS=names;
+ * en la imagen del torneo, con nombre y primer apellido (ver `shareRivals.ts`), salvo SHARE_RIVAL_NAMES=off o categorías de menores.
  */
 export type CardKind = 'partido' | 'torneo' | 'resultados';
 export type CardSize = 'og' | 'square' | 'story';
@@ -161,7 +162,7 @@ function titleBlock(t: PublicTournament, w: number, x: number, y: number, vertic
   return { svg: svg + `<text x="${x}" y="${sy}" font-weight="700" font-size="${vertical ? 40 : 32}" fill="#c4dcf3" letter-spacing="3">${esc(upper(sub))}</text>`, bottom: sy };
 }
 
-export function tournamentSvg(t: PublicTournament, size: CardSize, kind: 'torneo' | 'resultados'): string {
+export function tournamentSvg(t: PublicTournament, size: CardSize, kind: 'torneo' | 'resultados', rivals: Record<string, string> = {}): string {
   const { w, h } = SIZES[size];
   const vertical = size !== 'og';
   const x = vertical ? 64 : 56;
@@ -196,19 +197,43 @@ export function tournamentSvg(t: PublicTournament, size: CardSize, kind: 'torneo
     }
     if (!list.length) rows += `<text x="${x}" y="${y}" font-weight="700" font-size="${rowSize}" fill="#c4dcf3">AÚN SIN RESULTADOS</text>`;
   } else {
-    const nextUp = t.matches.filter((m) => m.state !== 'finished').sort((a, b) => (a.estimatedStart ?? a.plannedStart ?? `${a.date}T${a.time}`).localeCompare(b.estimatedStart ?? b.plannedStart ?? `${b.date}T${b.time}`));
+    const startOf = (m: PublicMatch) => m.estimatedStart ?? m.plannedStart ?? `${m.date ?? '9999-99-99'}T${m.time ?? '99:99'}`;
     const live = t.matches.some((m) => m.state === 'live');
     const done = t.matches.length > 0 && t.matches.every((m) => m.state === 'finished');
     chip = live ? CHIP.live : done ? CHIP.done : CHIP.tour;
-    if (nextUp.length) {
-      rows += `<text x="${x}" y="${y}" font-weight="800" font-size="${rowSize * 0.85}" fill="#f2c230" letter-spacing="4">PRÓXIMOS PARTIDOS</text>`;
-      y += rowGap * 0.85;
-      for (const m of nextUp.slice(0, rowsFit())) {
-        const when = m.state === 'live' ? 'AHORA' : `${m.estimatedStart ? clockOf(m.estimatedStart) + ' EST' : (m.time ?? '--:--')}`;
-        const label = `${m.players.join(' / ')} vs ${m.opponent ?? 'Rival'}`;
-        rows += `<text x="${x}" y="${y}" font-weight="800" font-size="${rowSize}" fill="#f2c230">${esc(when)}</text><text x="${x + (vertical ? 230 : 190)}" y="${y}" font-weight="700" font-size="${rowSize}" fill="#fff">${esc(clip(upper(label), w - x * 2 - (vertical ? 250 : 210), rowSize))}</text>`;
-        y += rowGap;
+    // Jornada que se enseña: la del primer partido pendiente (o en juego); si ya terminó todo, la última.
+    const ordered = [...t.matches].sort((a, b) => startOf(a).localeCompare(startOf(b)));
+    const day = (ordered.find((m) => m.state !== 'finished') ?? ordered.at(-1))?.date;
+    const dayMatches = ordered.filter((m) => m.date === day);
+    if (dayMatches.length) {
+      // Filas propias de esta tarjeta: más compactas para que quepa la jornada entera (en vertical, dos líneas: nuestros jugadores y «vs» el rival).
+      const rs = vertical ? 40 : 26;
+      const rg = vertical ? 118 : 32;
+      rows += `<text x="${x}" y="${y}" font-weight="800" font-size="${rowSize * 0.85}" fill="#f2c230" letter-spacing="4">PARTIDOS DE LA JORNADA</text>`;
+      y += rg * (vertical ? 0.75 : 1);
+      const room = (extra = 0) => Math.max(1, Math.floor((h - 70 - y - extra) / rg));
+      const shown = dayMatches.length > room() ? room(rg * 0.8) : dayMatches.length;
+      const resX = w - (vertical ? 200 : 190); // la franja amarilla ocupa el borde derecho
+      const labelX = x + (vertical ? 190 : 120);
+      for (const m of dayMatches.slice(0, shown)) {
+        const when = m.state === 'live' ? 'AHORA' : (m.estimatedStart ? clockOf(m.estimatedStart) : m.time) ?? '--:--';
+        const rival = upper(rivals[m.id] ?? m.opponent ?? 'Rival');
+        const us = upper(m.players.join(' / '));
+        const timeColor = m.state === 'live' ? '#ff6b6b' : m.state === 'finished' ? '#8fa3c7' : '#f2c230';
+        const nameColor = m.state === 'finished' ? '#dfe8f6' : '#fff';
+        const result = m.state === 'finished' ? `${m.outcome === 'win' ? 'V ' : m.outcome === 'loss' ? 'D ' : ''}${m.score ?? ''}`.trim() : m.estimatedStart && m.state === 'scheduled' ? 'EST.' : '';
+        const resColor = m.outcome === 'win' ? '#5ee08f' : m.outcome === 'loss' ? '#ff8a80' : '#c4dcf3';
+        const maxW = resX - labelX - 16;
+        rows += `<text x="${x}" y="${y}" font-weight="800" font-size="${rs}" fill="${timeColor}">${esc(when)}</text>`;
+        if (vertical) {
+          rows += `<text x="${labelX}" y="${y}" font-weight="700" font-size="${rs}" fill="${nameColor}">${esc(clip(us, maxW, rs))}</text><text x="${labelX}" y="${y + rs * 0.95}" font-weight="700" font-size="${rs * 0.85}" fill="#8fc2ee">vs ${esc(clip(rival, maxW - 60, rs * 0.85))}</text>`;
+        } else {
+          rows += `<text x="${labelX}" y="${y}" font-weight="700" font-size="${rs}" fill="${nameColor}">${esc(clip(`${us} VS ${rival}`, maxW, rs))}</text>`;
+        }
+        if (result) rows += `<text x="${resX}" y="${y}" text-anchor="end" font-weight="800" font-size="${rs * 0.9}" fill="${resColor}">${esc(upper(result))}</text>`;
+        y += rg;
       }
+      if (dayMatches.length > shown) rows += `<text x="${x}" y="${y}" font-weight="800" font-size="${rs * 0.85}" fill="#c4dcf3" letter-spacing="3">+${dayMatches.length - shown} PARTIDOS MÁS EN LA WEB</text>`;
     } else if (t.uvaPlayers.length) {
       const names = t.uvaPlayers.slice(0, vertical ? 8 : 6);
       rows += `<text x="${x}" y="${y}" font-weight="800" font-size="${rowSize * 0.85}" fill="#f2c230" letter-spacing="4">JUGADORES DE LA UVA${t.uvaPlayers.length > names.length ? ` · +${t.uvaPlayers.length - names.length}` : ''}</text>`;
@@ -224,7 +249,7 @@ export function tournamentSvg(t: PublicTournament, size: CardSize, kind: 'torneo
 
 /* ------------------------------ Búsqueda y PNG ------------------------------ */
 
-export type Found = { kind: 'partido'; t: PublicTournament; m: PublicMatch } | { kind: 'torneo' | 'resultados'; t: PublicTournament };
+export type Found = { kind: 'partido'; t: PublicTournament; m: PublicMatch } | { kind: 'torneo' | 'resultados'; t: PublicTournament; rivals?: Record<string, string> };
 
 export function findCard(state: PublicState, kind: CardKind, id: string): Found | undefined {
   if (kind === 'partido') {
@@ -238,7 +263,7 @@ export function findCard(state: PublicState, kind: CardKind, id: string): Found 
   return t ? { kind, t } : undefined;
 }
 
-export const svgOf = (f: Found, size: CardSize): string => (f.kind === 'partido' ? matchSvg(f.t, f.m, size) : tournamentSvg(f.t, size, f.kind));
+export const svgOf = (f: Found, size: CardSize): string => (f.kind === 'partido' ? matchSvg(f.t, f.m, size) : tournamentSvg(f.t, size, f.kind, f.kind === 'torneo' ? f.rivals : undefined));
 
 /** Cambia cuando cambia lo que se dibuja: así la dirección de la imagen cambia con el partido y las aplicaciones no enseñan una vista previa antigua. */
 export const cardVersion = (f: Found): string => createHash('sha1').update(svgOf(f, 'og')).digest('hex').slice(0, 8);

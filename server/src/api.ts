@@ -10,7 +10,8 @@ import { kvGet } from './db';
 import { buildPublicState, cachedPublicState, invalidatePublicState, type PublicMatch } from './publicView';
 import { pushConfigured, subscribe, unsubscribe } from './push';
 import { buildAccuracy } from './accuracy';
-import { cardVersion, findCard, metaOf, renderPng, shareHtmlPage, type CardKind } from './share';
+import { cardVersion, findCard, metaOf, renderPng, shareHtmlPage, type CardKind, type Found } from './share';
+import { rivalNamesFor } from './shareRivals';
 import { buildOverview } from './adminView';
 import { importPlayersCsv } from './importCsv';
 import { addManualMatch, createManualTournament, deleteManualMatch, deleteManualTournament, listManual, setManualProgress, updateManualMatch } from './manual';
@@ -21,6 +22,9 @@ const MAX_BODY = 64 * 1024;
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 
 /** Página que se ve al compartir un partido: etiquetas Open Graph para la vista previa y redirección a la web del club. */
+/** Añade a la tarjeta de torneo los rivales (nombre y primer apellido), que solo viajan en la imagen y no en la API. */
+const withRivals = (db: Db, f: Found | undefined): Found | undefined => (f && f.kind === 'torneo' ? { ...f, rivals: rivalNamesFor(db, f.t.id, f.t.name) } : f);
+
 export function shareHtml(tournament: string, m: PublicMatch, id: string): string {
   const when = [m.date, m.time].filter(Boolean).join(' ');
   const title = `${m.players.join(' / ')} · ${m.event ?? tournament}`;
@@ -221,7 +225,7 @@ export function createApp(db: Db, engine: SyncEngine | undefined, hub: Hub) {
       const og = /^\/og\/(partido|torneo|resultados)\/(.+)\.png$/.exec(url.pathname);
       if (req.method === 'GET' && og) {
         if (limited(req)) throw new HttpFail(429, 'Demasiadas consultas.');
-        const found = findCard(cachedPublicState(db).state, og[1] as CardKind, decodeURIComponent(og[2]));
+        const found = withRivals(db, findCard(cachedPublicState(db).state, og[1] as CardKind, decodeURIComponent(og[2])));
         if (!found) throw new HttpFail(404, 'No disponible.');
         const size = (['og', 'square', 'story'] as const).find((x) => x === url.searchParams.get('size')) ?? 'og';
         res.writeHead(200, { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=300', 'X-Content-Type-Options': 'nosniff', ...cors(req) });
@@ -235,7 +239,7 @@ export function createApp(db: Db, engine: SyncEngine | undefined, hub: Hub) {
         if (limited(req)) throw new HttpFail(429, 'Demasiadas consultas.');
         const kind = (share[1] ?? 'partido') as CardKind;
         const id = decodeURIComponent(share[2]);
-        const found = findCard(cachedPublicState(db).state, kind, id);
+        const found = withRivals(db, findCard(cachedPublicState(db).state, kind, id));
         if (!found) throw new HttpFail(404, 'No disponible.');
         const proto = String(req.headers['x-forwarded-proto'] ?? 'https').split(',')[0];
         const base = `${proto}://${req.headers['x-forwarded-host'] ?? req.headers.host}`;
