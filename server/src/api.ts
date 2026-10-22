@@ -13,6 +13,7 @@ import { buildAccuracy } from './accuracy';
 import { currentShift } from './calibration';
 import { cardVersion, findCard, metaOf, renderPng, shareHtmlPage, type CardKind, type Found } from './share';
 import { rivalNamesFor } from './shareRivals';
+import { decide, draftFor } from './chronicle';
 import { buildOverview } from './adminView';
 import { importPlayersCsv } from './importCsv';
 import { addManualMatch, createManualTournament, deleteManualMatch, deleteManualTournament, listManual, setManualProgress, updateManualMatch } from './manual';
@@ -91,6 +92,21 @@ async function readJson(req: http.IncomingMessage): Promise<Record<string, unkno
     throw new HttpFail(400, 'JSON no válido.');
   }
 }
+
+async function readForm(req: http.IncomingMessage): Promise<URLSearchParams> {
+  let size = 0;
+  const chunks: Buffer[] = [];
+  for await (const c of req) {
+    size += (c as Buffer).length;
+    if (size > 4096) throw new HttpFail(413, 'Cuerpo demasiado grande.');
+    chunks.push(c as Buffer);
+  }
+  return new URLSearchParams(Buffer.concat(chunks).toString('utf8'));
+}
+
+const html = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
+const approvalPage = (title: string, inner: string) =>
+  `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex"><title>${html(title)}</title><style>body{font:17px/1.6 system-ui,sans-serif;max-width:640px;margin:24px auto;padding:0 16px;color:#222}h1{font-size:1.4rem}.b{display:flex;gap:12px;margin-top:20px}button{font:inherit;padding:12px 20px;border:0;border-radius:6px;cursor:pointer}.ok{background:#2f2c64;color:#fff}.no{background:#e6e6ee}</style></head><body>${inner}</body></html>`;
 
 const STARTED_AT = new Date(Date.now() - process.uptime() * 1000).toISOString();
 
@@ -248,6 +264,28 @@ export function createApp(db: Db, engine: SyncEngine | undefined, hub: Hub) {
         const image = `${base}/og/${kind}/${encodeURIComponent(id)}.png?v=${cardVersion(found)}`;
         res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'public, max-age=60' });
         return res.end(shareHtmlPage({ title: m.title, description: m.description, image, target: settings.siteUrl ? `${settings.siteUrl}${m.webPath}` : '' }));
+      }
+
+      // Aprobación de una crónica redactada por IA: el enlace del correo lleva un código secreto por borrador.
+      const approve = /^\/aprobar-cronica\/([0-9A-Fa-f-]{36})$/.exec(url.pathname);
+      if (approve && (req.method === 'GET' || req.method === 'POST')) {
+        if (limited(req)) throw new HttpFail(429, 'Demasiadas consultas.');
+        const page = { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Frame-Options': 'DENY', 'Referrer-Policy': 'no-referrer' };
+        const guid = approve[1].toUpperCase();
+        if (req.method === 'GET') {
+          const code = url.searchParams.get('code') ?? '';
+          const d = draftFor(db, guid, code);
+          res.writeHead(d ? 200 : 404, page);
+          if (!d) return res.end(approvalPage('No disponible', '<h1>Enlace no válido o caducado</h1>'));
+          const c = d.chronicle;
+          const done = d.status !== 'draft' ? `<p><strong>Estado: ${d.status === 'published' ? 'publicada' : 'descartada'}.</strong></p>` : '';
+          return res.end(approvalPage('Revisar crónica', `<h1>${html(c.title)}</h1><p><em>${html(c.summary)}</em></p>${c.paragraphs.map((p) => `<p>${html(p)}</p>`).join('')}${done}<form method="post" class="b"><input type="hidden" name="code" value="${html(code)}"><button class="ok" name="action" value="publish">Publicar</button><button class="no" name="action" value="discard">Descartar</button></form>`));
+        }
+        const form = await readForm(req);
+        const action = form.get('action') === 'publish' ? 'publish' : 'discard';
+        const ok = decide(db, guid, form.get('code') ?? '', action);
+        res.writeHead(ok ? 200 : 404, page);
+        return res.end(approvalPage('Hecho', ok ? `<h1>${action === 'publish' ? 'Crónica publicada' : 'Crónica descartada'}</h1><p>${action === 'publish' ? 'Ya aparece en las noticias de la web.' : 'La noticia sigue con el texto automático.'}</p>` : '<h1>Enlace no válido</h1>'));
       }
 
       if (route === 'GET /admin') {

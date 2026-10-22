@@ -90,6 +90,18 @@ create table if not exists history_matches (
 );
 create index if not exists history_by_tournament on history_matches(tournament_guid);
 
+-- Crónicas de torneos redactadas por IA: borrador hasta que el responsable la aprueba por el enlace del correo.
+create table if not exists chronicles (
+  tournament_guid text primary key,
+  status text not null,
+  title text not null,
+  summary text not null,
+  body_json text not null,
+  code text not null,
+  created_at text not null,
+  decided_at text
+);
+
 -- Participantes del torneo que son del club. Solo se guarda el nombre de quienes son del club (minimización).
 create table if not exists entrants (
   tournament_guid text not null,

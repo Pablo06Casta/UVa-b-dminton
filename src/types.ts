@@ -276,6 +276,8 @@ export interface NewsItem {
   medals?: { place: 1 | 2 | 3; event: string; eventName: string; who: string; detail?: string }[];
   /** Puntos clave de la noticia (camino hasta la medalla, etc.). */
   highlights?: string[];
+  /** Crónica (párrafos) redactada con IA y aprobada por el club. */
+  body?: string[];
   /** Torneo al que se refiere (GUID oficial): una noticia escrita a mano sustituye a la automática del mismo torneo. */
   tournamentGuid?: string;
   /** `true` si la ha generado sola el servidor con los resultados oficiales. */

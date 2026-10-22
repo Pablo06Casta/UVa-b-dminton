@@ -14,6 +14,8 @@ export interface PublicNews {
   tournamentGuid: string;
   medals?: { place: 1 | 2 | 3; event: string; eventName: string; who: string; detail?: string }[];
   highlights?: string[];
+  /** Texto de la crónica (párrafos), si hay una redactada y aprobada. */
+  body?: string[];
   sources: { label: string; url: string }[];
   auto: true;
 }
@@ -34,7 +36,7 @@ const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one :
 const MEDAL_WORD = { 1: 'oro', 2: 'plata', 3: 'bronce' } as const;
 
 /** ¿Ha terminado el torneo? Por fecha, o porque ya no quedan partidos del último día. */
-function finished(t: PublicTournament, today: string): boolean {
+export function finished(t: PublicTournament, today: string): boolean {
   const last = t.endDate ?? t.startDate;
   if (!last) return false;
   return last < today || (t.progress?.date === last && t.progress.done);

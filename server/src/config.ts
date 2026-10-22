@@ -83,6 +83,14 @@ export const settings = {
   shareRivalNames: process.env.SHARE_RIVAL_NAMES !== 'off',
   /** Por defecto no se nombra a rivales en torneos con categorías de menores (Sub-13, Sub-17…). `SHARE_RIVAL_YOUTH=true` lo permite. */
   shareRivalYouth: process.env.SHARE_RIVAL_YOUTH === 'true',
+  /** Crónicas con IA: con clave de la API de Anthropic y correo del responsable, al terminar un torneo se redacta un borrador y se envía para su aprobación. Sin clave, solo hay las noticias de plantilla. */
+  chronicle: {
+    apiKey: process.env.ANTHROPIC_API_KEY ?? '',
+    model: process.env.CHRONICLE_MODEL ?? 'claude-sonnet-5-5',
+    email: process.env.CHRONICLE_EMAIL ?? '',
+    /** Dirección pública de este servidor (Render la da en RENDER_EXTERNAL_URL): para el enlace de aprobación. */
+    baseUrl: (process.env.PUBLIC_BASE_URL ?? process.env.RENDER_EXTERNAL_URL ?? '').replace(/\/$/, ''),
+  },
   /** Limita las consultas a la API pública por IP y minuto. */
   publicRatePerMinute: num(process.env.PUBLIC_RATE_PER_MINUTE, 120),
   /** Días que se conservan las entradas del registro de cambios. */

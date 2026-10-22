@@ -34,3 +34,8 @@ services:
       # Opcional: lista del club en CSV (la rellenas tú en Render; no se sube a git).
       - key: ROSTER_CSV
         sync: false
+      # Opcional: crónicas de torneos redactadas por IA, con borrador por correo para aprobarlo. Clave de la API de Anthropic y correo del responsable.
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: CHRONICLE_EMAIL
+        sync: false

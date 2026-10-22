@@ -155,3 +155,8 @@ badminton.es no avisa cuando publica algo, así que el servidor lo detecta con l
 - La cuenta pasó de `Pablo06Casta` a `badmiton-uva`: la web está ahora en https://badmiton-uva.github.io/UVa-b-dminton/ (la dirección antigua da 404) y Web-cerca en https://badmiton-uva.github.io/PABLO-APP/.
 - El servidor autoriza siempre las dos direcciones (`CLUB_ORIGINS` en `server/src/config.ts`); antes solo la antigua y por eso la web nueva no recibía noticias ni datos en vivo.
 - Pendiente del dueño: en Render, `SITE_URL=https://badmiton-uva.github.io/UVa-b-dminton` y `CORS_ORIGINS=https://badmiton-uva.github.io` (los enlaces de compartir usan `SITE_URL`).
+
+## Crónicas de torneos con IA y aprobación por correo (`server/src/chronicle.ts`)
+- Al terminar un torneo con resultados del club, el servidor pide a la API de Anthropic (`ANTHROPIC_API_KEY`, modelo `CHRONICLE_MODEL`, por defecto claude-sonnet-5-5) una crónica corta solo con datos públicos (jugadores con consentimiento, resultados, medallas, balance; nunca rivales). Se descarta si trae cifras que no están en los datos.
+- El borrador se envía por FormSubmit a `CHRONICLE_EMAIL` con un enlace `/aprobar-cronica/<torneo>?code=…` (código secreto por borrador, guardado con hash). Sin aprobar, la noticia sigue con el texto de plantilla. Al pulsar «Publicar», la crónica sustituye título, resumen y cuerpo de la noticia automática de ese torneo (campo `body`).
+- Sin `ANTHROPIC_API_KEY` o sin `CHRONICLE_EMAIL` la función está apagada. Revisión cada 15 min; un torneo se redacta una sola vez. Aparece en el texto de privacidad (Anthropic como encargado).

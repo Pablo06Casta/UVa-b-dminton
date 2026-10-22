@@ -26,6 +26,7 @@ function Story({ item }: { item: NewsItem }) {
       </p>
       <h3 id={`n-${item.id}`}>{item.title}</h3>
       <p className="nfeat__summary">{item.summary}</p>
+      {item.body?.map((para) => <p key={para} className="nfeat__body">{para}</p>)}
       {medals.length > 0 && (
         <ul className="nmedals">
           {medals.map((m) => (

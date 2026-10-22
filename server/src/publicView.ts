@@ -8,6 +8,7 @@ import { isUvaClub } from './uva';
 import type { Estimate } from './estimate';
 import { uvaRecord, uvaResults, type PublicRecord, type PublicResult } from './results';
 import { buildAutoNews, type PublicNews } from './news';
+import { applyChronicles } from './chronicle';
 import type { StoredMatch } from './uva';
 
 export interface PublicMatch {
@@ -339,7 +340,7 @@ export function buildPublicState(db: Db, now = new Date()): PublicState {
 
   const publicList = [...publicPlayers.values()].map((p) => ({ id: p.id, name: p.name, category: p.category ?? undefined }));
   // La versión cambia si cambia cualquier cosa publicable (jugadores o torneos); no depende de la hora de generación.
-  const news = buildAutoNews(tournaments, now);
+  const news = applyChronicles(db, buildAutoNews(tournaments, now));
   // Torneos con partidos en los perfiles que no están entre los publicados arriba (solo para la gráfica de trayectoria).
   const listed = new Set(tournaments.map((t) => t.id));
   const history: PublicHistory[] = [...hist.values()].filter((r) => !listed.has(r.g)).map((r) => ({ id: r.g, name: r.n, date: r.d, won: r.w, lost: r.l })).sort((a, b) => a.date.localeCompare(b.date));

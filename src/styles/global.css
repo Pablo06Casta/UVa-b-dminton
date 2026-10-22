@@ -3926,3 +3926,7 @@ abbr.est--big {
   stroke: var(--gray-200);
   stroke-width: 1;
 }
+.nfeat__body {
+  margin: 0 0 10px;
+  color: var(--text);
+}

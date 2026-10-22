@@ -8,6 +8,8 @@ import { remoteConfig, restoreIfMissing, saveSnapshot } from './remoteBackup';
 import { importPlayersCsv } from './importCsv';
 import { listPlayers } from './roster';
 import { SyncEngine } from './engine';
+import { cachedPublicState } from './publicView';
+import { draftChronicles } from './chronicle';
 import { notifyUpcoming, realSender } from './push';
 import { RealSource } from './source';
 import { OfficialLiveReaders } from './officialReaders';
@@ -95,6 +97,11 @@ const loop = async () => {
 if (engine) loop();
 
 setInterval(() => hub.heartbeat(), 25_000).unref();
+// Crónicas con IA (si hay clave): cada 15 minutos se mira si ha terminado algún torneo sin crónica; el borrador va por correo para su aprobación.
+if (settings.chronicle.apiKey && settings.chronicle.email) {
+  console.log('Crónicas con IA: activadas (borrador por correo para aprobar).');
+  setInterval(() => void draftChronicles(db, cachedPublicState(db).state, new Date()).catch((e) => console.error('crónicas', e)), 15 * 60_000).unref();
+}
 setInterval(() => engine?.prune(), 24 * 3600_000).unref();
 // Los avisos dependen de la hora: se comprueban cada minuto con lo ya guardado (sin pedir nada a badminton.es).
 if (sender) setInterval(() => void notifyUpcoming(db, new Date(), sender).catch((e) => console.error('push', e)), 60_000).unref();
