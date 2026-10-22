@@ -5,11 +5,11 @@ import { entriesOf, monthlyOf, type TrajectoryEntry } from './TrajectoryChart';
 const e = (id: string, date: string, won: number, lost = 0, medals: Partial<TrajectoryEntry> = {}): TrajectoryEntry => ({ id, name: id, date, won, lost, gold: 0, silver: 0, bronze: 0, ...medals });
 const NOW = new Date('2026-10-21T10:00:00+02:00');
 
-describe('trayectoria mensual de los últimos 5 años', () => {
-  it('abarca 60 meses hasta el mes actual, agrupa por mes y acumula', () => {
-    const m = monthlyOf([e('a', '2025-12-20', 4, 2), e('b', '2025-12-21', 1), e('c', '2026-04-14', 9, 2, { gold: 1, bronze: 2 }), e('fuera', '2021-09-30', 50), e('futuro', '2026-12-01', 7)], NOW);
-    expect(m).toHaveLength(60);
-    expect(m[0].key).toBe('2021-11');
+describe('trayectoria mensual desde enero de 2025', () => {
+  it('abarca desde enero de 2025 hasta el mes actual, agrupa por mes y acumula', () => {
+    const m = monthlyOf([e('a', '2025-12-20', 4, 2), e('b', '2025-12-21', 1), e('c', '2026-04-14', 9, 2, { gold: 1, bronze: 2 }), e('fuera', '2024-12-30', 50), e('futuro', '2026-12-01', 7)], NOW);
+    expect(m).toHaveLength(22);
+    expect(m[0].key).toBe('2025-01');
     expect(m.at(-1)!.key).toBe('2026-10');
     const dec = m.find((x) => x.key === '2025-12')!;
     expect([dec.won, dec.lost, dec.items.length, dec.total]).toEqual([5, 2, 2, 5]);

@@ -27,8 +27,8 @@ export interface MonthPoint {
   items: TrajectoryEntry[];
 }
 
-/** Años que abarca la gráfica. */
-export const YEARS = 5;
+/** Primer mes de la gráfica: badminton.es solo publica los partidos de los perfiles desde esa fecha. */
+export const START = '2025-01';
 
 const MEDAL = { gold: '#c99a06', silver: '#8c96a3', bronze: '#a9622d' } as const;
 const medalOf = (p: Pick<MonthPoint, 'gold' | 'silver' | 'bronze'>) => (p.gold ? 'gold' : p.silver ? 'silver' : p.bronze ? 'bronze' : undefined);
@@ -58,11 +58,11 @@ export function entriesOf(tournaments: Tournament[], history: LiveState['history
   return [...fromTournaments, ...fromProfiles, ...fromClub];
 }
 
-/** Un punto por mes durante los últimos `years` años (hasta el mes de `now`), con el total acumulado. */
-export function monthlyOf(entries: TrajectoryEntry[], now: Date, years = YEARS): MonthPoint[] {
-  const total = years * 12;
-  const keys = Array.from({ length: total }, (_, i) => {
-    const d = new Date(now.getFullYear(), now.getMonth() - (total - 1 - i), 1);
+/** Un punto por mes desde `start` (YYYY-MM) hasta el mes de `now`, con el total acumulado. */
+export function monthlyOf(entries: TrajectoryEntry[], now: Date, start = START): MonthPoint[] {
+  const total = (now.getFullYear() - Number(start.slice(0, 4))) * 12 + now.getMonth() - (Number(start.slice(5, 7)) - 1) + 1;
+  const keys = Array.from({ length: Math.max(1, total) }, (_, i) => {
+    const d = new Date(Number(start.slice(0, 4)), Number(start.slice(5, 7)) - 1 + i, 1);
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
   });
   const byKey = new Map(keys.map((k) => [k, { key: k, won: 0, lost: 0, gold: 0, silver: 0, bronze: 0, total: 0, items: [] as TrajectoryEntry[] }]));
@@ -86,7 +86,7 @@ export function monthlyOf(entries: TrajectoryEntry[], now: Date, years = YEARS):
   });
 }
 
-/** Trayectoria del club mes a mes en los últimos cinco años: partidos ganados cada mes (barras), total acumulado (línea) y medallas. */
+/** Trayectoria del club mes a mes desde enero de 2025: partidos ganados cada mes (barras), total acumulado (línea) y medallas. */
 export function TrajectoryChart({ tournaments, history }: { tournaments: Tournament[]; history?: LiveState['history'] }) {
   const months = useMemo(() => monthlyOf(entriesOf(tournaments, history), new Date()), [tournaments, history]);
   const [active, setActive] = useState<number | null>(null);
@@ -104,10 +104,9 @@ export function TrajectoryChart({ tournaments, history }: { tournaments: Tournam
   const lostTotal = months.reduce((n, m) => n + m.lost, 0);
   const golds = months.reduce((n, m) => n + m.gold, 0);
   const medalTournaments = months.reduce((n, m) => n + m.items.filter((e) => e.gold + e.silver + e.bronze > 0).length, 0);
-  const first = withData[0].key;
 
   const n = months.length;
-  const step = 17;
+  const step = 30;
   const padL = 44;
   const padR = 44;
   const padT = 22;
@@ -118,7 +117,7 @@ export function TrajectoryChart({ tournaments, history }: { tournaments: Tournam
   const { max: yMax, ticks } = niceScale(Math.max(wonTotal, ...months.map((m) => m.won)));
   const x = (i: number) => padL + step * (i + 0.5);
   const y = (v: number) => padT + innerH - (v / yMax) * innerH;
-  const barW = 9;
+  const barW = 14;
   // La línea empieza en el primer mes con datos: antes no es «cero partidos», es que badminton.es no los publica.
   const firstIdx = months.findIndex((m) => m.items.length > 0);
   const line = months.map((m, i) => (i < firstIdx ? '' : `${i === firstIdx ? 'M' : 'L'}${x(i).toFixed(1)} ${y(m.total).toFixed(1)}`)).filter(Boolean).join(' ');
@@ -142,7 +141,7 @@ export function TrajectoryChart({ tournaments, history }: { tournaments: Tournam
   return (
     <section className="traj" aria-labelledby="traj-title">
       <h3 id="traj-title">Trayectoria del club</h3>
-      <p className="traj__lead">Partidos ganados por los jugadores de la UVa cada mes durante los últimos {YEARS} años y total acumulado.</p>
+      <p className="traj__lead">Partidos ganados por los jugadores de la UVa cada mes desde enero de 2025 y total acumulado.</p>
 
       <dl className="traj__stats">
         <div><dt>Partidos ganados</dt><dd>{wonTotal}</dd></div>
@@ -158,7 +157,7 @@ export function TrajectoryChart({ tournaments, history }: { tournaments: Tournam
       </ul>
 
       <div className="traj__scroll" ref={scroller}>
-        <svg className="traj__svg" viewBox={`0 0 ${W} ${H}`} style={{ minWidth: Math.min(W, 900) }} role="group" aria-label={`Gráfica mensual de los últimos ${YEARS} años: ${wonTotal} partidos ganados en total`}>
+        <svg className="traj__svg" viewBox={`0 0 ${W} ${H}`} style={{ minWidth: Math.min(W, 760) }} role="group" aria-label={`Gráfica mensual desde enero de 2025: ${wonTotal} partidos ganados en total`}>
           {ticks.map((t) => (
             <g key={t}>
               <line className="traj__grid" x1={padL} x2={W - padR} y1={y(t)} y2={y(t)} />
@@ -243,9 +242,7 @@ export function TrajectoryChart({ tournaments, history }: { tournaments: Tournam
           </table>
         </div>
       </details>
-      <p className="traj__note">
-        Datos de badminton.es, que solo publica las últimas temporadas de cada jugador: los meses anteriores a {monthLabel(first)} aparecen vacíos. Solo cuentan los partidos de jugadores del club que han dado su consentimiento para aparecer en la web.
-      </p>
+      <p className="traj__note">Datos de badminton.es, que publica los partidos de cada jugador desde enero de 2025. Solo cuentan los partidos de jugadores del club que han dado su consentimiento para aparecer en la web.</p>
     </section>
   );
 }
