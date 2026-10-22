@@ -211,14 +211,15 @@ export function tournamentSvg(t: PublicTournament, size: CardSize, kind: 'torneo
     const dayMatches = ordered.filter((m) => m.date === day);
     if (dayMatches.length) {
       // Filas propias de esta tarjeta: más compactas para que quepa la jornada entera (en vertical, dos líneas: nuestros jugadores y «vs» el rival).
-      const rs = vertical ? 40 : 26;
-      const rg = vertical ? 118 : 32;
+      const tall = size === 'story';
+      const rs = tall ? 40 : size === 'square' ? 34 : 26;
+      const rg = tall ? 118 : size === 'square' ? 58 : 32;
       rows += `<text x="${x}" y="${y}" font-weight="800" font-size="${rowSize * 0.85}" fill="#f2c230" letter-spacing="4">PARTIDOS DE LA JORNADA</text>`;
-      y += rg * (vertical ? 0.75 : 1);
+      y += rg * (tall ? 0.75 : 1);
       const room = (extra = 0) => Math.max(1, Math.floor((h - 70 - y - extra) / rg));
       const shown = dayMatches.length > room() ? room(rg * 0.8) : dayMatches.length;
       const resX = w - (vertical ? 200 : 190); // la franja amarilla ocupa el borde derecho
-      const labelX = x + (vertical ? 190 : 120);
+      const labelX = x + (tall ? 190 : size === 'square' ? 150 : 120);
       for (const m of dayMatches.slice(0, shown)) {
         const when = m.state === 'live' ? 'AHORA' : (m.estimatedStart ? clockOf(m.estimatedStart) : m.time) ?? '--:--';
         const rival = upper(rivals[m.id] ?? m.opponent ?? 'Rival');
@@ -229,7 +230,7 @@ export function tournamentSvg(t: PublicTournament, size: CardSize, kind: 'torneo
         const resColor = m.outcome === 'win' ? '#5ee08f' : m.outcome === 'loss' ? '#ff8a80' : '#c4dcf3';
         const maxW = resX - labelX - 16;
         rows += `<text x="${x}" y="${y}" font-weight="800" font-size="${rs}" fill="${timeColor}">${esc(when)}</text>`;
-        if (vertical) {
+        if (tall) {
           rows += `<text x="${labelX}" y="${y}" font-weight="700" font-size="${rs}" fill="${nameColor}">${esc(clip(us, maxW, rs))}</text><text x="${labelX}" y="${y + rs * 0.95}" font-weight="700" font-size="${rs * 0.85}" fill="#8fc2ee">vs ${esc(clip(rival, maxW - 60, rs * 0.85))}</text>`;
         } else {
           rows += `<text x="${labelX}" y="${y}" font-weight="700" font-size="${rs}" fill="${nameColor}">${esc(clip(`${us} VS ${rival}`, maxW, rs))}</text>`;
