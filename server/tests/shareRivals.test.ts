@@ -68,3 +68,33 @@ describe('rivales en la imagen del torneo', () => {
     expect(renderPng({ kind: 'torneo', t, rivals: { a: 'Rival Uno' } }, 'og').subarray(1, 4).toString()).toBe('PNG');
   });
 });
+
+describe('tarjeta de resultados con podio', () => {
+  const t = {
+    id: GUID, name: 'TOP Máster Absoluto', startDate: '2026-10-24', city: 'Villanueva de la Vera', uvaPlayers: [], matches: [], draws: [], entries: [], stale: false, manual: false,
+    results: [
+      { event: 'IM', entrant: 'Ana Prueba', place: 1, text: 'Oro', done: true },
+      { event: 'DM', entrant: 'Luis Prueba / Eva Prueba', place: 2, text: 'Plata', done: true },
+      { event: 'IF', entrant: 'Marta Prueba', place: 3, text: 'Bronce', done: true },
+      { event: 'DF', entrant: 'Otra Prueba', place: 3, text: 'Bronce', done: true },
+    ],
+  } as unknown as PublicTournament;
+
+  it('con medallas dibuja el podio 2-1-3 con los nombres, el titular publicitario y la llamada a la acción (cuadrada y vertical)', () => {
+    for (const size of ['square', 'story'] as const) {
+      const svg = tournamentSvg(t, size, 'resultados');
+      expect(svg).toContain('EL TALENTO UVA');
+      expect(svg).toContain('SUBE AL PODIO');
+      expect(svg).toContain('ANA PRUEBA');
+      expect(svg).toContain('LUIS PRUEBA'); // las parejas, una línea por persona
+      expect(svg).toContain('EVA PRUEBA');
+      expect(svg).toContain('+1 MEDALLA MÁS'); // hay 4 medallas y el podio enseña 3
+      expect(svg).toContain('SÚMATE AL CLUB');
+    }
+  });
+
+  it('sin medallas, o en formato panorámico, sigue la lista de resultados', () => {
+    expect(tournamentSvg({ ...t, results: [{ event: 'IM', entrant: 'Ana Prueba', text: 'Cae en Cuartos', done: true }] } as unknown as PublicTournament, 'square', 'resultados')).not.toContain('SUBE AL PODIO');
+    expect(tournamentSvg(t, 'og', 'resultados')).not.toContain('SUBE AL PODIO');
+  });
+});

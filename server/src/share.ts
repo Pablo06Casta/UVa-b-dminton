@@ -166,7 +166,77 @@ function titleBlock(t: PublicTournament, w: number, x: number, y: number, vertic
   return { svg: svg + `<text x="${x}" y="${sy}" font-weight="700" font-size="${vertical ? 40 : 32}" fill="#c4dcf3" letter-spacing="3">${esc(upper(sub))}</text>`, bottom: sy };
 }
 
+
+/* ------------------------- Podio (resultados con medallas) ------------------------- */
+
+/** Pelota de bádminton (volante) dibujada con formas simples, centrada en (0,0) y apuntando a la izquierda. */
+const SHUTTLE = `<g><ellipse cx="0" cy="0" rx="34" ry="30" fill="#f4f1e8" stroke="#cfd6e2" stroke-width="2"/><path d="M30 -22 L150 -60 L150 60 L30 22 Z" fill="#fbfbf7" stroke="#cfd6e2" stroke-width="2"/><path d="M60 -30V30M90 -42V42M120 -52V52" stroke="#cfd6e2" stroke-width="3"/><rect x="26" y="-30" width="10" height="60" fill="#1f7a4d"/></g>`;
+
+/**
+ * Tarjeta de resultados con podio en tres alturas (1.º en el centro), titular publicitario y llamada a la acción.
+ * Se dibuja en un lienzo de 1080×1350 y se escala para que quepa en cuadrado o vertical.
+ */
+export function podiumSvg(t: PublicTournament, size: CardSize): string {
+  const { w, h } = SIZES[size];
+  const k = Math.min(w / 1080, h / 1350);
+  const ox = (w - 1080 * k) / 2;
+  const oy = (h - 1350 * k) / 2;
+  const medals = t.results.filter((r) => r.place);
+  const pick = (p: 1 | 2 | 3) => medals.find((r) => r.place === p);
+  const extra = medals.length - [1, 2, 3].filter((p) => pick(p as 1 | 2 | 3)).length;
+  // Alturas: escalón central más alto. Cada uno: [x, ancho, arriba, color, número].
+  const steps = [
+    { p: 2 as const, x: 64, w: 330, top: 800, fill: 'url(#silver)', line: '#9aa3af' },
+    { p: 1 as const, x: 372, w: 336, top: 730, fill: 'url(#gold)', line: '#e0a914' },
+    { p: 3 as const, x: 686, w: 330, top: 850, fill: 'url(#bronze)', line: '#b8793f' },
+  ];
+  const NAVY = '#14132f';
+  const nameLines = (who: string): string[] => {
+    const parts = who.split(/\s+\/\s+/);
+    return parts.length > 1 ? parts : wrap(who, 15, 2);
+  };
+  const stepSvg = steps
+    .map((s) => {
+      const r = pick(s.p);
+      const lines = r ? nameLines(r.entrant) : [];
+      const cx = s.x + s.w / 2;
+      const hgt = 1050 - s.top;
+      const evY = s.top - 26;
+      const nameY = evY - 64 - (lines.length - 1) * 46;
+      const label = lines.map((l, i) => `<text x="${cx}" y="${nameY + i * 46}" text-anchor="middle" font-weight="800" font-size="44" fill="${NAVY}">${esc(clip(upper(l), s.w + 20, 44))}</text>`).join('');
+      const ev = r ? `<rect x="${cx - 36}" y="${evY - 50}" width="72" height="6" fill="${s.line}"/><text x="${cx}" y="${evY}" text-anchor="middle" font-weight="700" font-size="26" letter-spacing="2" fill="#44506b">${esc(clip(upper(eventName(r.event)), s.w + 20, 26))}</text>` : '';
+      const numSize = Math.min(190, hgt * 0.6);
+      return `${label}${ev}<rect x="${s.x}" y="${s.top}" width="${s.w}" height="${hgt}" fill="${s.fill}"/><rect x="${s.x}" y="${s.top}" width="${s.w}" height="10" fill="#fff" fill-opacity=".35"/>
+<text x="${cx}" y="${s.top + hgt * 0.62}" text-anchor="middle" font-weight="800" font-size="${numSize}" fill="${NAVY}">${s.p}</text><text x="${cx}" y="${s.top + hgt * 0.93}" text-anchor="middle" font-weight="800" font-size="${Math.min(64, hgt * 0.24)}" fill="${NAVY}">UVa</text>`;
+    })
+    .join('');
+  const place = [t.name, t.city].filter(Boolean).join(' · ');
+  const body = `
+<defs>
+  <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset=".6" stop-color="#eef2f9"/><stop offset="1" stop-color="#dfe6f2"/></linearGradient>
+  <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f3cf55"/><stop offset="1" stop-color="#d9a514"/></linearGradient>
+  <linearGradient id="silver" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d9dde4"/><stop offset="1" stop-color="#a7aeb9"/></linearGradient>
+  <linearGradient id="bronze" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d9965c"/><stop offset="1" stop-color="#a8683a"/></linearGradient>
+  <clipPath id="logoClip"><rect width="112" height="112"/></clipPath>
+</defs>
+<g stroke="#9fb0cf" stroke-opacity=".45" stroke-width="2"><path d="M-600 640H1700M-600 700H1700M-600 760H1700M-600 820H1700M-600 880H1700M-90 600V900M90 600V900M270 600V900M450 600V900M630 600V900M810 600V900M990 600V900M1170 600V900"/></g>
+<g stroke="#fff" stroke-opacity=".8" stroke-width="5"><path d="M-600 1070H1700M-600 1140H1700M540 1050V1190"/></g>
+<g transform="translate(64 56)"><image href="${LOGO}" width="112" height="112" clip-path="url(#logoClip)"/></g>
+<rect x="206" y="62" width="3" height="100" fill="#14132f" fill-opacity=".6"/>
+<text x="232" y="98" font-weight="800" font-size="48" fill="${NAVY}">CLUB</text><text x="232" y="140" font-weight="800" font-size="48" fill="${NAVY}">BÁDMINTON UVA</text>
+<text x="540" y="360" text-anchor="middle" font-weight="800" font-size="168" fill="${NAVY}">EL TALENTO UVA</text>
+<text x="540" y="506" text-anchor="middle" font-weight="800" font-size="150" fill="#e0a914">SUBE AL PODIO</text>
+${stepSvg}
+<g transform="translate(900 1125) rotate(-8)">${SHUTTLE}</g>
+<line x1="64" x2="1016" y1="1182" y2="1182" stroke="#fff" stroke-opacity=".7" stroke-width="2"/>
+<text x="540" y="1244" text-anchor="middle" font-weight="800" font-size="46" fill="#fff">${esc(clip(upper(place), 960, 46))}</text>
+<line x1="64" x2="1016" y1="1268" y2="1268" stroke="#fff" stroke-opacity=".7" stroke-width="2"/>
+<text x="540" y="1318" text-anchor="middle" font-weight="700" font-size="36" fill="#fff" letter-spacing="1">${esc(upper(extra > 0 ? `+${extra} ${extra === 1 ? 'medalla más' : 'medallas más'} · ` : ''))}¡Súmate al club! #ClubBadmintonUVA</text>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" font-family="Barlow Condensed"><defs><linearGradient id="floor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3b5f95"/><stop offset="1" stop-color="#25406d"/></linearGradient><linearGradient id="skyBg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#dfe6f2"/></linearGradient></defs><rect width="${w}" height="${h}" fill="url(#skyBg)"/><rect y="${oy + 1030 * k}" width="${w}" height="${h}" fill="url(#floor)"/><g transform="translate(${ox} ${oy}) scale(${k})">${body}</g></svg>`;
+}
+
 export function tournamentSvg(t: PublicTournament, size: CardSize, kind: 'torneo' | 'resultados', rivals: Record<string, string> = {}): string {
+  if (kind === 'resultados' && size !== 'og' && t.results.some((r) => r.place)) return podiumSvg(t, size);
   const { w, h } = SIZES[size];
   const vertical = size !== 'og';
   const x = vertical ? 64 : 56;
