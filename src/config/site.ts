@@ -22,7 +22,7 @@ export const nav = [
  * la web validaría el formulario pero NO simularía ningún envío.
  */
 export const contactForm = {
-  endpoint: (import.meta.env.VITE_CONTACT_ENDPOINT as string | undefined)?.trim() || 'https://formsubmit.co/ajax/pablitocastaneda06@gmail.com',
+  endpoint: (import.meta.env.VITE_CONTACT_ENDPOINT as string | undefined)?.trim() || 'https://formsubmit.co/ajax/cduvabad@gmail.com',
   /** Segundos mínimos entre que se carga el formulario y se acepta un envío (antispam básico). */
   minFillSeconds: 3,
   maxMessageLength: 2000,
