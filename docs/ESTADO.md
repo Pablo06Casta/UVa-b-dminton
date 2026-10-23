@@ -165,3 +165,10 @@ badminton.es no avisa cuando publica algo, así que el servidor lo detecta con l
 ## Paquete para redes (`GET /api/public/social?when=previa|resultados`, `server/src/social.ts`)
 - El servidor calcula solo qué toca publicar (torneos de mañana con gente del club, o torneos jugados el fin de semana con resultados) y devuelve imágenes (generadas por el propio servidor, sin leer la web ni usar generadores externos), pie de foto de partida con datos reales, versión corta, jugadores (nombre y primer apellido), medallas y si los resultados son provisionales.
 - Las tareas programadas «Publicista · Previa» y «Publicista · Resultados» usan este paquete como base y lo envían por correo mejorando el texto.
+
+## Sección LIGA (`/liga`, `server/src/liga.ts`, `ligaParse.ts`)
+- Liga Nacional de Clubes, división Primera PLATA (donde juega el CD Universidad de Valladolid en 2026-27): clasificación, jornadas con sus encuentros (fecha, hora, resultado, enlace al acta en badminton.es), calendario del club y lista de clubes. El club se marca en amarillo.
+- El servidor busca solo la última edición («Liga Nacional de Clubes edición 2026-2027») en el buscador de badminton.es una vez al día y lee la división (`LIGA_DIVISION`, por defecto «plata»; `LIGA_TOURNAMENT_ID` fija una edición a mano; `LIGA_ENABLED=false` lo apaga). Cadencia: cada 5 min el día de jornada, cada hora si hay encuentros en los próximos 3 días, cada 12 h el resto.
+- Endpoint `GET /api/public/liga` (con ETag). La web lo pide al abrir y se renueva sola (1 min en día de jornada, 5 min si no).
+- Estado a 23/10/2026: edición 2026-27 publicada con 12 clubes y 66 encuentros en 11 jornadas, sin fechas ni resultados; la web lo indica y se rellena sola.
+- Dirección de la sede (`club.json`): Universidad de Valladolid (UVa) · Calle Ruiz Hernández, Valladolid (se muestra en Contacto y en el aviso legal como «Sede del club»).

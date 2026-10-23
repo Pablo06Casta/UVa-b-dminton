@@ -5,6 +5,7 @@ import { HomePage } from './pages/HomePage';
 
 // Cada página se descarga al visitarla: la portada carga solo lo suyo.
 const named = <T extends string>(load: () => Promise<Record<T, React.ComponentType>>, name: T) => lazy(() => load().then((m) => ({ default: m[name] })));
+const LigaPage = named(() => import('./pages/LigaPage'), 'LigaPage');
 const LivePage = named(() => import('./pages/LivePage'), 'LivePage');
 const CalendarPage = named(() => import('./pages/CalendarPage'), 'CalendarPage');
 const HistoryPage = named(() => import('./pages/HistoryPage'), 'HistoryPage');
@@ -18,6 +19,7 @@ export default function App() {
     <Routes>
       <Route element={<Layout />}>
         <Route index element={<HomePage />} />
+        <Route path="liga" element={<LigaPage />} />
         <Route path="directo" element={<LivePage />} />
         <Route path="historia" element={<HistoryPage />} />
         <Route path="calendario" element={<CalendarPage />} />

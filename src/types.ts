@@ -284,3 +284,45 @@ export interface NewsItem {
   auto?: boolean;
   sources?: { label: string; url: string }[];
 }
+
+/** Liga Nacional de Clubes (división que sigue el club), tal como la publica el servidor en /api/public/liga. */
+export interface LigaClub {
+  rank: number;
+  club: string;
+  uva: boolean;
+  points: number;
+  adjusted: boolean;
+  played: number;
+  won: number;
+  drawn: number;
+  lost: number;
+  matchesFor: number;
+  matchesAgainst: number;
+}
+
+export interface LigaFixture {
+  id: number;
+  home: string;
+  away: string;
+  homeScore?: number;
+  awayScore?: number;
+  date?: string;
+  time?: string;
+  moved: boolean;
+  uva: boolean;
+  status: 'scheduled' | 'finished';
+  url: string;
+}
+
+export interface LigaData {
+  edition: string;
+  division: string;
+  updatedAt: string;
+  officialUrl: string;
+  /** `false` hasta que se juegue el primer encuentro. */
+  started: boolean;
+  clubs: LigaClub[];
+  rounds: { round: number; date?: string; fixtures: LigaFixture[] }[];
+  currentRound?: number;
+  version: string;
+}

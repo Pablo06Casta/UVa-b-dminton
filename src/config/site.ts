@@ -5,6 +5,7 @@ export const club = clubJson as ClubInfo;
 
 export const nav = [
   { to: '/', label: 'Inicio' },
+  { to: '/liga', label: 'Liga' },
   { to: '/directo', label: 'Directo' },
   { to: '/calendario', label: 'Calendario' },
   { to: '/historia', label: 'Historia' },
