@@ -24,7 +24,7 @@ const playsToday = (liga?: LigaData) => {
 /** Liga: sale al instante con lo de la última visita y se renueva sola (con ETag en el servidor, casi gratis si no hay cambios). */
 export function useLiga() {
   const [liga, setLiga] = useState<LigaData | undefined>(() => (hasApi ? cached() : undefined));
-  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>(() => (hasApi && cached() ? 'ready' : 'loading'));
+  const [status, setStatus] = useState<'loading' | 'ready' | 'pending' | 'error'>(() => (hasApi && cached() ? 'ready' : 'loading'));
   const alive = useRef(true);
   const current = useRef(liga);
   current.current = liga;
@@ -33,6 +33,7 @@ export function useLiga() {
     fetchLiga()
       .then((data) => {
         if (!alive.current) return;
+        if (!data) return setStatus((s) => (s === 'ready' ? s : 'pending'));
         setLiga(data);
         setStatus('ready');
         try {
@@ -51,9 +52,9 @@ export function useLiga() {
     let timer: ReturnType<typeof setTimeout>;
     const tick = () => {
       load();
-      timer = setTimeout(tick, playsToday(current.current) ? REFRESH_LIVE_MS : REFRESH_MS);
+      timer = setTimeout(tick, !current.current || playsToday(current.current) ? REFRESH_LIVE_MS : REFRESH_MS);
     };
-    timer = setTimeout(tick, REFRESH_MS);
+    timer = setTimeout(tick, current.current ? REFRESH_MS : REFRESH_LIVE_MS);
     const onVisible = () => document.visibilityState === 'visible' && load();
     document.addEventListener('visibilitychange', onVisible);
     return () => {

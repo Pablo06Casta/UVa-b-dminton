@@ -116,6 +116,7 @@ export function LigaPage() {
           {!hasApi && <Notice kind="warning" title="Sin conexión con el servidor">Esta web todavía no está conectada al servidor del club, por lo que no hay datos de la Liga.</Notice>}
           {hasApi && status === 'error' && !liga && <Notice kind="warning" title="No se puede cargar la Liga">El servidor no responde ahora mismo. Se volverá a intentar automáticamente.</Notice>}
           {hasApi && status === 'loading' && !liga && <p className="empty">Cargando…</p>}
+          {hasApi && status === 'pending' && !liga && <Notice title="Preparando la Liga">El servidor está leyendo ahora mismo la clasificación y las jornadas de badminton.es. Esta página se rellenará sola en un minuto.</Notice>}
 
           {liga && (
             <>

@@ -122,7 +122,7 @@ export class SyncEngine {
     // Liga Nacional de Clubes (división que sigue el club): clasificación y encuentros, con más frecuencia en jornada.
     if (this.src.leagueDraw && this.src.leagueEditions && settings.liga.enabled) {
       const snap = kvGet<LigaSnapshot>(this.db, 'liga');
-      jobs.push({ key: 'liga', kind: 'liga', phase: 'far', due: snap ? ms(snap.updatedAt) + ligaEveryMs(snap, new Date(nowMs)) : 0, rank: 6 });
+      jobs.push({ key: 'liga', kind: 'liga', phase: 'far', due: snap ? ms(snap.updatedAt) + ligaEveryMs(snap, new Date(nowMs)) : 0, rank: snap ? 6 : 2 }); // la primera lectura va pronto: sin ella la página está vacía
     }
 
     // Histórico de partidos de las personas del club (perfil oficial): una persona por lectura, una vuelta al día, solo con lo urgente atendido.

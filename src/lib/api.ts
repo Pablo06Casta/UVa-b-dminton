@@ -11,7 +11,13 @@ async function getJson<T>(path: string): Promise<T> {
 }
 
 export const fetchLiveState = () => getJson<LiveState>('/api/public/state');
-export const fetchLiga = () => getJson<LigaData>('/api/public/liga');
+/** `null` = el servidor aún no ha leído la Liga (404): se muestra «preparando», no un error. */
+export const fetchLiga = async (): Promise<LigaData | null> => {
+  const res = await fetch(API_URL + '/api/public/liga', { headers: { Accept: 'application/json' } });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return (await res.json()) as LigaData;
+};
 export const fetchNews = () => getJson<{ news: NewsItem[] }>('/api/public/news');
 export const fetchCalendar = () => getJson<{ meta: { comprobadoEl: string; fuente: string; nota: string }; tournaments: Tournament[] }>('/api/public/calendar');
 export const fetchPushKey = () => getJson<{ enabled: boolean; publicKey: string | null }>('/api/public/push/key');
