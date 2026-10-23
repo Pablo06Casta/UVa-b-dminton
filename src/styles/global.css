@@ -11,6 +11,10 @@
   --blue-dark: #174a75;
   --blue-light: #dcebf7;
   --tint: #e9e9f5;
+  --violet: #7a3fe0; /* morado de resalte de la Liga: contrasta con el azul-morado del logotipo */
+  --violet-deep: #4b1fa8;
+  --violet-soft: #e5dafb;
+  --violet-softer: #f2ecfd;
   --white: #fff;
   --gray-50: #f5f7fa;
   --gray-200: #dde3ec;
@@ -3933,12 +3937,12 @@ abbr.est--big {
 }
 
 /* ---------- Liga: clasificación, jornadas y clubes ---------- */
-.liga .lnext { margin: 20px 0; padding: 16px 18px; background: var(--gray-50); border-left: 5px solid var(--uva); }
+.liga .lnext { margin: 20px 0; padding: 16px 18px; background: var(--violet-softer); border-left: 5px solid var(--violet); }
 .liga .lnext h2 { margin: 0 0 10px; font-family: var(--font-sport); font-size: 1.35rem; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; color: var(--uva-ink); }
 .lnext__pos { margin: 10px 0 0; color: var(--muted); }
 .ltabs { display: flex; gap: 6px; margin: 22px 0 14px; border-bottom: 2px solid var(--gray-200); overflow-x: auto; }
 .ltabs button { padding: 10px 18px; font: inherit; font-weight: 700; color: var(--muted); background: none; border: 0; border-bottom: 4px solid transparent; margin-bottom: -2px; cursor: pointer; white-space: nowrap; }
-.ltabs button.is-on { color: var(--uva); border-bottom-color: #f2c230; }
+.ltabs button.is-on { color: var(--uva); border-bottom-color: var(--violet); }
 .ltable__wrap { overflow-x: auto; }
 .ltable { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
 .ltable th, .ltable td { padding: 9px 10px; text-align: center; border-bottom: 1px solid var(--gray-200); white-space: nowrap; }
@@ -3946,7 +3950,7 @@ abbr.est--big {
 .ltable tbody th { text-align: left; font-weight: 600; white-space: normal; min-width: 180px; }
 .ltable td:first-child { font-weight: 700; color: var(--uva); }
 .ltable__pts { font-weight: 800; color: var(--uva-ink); }
-.ltable tr.is-uva { background: #fff8dc; }
+.ltable tr.is-uva { background: var(--violet-soft); box-shadow: inset 4px 0 0 var(--violet); }
 .ltable tr.is-uva th { font-weight: 800; }
 .ltable__note { margin: 8px 2px; font-size: 0.82rem; color: var(--muted); }
 .ltag { display: inline-block; margin-left: 8px; padding: 1px 8px; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.06em; color: #fff; background: var(--uva); border-radius: 3px; vertical-align: 2px; }
@@ -3958,13 +3962,14 @@ abbr.est--big {
 .lround__title { margin: 4px 0 10px; font-family: var(--font-sport); font-size: 1.5rem; text-transform: uppercase; color: var(--uva-ink); }
 .lfix__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .lfix { display: grid; gap: 4px; padding: 11px 14px; background: var(--white); border: 1px solid var(--gray-200); border-left: 4px solid var(--gray-200); }
-.lfix.is-uva { border-left-color: #f2c230; background: #fffbea; }
+.lfix.is-uva { border-color: var(--violet); border-left-width: 5px; background: var(--violet-soft); }
 .lfix__when { font-size: 0.85rem; color: var(--muted); }
 .lfix__when small { color: #b45309; }
 .lfix__teams { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: center; }
 .lfix__team { font-weight: 600; text-align: right; overflow-wrap: anywhere; }
 .lfix__team--away { text-align: left; }
 .lfix__team.is-win { font-weight: 800; color: var(--uva-ink); }
+.lfix.is-uva .lfix__score { background: var(--violet-deep); }
 .lfix__score { min-width: 64px; padding: 2px 10px; text-align: center; font-family: var(--font-sport); font-size: 1.35rem; font-weight: 800; color: var(--white); background: var(--uva); border-radius: 3px; }
 .lfix:not(.is-done) .lfix__score { color: var(--muted); background: var(--gray-50); font-size: 1rem; }
 .lfix__link { justify-self: end; font-size: 0.82rem; }
@@ -3972,7 +3977,7 @@ abbr.est--big {
 .lcal__round { padding-top: 12px; font-family: var(--font-sport); font-size: 1.3rem; font-weight: 800; color: var(--uva); }
 .lclubs { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; }
 .lclubs li { padding: 12px 14px; font-weight: 600; background: var(--gray-50); border-left: 4px solid var(--gray-200); }
-.lclubs li.is-uva { background: #fff8dc; border-left-color: #f2c230; }
+.lclubs li.is-uva { background: var(--violet-soft); border-left-color: var(--violet); }
 @media (max-width: 560px) {
   .lfix__teams { grid-template-columns: 1fr; gap: 2px; }
   .lfix__team, .lfix__team--away { text-align: left; }
