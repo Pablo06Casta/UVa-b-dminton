@@ -54,5 +54,12 @@
     "role": "Jugador",
     "photo": "/images/jugadores/marco-terhi.webp",
     "consent": true
+  },
+  {
+    "id": "samuel-munoz",
+    "name": "Samuel Muñoz Sanz",
+    "role": "Jugador",
+    "photo": "/images/jugadores/samuel-munoz.webp",
+    "consent": true
   }
 ]
