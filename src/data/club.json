@@ -47,11 +47,11 @@
     }
   },
   "legal": {
-    "holder": "Pablo Martín Castañeda (responsable de la web del Club Bádminton Universidad de Valladolid)",
+    "holder": "Universidad de Valladolid",
     "taxId": null,
-    "address": null,
-    "email": "cduvabad@gmail.com",
+    "address": "Calle Ruiz Hernández, Valladolid",
+    "email": "pablitocastaneda06@gmail.com",
     "dpoEmail": "cduvabad@gmail.com",
-    "updated": "2026-10-21"
+    "updated": "2026-10-23"
   }
 }

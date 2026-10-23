@@ -31,8 +31,7 @@ export function LegalPage() {
           {pending && (
             <Notice kind="warning" title="Versión de prueba">
               Estos textos son una versión de prueba, redactada conforme a la normativa vigente, pendiente de revisión jurídica. Los datos marcados
-              como pendientes (NIF, domicilio y, en su caso, otro titular) los debe facilitar el club o la Universidad de Valladolid antes de la
-              publicación definitiva.
+              como pendientes los debe facilitar el club o la Universidad de Valladolid antes de la publicación definitiva.
             </Notice>
           )}
           <p className="legal__updated">Versión de prueba · Última actualización: {new Date(legal.updated).toLocaleDateString('es-ES', { dateStyle: 'long' })}</p>
@@ -44,7 +43,6 @@ export function LegalPage() {
             </p>
             <ul>
               <Data label="Titular" value={legal.holder} />
-              <Data label="NIF / CIF" value={legal.taxId} />
               <Data label="Domicilio" value={legal.address} />
               <Data label="Sede del club" value={club.address} />
               <Data label="Correo electrónico" value={mail} />
