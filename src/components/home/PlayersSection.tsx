@@ -77,7 +77,7 @@ export function PlayersSection() {
     for (const p of live?.players ?? []) {
       const extra = manual.find((m) => sameName(m.name, p.name));
       if (extra) used.add(extra.id);
-      out.push({ key: `s${p.id}`, name: p.name, role: extra?.role ?? 'Jugador/a', photo: extra?.photo, info: extra?.info ?? p.category, medals: medalsOf(p.name, tournaments) });
+      out.push({ key: `s${p.id}`, name: extra?.name ?? p.name, role: extra?.role ?? 'Jugador/a', photo: extra?.photo, info: extra?.info ?? p.category, medals: medalsOf(p.name, tournaments) });
     }
     for (const m of manual) if (!used.has(m.id)) out.push({ key: m.id, name: m.name, role: m.role, photo: m.photo, info: m.info, medals: medalsOf(m.name, tournaments) });
     return out.sort((a, b) => b.medals.gold - a.medals.gold || b.medals.silver - a.medals.silver || b.medals.bronze - a.medals.bronze || a.name.localeCompare(b.name, 'es'));

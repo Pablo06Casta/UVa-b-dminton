@@ -1,1 +1,30 @@
-[]
+[
+  {
+    "id": "cristina-rivera",
+    "name": "Cristina Rivera Zapatero",
+    "role": "Jugadora",
+    "photo": "/images/jugadores/cristina-rivera.webp",
+    "consent": true
+  },
+  {
+    "id": "eduardo-bayon",
+    "name": "Eduardo Bayón Cascajo",
+    "role": "Jugador",
+    "photo": "/images/jugadores/eduardo-bayon.webp",
+    "consent": true
+  },
+  {
+    "id": "enrique-fernandez",
+    "name": "Enrique Fernández Polo",
+    "role": "Jugador",
+    "photo": "/images/jugadores/enrique-fernandez.webp",
+    "consent": true
+  },
+  {
+    "id": "javier-gonzalez",
+    "name": "Javier González Martín",
+    "role": "Jugador",
+    "photo": "/images/jugadores/javier-gonzalez.webp",
+    "consent": true
+  }
+]
