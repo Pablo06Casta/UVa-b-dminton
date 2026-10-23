@@ -15,6 +15,7 @@ import { cardVersion, findCard, metaOf, renderPng, shareHtmlPage, type CardKind,
 import { rivalNamesFor } from './shareRivals';
 import { decide, draftFor } from './chronicle';
 import { buildSocial } from './social';
+import { backupState } from './remoteBackup';
 import { buildLiga, type LigaSnapshot } from './liga';
 import { buildOverview } from './adminView';
 import { importPlayersCsv } from './importCsv';
@@ -169,6 +170,7 @@ export function createApp(db: Db, engine: SyncEngine | undefined, hub: Hub) {
           startedAt: STARTED_AT,
           uptimeMin: Math.round(process.uptime() / 60),
           // Diagnóstico sin datos personales: qué hizo el motor por última vez y el último error.
+          ...(full ? { backup: backupState } : {}),
           engine: !engine || !d ? null : {
             ...(full ? d : { pausedUntil: d.pausedUntil, retrying: d.retrying.length, http: d.http }),
             lastJob: last ? { job: last.key.split(':')[0], at: last.at, ok: last.ok } : null,

@@ -39,6 +39,7 @@ async function cmd(c: RemoteConfig, args: (string | number)[]): Promise<unknown>
 
 /** Restaura la última copia en `file` si todavía no existe. Devuelve true si se restauró. */
 export async function restoreIfMissing(file: string, c: RemoteConfig | undefined = remoteConfig()): Promise<boolean> {
+  backupState.configured = !!c;
   if (!c || fs.existsSync(file)) return false;
   try {
     const meta = (await cmd(c, ['GET', `${PREFIX}meta`])) as string | null;
@@ -48,17 +49,22 @@ export async function restoreIfMissing(file: string, c: RemoteConfig | undefined
     for (let i = 0; i < chunks; i++) b64 += String(await cmd(c, ['GET', `${PREFIX}${i}`]));
     fs.mkdirSync(path.dirname(file), { recursive: true });
     fs.writeFileSync(file, zlib.gunzipSync(Buffer.from(b64, 'base64')));
+    backupState.restored = true;
     return true;
   } catch (e) {
+    backupState.lastError = `restaurar: ${(e as Error).message}`;
     console.error('No se pudo restaurar la copia remota:', (e as Error).message);
     return false;
   }
 }
 
 let lastHash = '';
+/** Estado de la copia remota, para el diagnóstico (`/api/health?full=1`). */
+export const backupState: { configured: boolean; restored?: boolean; lastSavedAt?: string; lastError?: string } = { configured: false };
 
 /** Guarda una copia comprimida de la base de datos. Si no ha cambiado desde la última, no envía nada. */
 export async function saveSnapshot(db: Db, c: RemoteConfig | undefined = remoteConfig()): Promise<boolean> {
+  backupState.configured = !!c;
   if (!c) return false;
   const tmp = path.join(os.tmpdir(), `club-snapshot-${process.pid}.sqlite`);
   try {
@@ -71,8 +77,10 @@ export async function saveSnapshot(db: Db, c: RemoteConfig | undefined = remoteC
     for (let i = 0; i < chunks; i++) await cmd(c, ['SET', `${PREFIX}${i}`, b64.slice(i * CHUNK, (i + 1) * CHUNK)]);
     await cmd(c, ['SET', `${PREFIX}meta`, JSON.stringify({ chunks, at: new Date().toISOString() })]);
     lastHash = hash;
+    backupState.lastSavedAt = new Date().toISOString();
     return true;
   } catch (e) {
+    backupState.lastError = `guardar: ${(e as Error).message}`;
     console.error('No se pudo guardar la copia remota:', (e as Error).message);
     return false;
   } finally {

@@ -133,7 +133,8 @@ export class SyncEngine {
 
     const rows = this.db.prepare('select * from tournaments where hidden = 0 and manual = 0').all() as unknown as TournamentRow[];
     // Los torneos ya terminados solo se leen (una vez, para la trayectoria) cuando no hay ninguno en juego, para no retrasar lo urgente.
-    const quiet = !rows.some((t) => ['live', 'imminent', 'recent'].includes(tournamentPhase({ startDate: t.start_date, endDate: t.end_date }, today)));
+    // Solo un torneo en juego lo retrasa: las noticias y la gráfica se rehacen enseguida tras un reinicio, empezando por el torneo terminado más reciente.
+    const quiet = !rows.some((t) => tournamentPhase({ startDate: t.start_date, endDate: t.end_date }, today) === 'live');
     const backfillAt = ms(kvGet<{ at: string }>(this.db, 'backfill_at')?.at);
     for (const t of rows) {
       if (t.name && settings.excludedTournaments.test(t.name)) {
@@ -150,7 +151,7 @@ export class SyncEngine {
       if (!t.info_ok_at) continue;
       if (phase === 'past') {
         if (!t.draws_ok_at && quiet && settings.backfillDays > 0 && t.start_date && daysBetween(t.start_date, today) <= settings.backfillDays) {
-          jobs.push({ key: `draws:${t.guid}`, kind: 'draws', guid: t.guid, phase, due: backfillAt + 10 * 60_000, rank: 6 });
+          jobs.push({ key: `draws:${t.guid}`, kind: 'draws', guid: t.guid, phase, due: backfillAt + 10 * 60_000, rank: 6 + daysBetween(t.start_date, today) / 1000 });
         }
         continue;
       }
