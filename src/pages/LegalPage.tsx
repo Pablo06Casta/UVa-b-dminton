@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Notice, PageHeader, PendingTag } from '../components/ui';
+import { PageHeader, PendingTag } from '../components/ui';
 import { club } from '../config/site';
 import { usePageTitle } from '../hooks/usePageTitle';
 
@@ -19,7 +19,6 @@ const Block = ({ id, title, children }: { id: string; title: string; children: R
 export function LegalPage() {
   usePageTitle('Información legal');
   const { legal } = club;
-  const pending = Object.entries(legal).some(([k, v]) => k !== 'updated' && v === null);
   const mail = legal.email ?? club.email;
   const dpo = legal.dpoEmail ?? mail;
 
@@ -28,13 +27,7 @@ export function LegalPage() {
       <PageHeader title="Información legal" lead="Aviso legal, política de privacidad y política de cookies de la web del club." />
       <div className="section">
         <div className="container container--narrow">
-          {pending && (
-            <Notice kind="warning" title="Versión de prueba">
-              Estos textos son una versión de prueba, redactada conforme a la normativa vigente, pendiente de revisión jurídica. Los datos marcados
-              como pendientes los debe facilitar el club o la Universidad de Valladolid antes de la publicación definitiva.
-            </Notice>
-          )}
-          <p className="legal__updated">Versión de prueba · Última actualización: {new Date(legal.updated).toLocaleDateString('es-ES', { dateStyle: 'long' })}</p>
+          <p className="legal__updated">Última actualización: {new Date(legal.updated).toLocaleDateString('es-ES', { dateStyle: 'long' })}</p>
 
           <Block id="aviso-legal" title="Aviso legal">
             <p>
