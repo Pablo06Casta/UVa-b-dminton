@@ -26,5 +26,19 @@
     "role": "Jugador",
     "photo": "/images/jugadores/javier-gonzalez.webp",
     "consent": true
+  },
+  {
+    "id": "marta-fernandez",
+    "name": "Marta Fernández Polo",
+    "role": "Jugadora",
+    "photo": "/images/jugadores/marta-fernandez.webp",
+    "consent": true
+  },
+  {
+    "id": "roberto-del-cueto",
+    "name": "Roberto del Cueto",
+    "role": "Integrante del club",
+    "photo": "/images/jugadores/roberto-del-cueto.webp",
+    "consent": true
   }
 ]
