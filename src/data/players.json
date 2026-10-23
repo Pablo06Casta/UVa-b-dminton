@@ -40,5 +40,12 @@
     "role": "Integrante del club",
     "photo": "/images/jugadores/roberto-del-cueto.webp",
     "consent": true
+  },
+  {
+    "id": "pablo-martin",
+    "name": "Pablo Martín Castañeda",
+    "role": "Jugador",
+    "photo": "/images/jugadores/pablo-martin.webp",
+    "consent": true
   }
 ]
