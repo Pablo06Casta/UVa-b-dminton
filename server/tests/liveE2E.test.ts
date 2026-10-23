@@ -75,8 +75,8 @@ describe('sincronización completa con los lectores oficiales', () => {
     // El rival no se publica por defecto y solo salen partidos con jugadores del club con consentimiento.
     expect(JSON.stringify(state)).not.toContain('Jugador Dos');
     expect(JSON.stringify(state)).not.toContain('Jugador Seis');
-    // Solo se pidió lo necesario: perfil, ficha, cuadros, clasificaciones/cuadros y los días del torneo.
-    expect(urls.every((u) => /profile\/overview|tournament\.aspx|draws\.aspx|GetStandings|GetDrawContent|matches\.aspx/.test(u))).toBe(true);
+    // Solo se pidió lo necesario: perfil, ficha, cuadros, clasificaciones/cuadros, los días del torneo y la búsqueda de la edición de la Liga.
+    expect(urls.every((u) => /profile\/overview|tournament\.aspx|draws\.aspx|GetStandings|GetDrawContent|matches\.aspx|find\/tournament/.test(u))).toBe(true);
   });
 
   it('no publica nada si la jugadora no ha dado su consentimiento, aunque la lectura funcione', async () => {
