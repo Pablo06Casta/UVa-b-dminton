@@ -151,7 +151,7 @@ export class SyncEngine {
       if (!t.info_ok_at) continue;
       if (phase === 'past') {
         if (!t.draws_ok_at && quiet && settings.backfillDays > 0 && t.start_date && daysBetween(t.start_date, today) <= settings.backfillDays) {
-          jobs.push({ key: `draws:${t.guid}`, kind: 'draws', guid: t.guid, phase, due: backfillAt + 10 * 60_000, rank: 6 + daysBetween(t.start_date, today) / 1000 });
+          jobs.push({ key: `draws:${t.guid}`, kind: 'draws', guid: t.guid, phase, due: backfillAt + 2 * 60_000, rank: 6 + daysBetween(t.start_date, today) / 1000 });
         }
         continue;
       }
@@ -430,7 +430,7 @@ export class SyncEngine {
     );
     const waiting = job.phase === 'far' || job.phase === 'soon' || job.phase === 'imminent';
     const past = job.phase === 'past';
-    if (past) kvSet(this.db, 'backfill_at', { at: now.toISOString() }); // una lectura histórica cada 10 min como mucho
+    if (past) kvSet(this.db, 'backfill_at', { at: now.toISOString() }); // una lectura histórica cada 2 min como mucho: tras un reinicio las noticias vuelven en minutos
     let drawList: Awaited<ReturnType<OfficialSource['draws']>> = [];
     try {
       drawList = await this.src.draws(guid, p);
