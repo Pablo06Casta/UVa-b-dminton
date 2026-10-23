@@ -47,5 +47,12 @@
     "role": "Jugador",
     "photo": "/images/jugadores/pablo-martin.webp",
     "consent": true
+  },
+  {
+    "id": "marco-terhi",
+    "name": "Marco Terhi Sebastián",
+    "role": "Jugador",
+    "photo": "/images/jugadores/marco-terhi.webp",
+    "consent": true
   }
 ]
