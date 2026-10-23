@@ -172,3 +172,6 @@ badminton.es no avisa cuando publica algo, así que el servidor lo detecta con l
 - Endpoint `GET /api/public/liga` (con ETag). La web lo pide al abrir y se renueva sola (1 min en día de jornada, 5 min si no).
 - Estado a 23/10/2026: edición 2026-27 publicada con 12 clubes y 66 encuentros en 11 jornadas, sin fechas ni resultados; la web lo indica y se rellena sola.
 - Dirección de la sede (`club.json`): Universidad de Valladolid (UVa) · Calle Ruiz Hernández, Valladolid (se muestra en Contacto y en el aviso legal como «Sede del club»).
+
+## Sección «Nuestros jugadores» (Inicio, `PlayersSection.tsx`)
+- Lista a las personas públicas del servidor (consentimiento) con tarjeta (foto o silueta, nombre, función, categoría) y sus medallas de los torneos leídos (las parejas cuentan para las dos personas). Para poner foto, función o información: añadir la ficha en `src/data/players.json` (`{ id, name, role, photo: "/images/jugadores/nombre.webp", info, consent: true }`) y subir la foto a `public/images/jugadores/`; se une por nombre con el del servidor.

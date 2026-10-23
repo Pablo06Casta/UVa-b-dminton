@@ -1,6 +1,7 @@
 import { AboutSection } from '../components/home/AboutSection';
 import { AchievementsSection } from '../components/home/AchievementsSection';
 import { Hero } from '../components/home/Hero';
+import { PlayersSection } from '../components/home/PlayersSection';
 import { MatchesSection } from '../components/home/MatchesSection';
 import { NewsSection } from '../components/home/NewsSection';
 import { QuickContact } from '../components/home/QuickContact';
@@ -14,6 +15,7 @@ export function HomePage() {
       <Hero />
       <NewsSection />
       <AboutSection />
+      <PlayersSection />
       <AchievementsSection />
       <UpcomingSection />
       <MatchesSection />

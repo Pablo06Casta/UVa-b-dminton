@@ -3977,3 +3977,8 @@ abbr.est--big {
   .lfix__team, .lfix__team--away { text-align: left; }
   .lfix__score { justify-self: start; }
 }
+.player__medals { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0; }
+.pmedal { padding: 2px 10px; font-size: 0.78rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; border-radius: 999px; }
+.pmedal--gold { color: #4a3600; background: #f2c230; }
+.pmedal--silver { color: #26303f; background: #dfe5ee; }
+.pmedal--bronze { color: #3a1d06; background: #e39a58; }
