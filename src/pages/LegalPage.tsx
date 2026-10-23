@@ -45,7 +45,8 @@ export function LegalPage() {
             <ul>
               <Data label="Titular" value={legal.holder} />
               <Data label="NIF / CIF" value={legal.taxId} />
-              <Data label="Domicilio" value={legal.address ?? club.address} />
+              <Data label="Domicilio" value={legal.address} />
+              <Data label="Sede del club" value={club.address} />
               <Data label="Correo electrónico" value={mail} />
             </ul>
             <h3>Objeto y condiciones de uso</h3>

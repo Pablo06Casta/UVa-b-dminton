@@ -15,6 +15,7 @@ import { cardVersion, findCard, metaOf, renderPng, shareHtmlPage, type CardKind,
 import { rivalNamesFor } from './shareRivals';
 import { decide, draftFor } from './chronicle';
 import { buildSocial } from './social';
+import { buildLiga, type LigaSnapshot } from './liga';
 import { buildOverview } from './adminView';
 import { importPlayersCsv } from './importCsv';
 import { addManualMatch, createManualTournament, deleteManualMatch, deleteManualTournament, listManual, setManualProgress, updateManualMatch } from './manual';
@@ -209,6 +210,20 @@ export function createApp(db: Db, engine: SyncEngine | undefined, hub: Hub) {
         const base = `${proto}://${req.headers['x-forwarded-host'] ?? req.headers.host}`;
         res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...cors(req) });
         return res.end(JSON.stringify({ generatedAt: nowIso(), when, items: buildSocial(cachedPublicState(db).state, when, base) }));
+      }
+
+      // Liga Nacional de Clubes (división que sigue el club): clasificación, clubes y jornadas con sus encuentros.
+      if (route === 'GET /api/public/liga') {
+        if (limited(req)) throw new HttpFail(429, 'Demasiadas consultas.');
+        const liga = buildLiga(kvGet<LigaSnapshot>(db, 'liga'));
+        if (!liga) return send(res, 404, { error: 'La Liga aún no está disponible.' }, { ...cors(req), 'Cache-Control': 'no-store' });
+        const etag = `"l${liga.version}"`;
+        const headers = { ...cors(req), 'Cache-Control': 'public, max-age=30, must-revalidate', ETag: etag };
+        if (req.headers['if-none-match'] === etag) {
+          res.writeHead(304, headers);
+          return res.end();
+        }
+        return send(res, 200, liga, headers);
       }
 
       if (route === 'GET /api/public/accuracy') {

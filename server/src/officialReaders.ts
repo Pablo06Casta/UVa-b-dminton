@@ -5,6 +5,8 @@ import { parseRankingCategory, parseRankingProfileGuid } from './rankingParse';
 import { TsSource, urls } from './lib/ts/source';
 import { parseBracket, parseDrawsList, parseStandingTable } from './lib/ts/parse/draws';
 import { parseEventPage } from './lib/ts/parse/pages';
+import { parseLigaFixtures, parseLigaStandings } from './ligaParse';
+import { load } from 'cheerio';
 import { parseEventsList, parsePlayerPageProfile, parsePlayersList } from './entriesParse';
 
 const XHR = { 'X-Requested-With': 'XMLHttpRequest' };
@@ -76,6 +78,25 @@ export class OfficialLiveReaders implements LiveReaders, RosterReaders {
     return data
       .filter((m) => m.mySide && m.winner && m.date && m.status === 'finished')
       .map((m) => ({ key: m.key, tournamentId: m.tournamentId, tournamentName: m.tournamentName, date: m.date!, won: m.winner === m.mySide }));
+  }
+
+  /** Ediciones de la Liga Nacional de Clubes (buscador de torneos de badminton.es). */
+  async leagueEditions(p: Priority) {
+    const $ = load((await this.http.get('/find/tournament?q=Liga+Nacional+de+Clubes+edici%C3%B3n', { priority: p })).body);
+    const out: { id: string; name: string }[] = [];
+    $('a[href*="tournament"]').each((_, a) => {
+      const id = ($(a).attr('href') ?? '').match(/([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12})/)?.[1];
+      const name = $(a).text().replace(/\s+/g, ' ').trim();
+      if (id && name && !out.some((o) => o.id === id.toUpperCase())) out.push({ id: id.toUpperCase(), name });
+    });
+    return out;
+  }
+
+  /** Clasificación (página de la división) y todos los encuentros (listado de partidos) de una división de la Liga. */
+  async leagueDraw(guid: string, drawId: number, p: Priority) {
+    const standings = parseLigaStandings((await this.http.get(urls.draw(guid, drawId), { priority: p })).body);
+    const fixtures = parseLigaFixtures((await this.http.get(`/sport/drawmatches.aspx?id=${guid}&draw=${drawId}`, { priority: p })).body);
+    return { standings, fixtures };
   }
 
   async eventEntries(guid: string, eventId: number, p: Priority) {

@@ -13,13 +13,14 @@ import { isUvaClub } from './uva';
 import type { OfficialSource } from './source';
 import { transformCalendar } from './calendar';
 import { applyShift, currentShift } from './calibration';
+import { latestEdition, ligaEveryMs, type LigaSnapshot } from './liga';
 import { defaultEstimateConfig, estimate, type Estimate, type Slot } from './estimate';
 import type { MatchRow } from './model';
 import { buildStoredMatch, type ClubEntrants, diffMatch, findClubEntrants, matchFingerprint, type EntrantLike, type StoredMatch } from './uva';
 
 const DEFAULT_TZ = 'Europe/Madrid';
 
-export type JobKind = 'roster' | 'discover' | 'info' | 'draws' | 'day' | 'calendar' | 'entries' | 'identify' | 'history';
+export type JobKind = 'roster' | 'discover' | 'info' | 'draws' | 'day' | 'calendar' | 'entries' | 'identify' | 'history' | 'liga';
 
 /**
  * Reconocer a la gente del club en un torneo antes de que haya cuadros: se lee la lista de jugadores (solo nombres), se eligen los de la
@@ -116,6 +117,12 @@ export class SyncEngine {
     if (rostered.length > 0) {
       const last = ms(kvGet<{ at: string }>(this.db, 'discover_ok')?.at);
       jobs.push({ key: 'discover', kind: 'discover', phase: 'far', due: last + settings.intervals.discovery, rank: 4 });
+    }
+
+    // Liga Nacional de Clubes (división que sigue el club): clasificación y encuentros, con más frecuencia en jornada.
+    if (this.src.leagueDraw && this.src.leagueEditions && settings.liga.enabled) {
+      const snap = kvGet<LigaSnapshot>(this.db, 'liga');
+      jobs.push({ key: 'liga', kind: 'liga', phase: 'far', due: snap ? ms(snap.updatedAt) + ligaEveryMs(snap, new Date(nowMs)) : 0, rank: 6 });
     }
 
     // Histórico de partidos de las personas del club (perfil oficial): una persona por lectura, una vuelta al día, solo con lo urgente atendido.
@@ -319,6 +326,8 @@ export class SyncEngine {
         return this.identify(job, now);
       case 'history':
         return this.readHistory(now);
+      case 'liga':
+        return this.readLiga(now);
     }
   }
 
@@ -515,6 +524,28 @@ export class SyncEngine {
         .run(guid, next.tsPlayerId, pl.name, null, pl.id, now.toISOString());
     }
     kvSet(this.db, key, { pending: rest, checked: { ...st.checked, [String(next.tsPlayerId)]: same ? 1 : 0 }, listAt: st.listAt, listHash: st.listHash } satisfies IdentState);
+  }
+
+  /** Liga: busca la última edición y la división (una vez al día) y lee su clasificación y todos sus encuentros. */
+  private async readLiga(now: Date) {
+    const prev = kvGet<LigaSnapshot>(this.db, 'liga');
+    let { tournamentId, drawId, edition, division, resolvedAt } = prev ?? ({} as Partial<LigaSnapshot>);
+    const live = new Date(now).getTime();
+    if (!tournamentId || !drawId || !resolvedAt || live - ms(resolvedAt) > 24 * 3600_000 || (settings.liga.tournamentId && settings.liga.tournamentId !== tournamentId)) {
+      const id = settings.liga.tournamentId || latestEdition(await this.src.leagueEditions!(2))?.id;
+      if (!id) throw new Error('No se encuentra la edición de la Liga en el buscador de badminton.es.');
+      const draw = (await this.src.draws(id, 2)).find((d) => d.type === 'roundrobin' && settings.liga.division.test(d.name));
+      if (!draw) throw new Error('La edición de la Liga aún no publica la división seguida.');
+      tournamentId = id;
+      drawId = draw.drawId;
+      division = draw.name.replace(/^Liga Nacional de Clubes\s*[–-]\s*/i, '').trim();
+      edition = (await this.src.tournament(id, 2)).name;
+      resolvedAt = now.toISOString();
+    }
+    const today = todayIn(DEFAULT_TZ, now);
+    const data = await this.src.leagueDraw!(tournamentId, drawId, ligaEveryMs(prev, now) <= 5 * 60_000 && prev?.fixtures.some((f) => f.date === today) ? 1 : 2);
+    if (data.standings.length === 0 && data.fixtures.length === 0) throw new Error('La página de la Liga llegó sin clasificación ni encuentros.');
+    kvSet(this.db, 'liga', { tournamentId, edition: edition!, division: division!, drawId, resolvedAt, updatedAt: now.toISOString(), standings: data.standings, fixtures: data.fixtures } satisfies LigaSnapshot);
   }
 
   /** Partidos terminados del perfil oficial de cada persona pública del club: de ahí salen los partidos ganados por mes y torneo. */

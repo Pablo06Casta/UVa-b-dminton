@@ -59,6 +59,12 @@ export const settings = {
   autoRosterConsent: (process.env.AUTO_ROSTER_CONSENT === 'declared' ? 'declared' : 'hidden') as 'declared' | 'hidden',
   /** Personas del club que NO deben publicarse (sin consentimiento), separadas por «;». Se ocultan siempre, aunque ya estén en la lista. */
   hiddenPlayers: (process.env.HIDDEN_PLAYERS ?? 'Clara Campos').split(';').map((x) => x.trim()).filter(Boolean),
+  /** Liga Nacional de Clubes: clasificación y encuentros de la división que sigue el club (por defecto, Primera PLATA). Se busca sola la última edición («edición 2026-2027»); `LIGA_TOURNAMENT_ID` la fija a mano. */
+  liga: {
+    enabled: process.env.LIGA_ENABLED !== 'false',
+    tournamentId: (process.env.LIGA_TOURNAMENT_ID ?? '').trim().toUpperCase(),
+    division: new RegExp(process.env.LIGA_DIVISION ?? 'plata', 'i'),
+  },
   /** Cuánto se reutiliza el estado público ya calculado (ms). Se descarta antes si cambia algo. 0 = sin caché. */
   publicCacheMs: num(process.env.PUBLIC_CACHE_MS, process.env.VITEST ? 0 : 10_000),
   /** Pasado este tiempo sin una lectura correcta, los datos se marcan como antiguos. */

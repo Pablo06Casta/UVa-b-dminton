@@ -4,6 +4,7 @@ import { httpConfig } from './config-http';
 import { type Priority, PoliteClient } from './http';
 import type { RankingCandidate } from './rankingParse';
 import type { BracketRound, DrawInfo, MatchRow, StandingRow, TournamentInfo } from './model';
+import type { LigaFixture, LigaStanding } from './ligaParse';
 
 /** Lectores de las páginas de torneo (información, cuadros, clasificaciones, orden de juego y perfiles). */
 export interface RosterReaders {
@@ -28,6 +29,9 @@ export interface LiveReaders extends Partial<RosterReaders> {
   playerProfile?(guid: string, tsPlayerId: number, p: Priority): Promise<string | undefined>;
   /** Partidos terminados del perfil oficial de una persona (≈ 100 últimos): fecha, torneo y si ganó. `isMe` indica qué lado es ella. */
   profileMatches?(guid: string, isMe: (name: string) => boolean, p: Priority): Promise<HistoryRow[]>;
+  /** Ediciones de la Liga Nacional de Clubes que figuran en el buscador de torneos y, de una división, su clasificación y sus encuentros. */
+  leagueEditions?(p: Priority): Promise<{ id: string; name: string }[]>;
+  leagueDraw?(guid: string, drawId: number, p: Priority): Promise<{ standings: LigaStanding[]; fixtures: LigaFixture[] }>;
 }
 
 export interface HistoryRow {
@@ -78,6 +82,8 @@ export class RealSource implements OfficialSource {
     if (live?.tournamentPlayers) this.tournamentPlayers = (g, p) => live.tournamentPlayers!(g, p);
     if (live?.playerProfile) this.playerProfile = (g, id, p) => live.playerProfile!(g, id, p);
     if (live?.profileMatches) this.profileMatches = (g, isMe, p) => live.profileMatches!(g, isMe, p);
+    if (live?.leagueEditions) this.leagueEditions = (p) => live.leagueEditions!(p);
+    if (live?.leagueDraw) this.leagueDraw = (g, d, p) => live.leagueDraw!(g, d, p);
   }
 
   get hasLiveReaders() {
@@ -90,6 +96,8 @@ export class RealSource implements OfficialSource {
   tournamentPlayers?: LiveReaders['tournamentPlayers'];
   playerProfile?: LiveReaders['playerProfile'];
   profileMatches?: LiveReaders['profileMatches'];
+  leagueEditions?: LiveReaders['leagueEditions'];
+  leagueDraw?: LiveReaders['leagueDraw'];
 
   rankingPlayers = (u: string, p: Priority) => (this.live?.rankingPlayers ? this.live.rankingPlayers(u, p) : missing());
   rankingProfile = (path: string, p: Priority) => (this.live?.rankingProfile ? this.live.rankingProfile(path, p) : missing());

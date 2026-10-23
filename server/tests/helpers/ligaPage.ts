@@ -1,0 +1,7 @@
+export const LIGA_PAGE = `<table class="ruler"><caption>Clasificación de Liga Nacional de Clubes – Primera PLATA</caption><thead><tr><td></td><td>Puntos</td><td>Jugado</td></tr></thead><tbody>
+<tr><td>1</td><td><a href="x">Maó</a></td><td>33</td><td>11</td><td>11</td><td>0</td><td>0</td><td>63</td><td>-</td><td>14</td><td>202</td><td>-</td><td>73</td><td>2755</td><td>-</td><td>2011</td></tr>
+<tr><td>2</td><td>CDB Huelva</td><td>27*</td><td>11</td><td>9</td><td>0</td><td>2</td><td>44</td><td>-</td><td>33</td><td>165</td><td>-</td><td>128</td><td>2755</td><td>-</td><td>2519</td></tr>
+</tbody></table><table class="ruler matches"><tbody>
+<tr><td></td><td class="plannedtime" align="right">sá. 24/01/2026 <span class="time">11:00</span></td><td align="right">1</td><td></td><td>1</td><td><a class="teamname" href="teammatch.aspx?id=X&match=1094">Estella</a></td><td>-</td><td><strong><a class="teamname" href="teammatch.aspx?id=X&match=1094">Cura Mora</a></strong></td><td><span class="score"><span>0-7</span></span></td><td></td><td><img class="icon_planningchanged" src="a.gif"/></td></tr>
+<tr><td></td><td class="plannedtime">do. 25/01/2026 <span class="time">9:30</span></td><td>2</td><td></td><td>7</td><td><a class="teamname" href="teammatch.aspx?id=X&match=1100">Maó</a></td><td>-</td><td><a class="teamname" href="teammatch.aspx?id=X&match=1100">CIDE</a></td><td><span class="score"><span></span></span></td></tr>
+</tbody></table>`;
