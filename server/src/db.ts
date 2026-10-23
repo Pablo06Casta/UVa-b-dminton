@@ -180,6 +180,15 @@ create table if not exists estimate_starts (
   primary key (tournament_guid, date, at, slot_key)
 );
 
+-- Patrón de cada jornada terminada (solo cifras anónimas): de aquí aprende la estimación (ver patterns.ts). No se borra con el registro.
+create table if not exists day_patterns (
+  tournament_guid text not null,
+  date text not null,
+  created_at text not null,
+  json text not null,
+  primary key (tournament_guid, date)
+);
+
 -- Cuadros y clasificaciones tal como los publica la fuente. Con nombres de terceros: solo se sirven anonimizados.
 create table if not exists draws (
   tournament_guid text not null,

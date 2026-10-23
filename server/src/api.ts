@@ -11,6 +11,8 @@ import { buildPublicState, cachedPublicState, invalidatePublicState, type Public
 import { pushConfigured, subscribe, unsubscribe } from './push';
 import { buildAccuracy } from './accuracy';
 import { currentShift } from './calibration';
+import { learnedPriors, loadPatterns } from './patterns';
+import { defaultPriors } from './estimate';
 import { cardVersion, findCard, metaOf, renderPng, shareHtmlPage, type CardKind, type Found } from './share';
 import { rivalNamesFor } from './shareRivals';
 import { decide, draftFor } from './chronicle';
@@ -234,7 +236,7 @@ export function createApp(db: Db, engine: SyncEngine | undefined, hub: Hub) {
         const days = Math.min(120, Math.max(1, Number(new URL(req.url ?? '/', 'http://x').searchParams.get('days')) || 45));
         const since = new Date(Date.now() - days * 86_400_000).toISOString();
         res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, max-age=60', 'X-Content-Type-Options': 'nosniff', ...cors(req) });
-        return res.end(JSON.stringify({ generatedAt: nowIso(), calibration: currentShift(db, new Date()), days: buildAccuracy(db, since) }));
+        return res.end(JSON.stringify({ generatedAt: nowIso(), calibration: currentShift(db, new Date()), learning: learningReport(db), days: buildAccuracy(db, since) }));
       }
 
       if (route === 'GET /api/public/stream') {
@@ -444,5 +446,17 @@ export function createApp(db: Db, engine: SyncEngine | undefined, hub: Hub) {
       // Cualquier cambio desde la administración (jugadores, partidos a mano…) debe verse enseguida.
       if (req.method !== 'GET' && url.pathname.startsWith('/api/admin/')) invalidatePublicState(db);
     }
+  };
+}
+
+/** Qué ha aprendido el modelo: valores de partida frente a los de fábrica y resumen de cada jornada guardada (solo cifras). */
+function learningReport(db: Db) {
+  const patterns = loadPatterns(db);
+  const learned = learnedPriors(db);
+  return {
+    patterns: patterns.length,
+    learnedFrom: { days: learned.days, matches: learned.matches },
+    priors: { default: defaultPriors, learned: learned.priors },
+    days: patterns.map(({ perEvent: _p, ...d }) => d),
   };
 }

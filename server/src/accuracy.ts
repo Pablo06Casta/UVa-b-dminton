@@ -22,6 +22,9 @@ export interface EndHorizon {
   errorMin: number;
   /** ¿Cayó la hora real dentro del margen probable que se mostraba? */
   inRange?: boolean;
+  /** Minutos de margen por debajo y por encima de la hora estimada (para recalibrar la anchura del margen). */
+  lowW?: number;
+  highW?: number;
 }
 
 export interface AccuracyDay {
@@ -105,6 +108,8 @@ export function buildAccuracy(db: Db, sinceIso: string): AccuracyDay[] {
       estimatedEnd: row.est_end,
       errorMin: mins(Date.parse(row.est_end) - actual),
       inRange: row.est_end_low && row.est_end_high ? Date.parse(row.est_end_low) <= actual && actual <= Date.parse(row.est_end_high) : undefined,
+      lowW: row.est_end_low ? mins(Date.parse(row.est_end) - Date.parse(row.est_end_low)) : undefined,
+      highW: row.est_end_high ? mins(Date.parse(row.est_end_high) - Date.parse(row.est_end)) : undefined,
     });
     const end: EndHorizon[] = [];
     let beforeStart: AccuracyDay['beforeStart'];
