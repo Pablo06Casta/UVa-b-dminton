@@ -17,8 +17,11 @@ export interface Shift {
   startMin: number;
   /** Jornadas terminadas en que se basa. */
   days: number;
-  /** Factor que ensancha (>1) o estrecha (<1) el margen probable para que acierte ~80 % de las veces. Ausente = 1. */
-  spread?: number;
+  /**
+   * Corrección del margen probable (minutos que se restan al límite inferior y se suman al superior; negativa = estrecharlo), por horizonte:
+   * a ≈120, ≈60 y ≈30 min del final. Regresión cuantílica conformalizada (CQR) con nivel adaptativo (ACI). Ausente = sin corregir.
+   */
+  conformal?: { 120: number; 60: number; 30: number };
 }
 
 const NONE: Shift = { endMin: 0, startMin: 0, days: 0 };
@@ -37,8 +40,45 @@ const clamp = (v: number, cap: number) => Math.max(-cap, Math.min(cap, v));
 const r1 = (x: number) => Math.round(x * 10) / 10;
 
 const TARGET_COVERAGE = 0.8;
-const SPREAD_MIN = 0.75;
-const SPREAD_MAX = 1.5;
+const ACI_GAMMA = 0.02; // paso de adaptación del nivel: pequeño porque hay pocas jornadas
+const CONFORMAL_MIN = -20;
+const CONFORMAL_MAX = 60;
+const HORIZONS = [120, 60, 30] as const;
+
+/** Cuantil de nivel `level` (0-1) con la regla conformal: el menor valor con al menos ⌈level·n⌉ puntuaciones por debajo o iguales. */
+const conformalQuantile = (scores: number[], level: number) => {
+  const s = [...scores].sort((a, b) => a - b);
+  return s[Math.min(s.length - 1, Math.max(0, Math.ceil(Math.min(1, level) * s.length) - 1))];
+};
+
+/**
+ * CQR + ACI para la anchura del margen de la hora de fin. Para cada horizonte (≈120, 60 y 30 min del final), con el error de cada jornada
+ * ya medida (estimada − real) y la anchura que se mostraba, se puntúa la jornada con E = lo que se salió del margen (negativo si cayó dentro,
+ * ya corregido el desvío de fin). La corrección Q es el cuantil conformal de nivel 1 − α_t de esas puntuaciones, con α_t adaptativo (ACI):
+ * se recorre el histórico en orden y α sube cuando el margen acertó de más y baja cuando falló, para que la cobertura a largo plazo sea ≈80 %
+ * aunque el torneo «cambie» de una jornada a otra. Con menos de 3 jornadas no corrige.
+ */
+export function learnConformal(days: ReturnType<typeof loadPatterns>, endMin: number): Shift['conformal'] {
+  const out: Record<number, number> = {};
+  for (const h of HORIZONS) {
+    // Puntuación en minutos respecto a la hora estimada: la real queda en r = −err; el margen mostrado es [endMin − lowW, endMin + highW].
+    const scores = [...days]
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .flatMap((d) => d.end.filter((x) => x.h === h && x.lowW !== undefined && x.highW !== undefined))
+      .map((x) => {
+        const r = -x.err;
+        return Math.max(endMin - x.lowW! - r, r - (endMin + x.highW!));
+      });
+    if (scores.length < MIN_DAYS) return undefined;
+    let alpha = 1 - TARGET_COVERAGE;
+    for (let t = MIN_DAYS; t < scores.length; t++) {
+      const q = conformalQuantile(scores.slice(0, t), (1 - alpha) * (1 + 1 / t));
+      alpha = Math.max(0.02, Math.min(0.5, alpha + ACI_GAMMA * (1 - TARGET_COVERAGE - (scores[t] > q ? 1 : 0))));
+    }
+    out[h] = r1(Math.max(CONFORMAL_MIN, Math.min(CONFORMAL_MAX, conformalQuantile(scores, (1 - alpha) * (1 + 1 / scores.length)))));
+  }
+  return { 120: out[120], 60: out[60], 30: out[30] };
+}
 
 export function learnedShift(db: Db, now: Date): Shift {
   consolidate(db, now); // guarda el patrón de las jornadas que acaban de terminar
@@ -52,37 +92,33 @@ export function learnedShift(db: Db, now: Date): Shift {
   const w = (n: number) => (n < MIN_DAYS ? 0 : n / (n + SHRINK));
   const endMin = r1(clamp(-median(endErrs.length ? endErrs : [0]) * w(endErrs.length), END_CAP));
 
-  // Anchura del margen: el factor más pequeño con el que, ya corregido el sesgo, el margen acierta al menos el 80 % de las veces.
-  const samples = days.flatMap((d) => d.end.filter((h) => h.lowW !== undefined && h.highW !== undefined));
-  let spread: number | undefined;
-  if (endErrs.length >= MIN_DAYS && samples.length >= MIN_DAYS * 2) {
-    const covers = (f: number) => samples.filter((h) => -f * h.highW! <= h.err + endMin && h.err + endMin <= f * h.lowW!).length / samples.length;
-    let best = SPREAD_MAX;
-    for (let f = SPREAD_MIN; f <= SPREAD_MAX + 1e-9; f += 0.05) if (covers(f) >= TARGET_COVERAGE) { best = f; break; }
-    const f = 1 + (best - 1) * w(endErrs.length);
-    spread = Math.round(Math.max(SPREAD_MIN, Math.min(SPREAD_MAX, f)) * 100) / 100;
-  }
+  const conformal = endErrs.length >= MIN_DAYS ? learnConformal(days, endMin) : undefined;
   return {
     endMin,
     startMin: r1(clamp(-median(startErrs.length ? startErrs : [0]) * w(startErrs.length), START_CAP)),
     days: Math.max(endErrs.length, startErrs.length),
-    ...(spread !== undefined && spread !== 1 ? { spread } : {}),
+    ...(conformal && HORIZONS.some((h) => conformal[h] !== 0) ? { conformal } : {}),
   };
 }
 
 const shiftIso = (iso: string | undefined, min: number) => (iso ? new Date(Date.parse(iso) + min * 60_000).toISOString() : undefined);
 
+/** Corrección del margen para el tiempo que falta hasta el final estimado: se toma el horizonte aprendido más cercano (≥ 90 min → 120; ≥ 45 → 60; si no, 30). */
+const conformalFor = (c: NonNullable<Shift['conformal']>, remainingMin: number) => (remainingMin >= 90 ? c[120] : remainingMin >= 45 ? c[60] : c[30]);
+
 /** Aplica el desvío aprendido: no toca partidos ya terminados ni empezados (`starts` solo tiene pendientes). */
 export function applyShift(est: Estimate, shift: Shift): Estimate {
-  const f = shift.spread ?? 1;
-  if (shift.endMin === 0 && shift.startMin === 0 && f === 1) return est;
-  // El margen se ensancha o estrecha alrededor de la hora estimada (en bruto) y luego se desplaza igual que ella.
-  const wide = (v: string | undefined) => (v && est.estimatedEnd && f !== 1 ? new Date(Date.parse(est.estimatedEnd) + (Date.parse(v) - Date.parse(est.estimatedEnd)) * f).toISOString() : v);
+  if (shift.endMin === 0 && shift.startMin === 0 && !shift.conformal) return est;
+  const q = shift.conformal && est.estimatedEnd ? conformalFor(shift.conformal, (Date.parse(est.estimatedEnd) - Date.parse(est.asOf)) / 60_000) : 0;
+  const end = shiftIso(est.estimatedEnd, shift.endMin);
+  // El margen se desplaza como la hora y se ensancha (o estrecha) por la corrección conformal, sin que la hora quede fuera de él.
+  const low = est.estimatedEndLow ? shiftIso(est.estimatedEndLow, shift.endMin - q) : undefined;
+  const high = est.estimatedEndHigh ? shiftIso(est.estimatedEndHigh, shift.endMin + q) : undefined;
   return {
     ...est,
-    estimatedEnd: shiftIso(est.estimatedEnd, shift.endMin),
-    estimatedEndLow: shiftIso(wide(est.estimatedEndLow), shift.endMin),
-    estimatedEndHigh: shiftIso(wide(est.estimatedEndHigh), shift.endMin),
+    estimatedEnd: end,
+    estimatedEndLow: low && end && low > end ? end : low,
+    estimatedEndHigh: high && end && high < end ? end : high,
     starts: Object.fromEntries(Object.entries(est.starts).map(([k, v]) => [k, shiftIso(v, shift.startMin)!])),
     startsEarly: est.startsEarly ? Object.fromEntries(Object.entries(est.startsEarly).map(([k, v]) => [k, shiftIso(v, shift.startMin)!])) : undefined,
   };

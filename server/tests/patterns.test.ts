@@ -57,21 +57,29 @@ describe('patrones de seguimiento', () => {
     expect(l.priors.cv).toBeLessThan(defaultPriors.cv); // duraciones idénticas: menos dispersión
   });
 
-  it('ensancha el margen si no acierta el 80 % y lo aplica en torno a la hora estimada', () => {
+  it('CQR+ACI: ensancha el margen cuando falla (errores de ±25 con margen ±10) y lo aplica por los dos lados, sin sacar la hora del margen', () => {
     const db = memDb();
-    for (const d of [1, 2, 3, 4, 5, 6]) seedDay(db, d, 30, d % 2 ? 25 : -25, 10); // errores de ±25 con margen ±10
+    for (const d of [1, 2, 3, 4, 5, 6]) seedDay(db, d, 30, d % 2 ? 25 : -25, 10);
     const s = learnedShift(db, NOW);
-    expect(s.spread).toBeGreaterThan(1);
-    const est = { estimatedEnd: '2026-11-07T12:00:00.000Z', estimatedEndLow: '2026-11-07T11:50:00.000Z', estimatedEndHigh: '2026-11-07T12:10:00.000Z', starts: {} } as unknown as Estimate;
-    const out = applyShift(est, { endMin: 0, startMin: 0, days: 6, spread: 1.5 });
-    expect(out.estimatedEndLow).toBe('2026-11-07T11:45:00.000Z');
-    expect(out.estimatedEndHigh).toBe('2026-11-07T12:15:00.000Z');
+    expect(s.conformal).toBeDefined();
+    expect(s.conformal![60]).toBeGreaterThan(10); // las puntuaciones son ≈15: hay que ensanchar unos 15 min por lado
+    const est = { asOf: '2026-11-07T10:00:00.000Z', estimatedEnd: '2026-11-07T12:00:00.000Z', estimatedEndLow: '2026-11-07T11:50:00.000Z', estimatedEndHigh: '2026-11-07T12:10:00.000Z', starts: {} } as unknown as Estimate;
+    const out = applyShift(est, { endMin: 0, startMin: 0, days: 6, conformal: { 120: 15, 60: 15, 30: 15 } });
+    expect(out.estimatedEndLow).toBe('2026-11-07T11:35:00.000Z');
+    expect(out.estimatedEndHigh).toBe('2026-11-07T12:25:00.000Z');
+    const narrow = applyShift(est, { endMin: 0, startMin: 0, days: 6, conformal: { 120: -20, 60: -20, 30: -20 } });
+    expect(Date.parse(narrow.estimatedEndLow!)).toBeLessThanOrEqual(Date.parse(narrow.estimatedEnd!));
+    expect(Date.parse(narrow.estimatedEndHigh!)).toBeGreaterThanOrEqual(Date.parse(narrow.estimatedEnd!));
   });
 
-  it('estrecha el margen si acierta de sobra y lo deja como está si ya acierta ~80 %', () => {
+  it('CQR+ACI: estrecha el margen si acierta de sobra, con tope, y no corrige con menos de 3 jornadas', () => {
     const db = memDb();
     for (const d of [1, 2, 3, 4, 5, 6]) seedDay(db, d, 30, 0, 40); // error 0 con margen ±40
-    expect(learnedShift(db, NOW).spread).toBeLessThan(1);
+    expect(learnedShift(db, NOW).conformal![60]).toBeLessThan(0);
+    const few = memDb();
+    seedDay(few, 1, 30, 25, 10);
+    seedDay(few, 2, 30, -25, 10);
+    expect(learnedShift(few, NOW).conformal).toBeUndefined();
   });
 });
 
@@ -119,5 +127,21 @@ describe('tiempos reales aprendidos', () => {
     const db2 = memDb();
     for (let d = 1; d <= 8; d++) save(db2, pattern(d, waiting));
     expect(learnedTiming(db2).gapSample).toBeUndefined();
+  });
+});
+
+describe('CQR+ACI: cobertura a largo plazo', () => {
+  it('con errores muy dispersos y un margen mal calibrado, el margen corregido acierta ≈80 % en jornadas nuevas', async () => {
+    const { learnConformal } = await import('../src/calibration');
+    let seed = 42;
+    const rand = () => ((seed = (seed * 1664525 + 1013904223) % 4294967296) / 4294967296);
+    const gauss = () => Math.sqrt(-2 * Math.log(1 - rand())) * Math.cos(2 * Math.PI * rand());
+    const day = (i: number, err: number) => ({ tournamentId: `G${i}`, tournament: 'T', date: `2026-${String(1 + Math.floor(i / 28)).padStart(2, '0')}-${String(1 + (i % 28)).padStart(2, '0')}`, matches: 30, played: 30, walkovers: 0, perEvent: {}, end: [120, 60, 30].map((h) => ({ h, err, lowW: 10, highW: 10 })) });
+    const errs = Array.from({ length: 300 }, () => gauss() * 25); // el margen mostrado (±10) es mucho más estrecho que la realidad (σ = 25)
+    const q = learnConformal(errs.slice(0, 150).map((e, i) => day(i, e)) as never, 0)![60];
+    expect(q).toBeGreaterThan(15); // hay que ensanchar bastante
+    const cover = errs.slice(150).filter((e) => -e >= -10 - q && -e <= 10 + q).length / 150;
+    expect(cover).toBeGreaterThan(0.72);
+    expect(cover).toBeLessThan(0.9);
   });
 });

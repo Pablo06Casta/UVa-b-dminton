@@ -278,7 +278,7 @@ export class SyncEngine {
         this.enforceHidden();
         this.relinkEntrants();
         // Las estimaciones guardadas pueden venir de una versión anterior: se recalculan con lo ya guardado (sin peticiones).
-        for (const r of this.db.prepare('select distinct tournament_guid g, date d from slots order by date').all() as unknown as { g: string; d: string }[]) this.recomputeEstimate(r.g, r.d, now); // por fecha: la guardada de cada torneo es la del último día
+        for (const r of this.db.prepare('select distinct tournament_guid g, date d from slots where date >= ? order by date').all(todayIn(DEFAULT_TZ, new Date(now.getTime() - 10 * 86_400_000))) as unknown as { g: string; d: string }[]) this.recomputeEstimate(r.g, r.d, now); // por fecha: la guardada de cada torneo es la del último día
       } catch (e) {
         console.error('relinkEntrants', e);
       }

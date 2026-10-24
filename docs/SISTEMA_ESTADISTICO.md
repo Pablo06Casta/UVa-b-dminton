@@ -35,7 +35,7 @@ Los nombres de personas **no** intervienen en la estimación.
 
 ## 3. El modelo de estimación (`estimate.ts`)
 
-Simulación de Monte Carlo (400 repeticiones, semilla determinista: misma entrada → misma estimación). En cada repetición se «juega» el resto del día:
+Simulación de Monte Carlo (1.000 repeticiones, semilla determinista: misma entrada → misma estimación). En cada repetición se «juega» el resto del día:
 
 1. **Duración de un partido**: log-normal. Su media depende de la prueba (valores de partida: IM 28,7 · IF 26,2 · DM 31,5 · DF 31,1 · DX 29,1 min;
    media global 28,9; coeficiente de variación 0,326) multiplicada por el **ritmo del torneo**.
@@ -46,14 +46,15 @@ Simulación de Monte Carlo (400 repeticiones, semilla determinista: misma entrad
 4. **Partido en pista**: no puede acabar antes de lo que ya lleva jugado (se condiciona a ese tiempo transcurrido).
 5. **Pistas**: si todos los partidos pendientes ya traen pista, cada uno va a la suya; si no, entran en la primera pista libre. El número de pistas es el
    de pistas publicadas o, como mínimo, cuántos partidos coinciden a la misma hora programada.
-6. **Orden y holgura**: cada pista atiende sus partidos en orden; un partido empieza en `max(pista libre + 3 min de cambio, hora programada, ahora)`.
-   La hora programada es siempre un suelo (nadie empieza antes).
+6. **Orden y holgura**: cada pista atiende sus partidos en orden; un partido empieza en `max(pista libre + hueco, hora programada, ahora, descanso)`.
+   El hueco es de 3 min o, cuando hay ≥150 huecos reales medidos, una muestra de ellos; el descanso (mínimo entre dos partidos de una misma persona, aprendido) solo
+   se aplica con datos suficientes. La hora programada es siempre un suelo (nadie empieza antes).
 7. **Resultado de la repetición**: hora del último partido que acaba.
 
 **Salidas** (tras las 400 repeticiones):
 - `estimatedEnd` = percentil 0,65 de la hora de fin (algo prudente: mejor llegar un poco tarde que dar una hora imposible).
-- `estimatedEndLow`/`High` = margen probable: percentiles 10 y 90 respecto a la mediana, ampliados por `spread` = 1,3.
-- `starts[partido]` = percentil 0,6 de la hora de inicio de cada partido pendiente.
+- `estimatedEndLow`/`High` = margen probable: percentiles 10 y 90 respecto a la mediana, ampliados por `spread` = 1,6 (medido con 14 jornadas reales para que acierte ≈80 %).
+- `starts[partido]` = mediana de la hora de inicio de cada partido pendiente («lo más probable»); `startsEarly[partido]` = percentil 0,25 («podría empezar desde»).
 - Diagnóstico: duración media observada, reserva por partido (mediana del hueco entre partidos programados en la misma pista), retraso medio
   (mediana de inicio real − programado), pistas, partidos terminados/en juego/pendientes.
 - `ahead` (en `publicView.ts`): para cada partido pendiente del club, cuántos partidos pendientes de todo el torneo van antes, ordenados por hora estimada
@@ -91,8 +92,8 @@ Tres mecanismos, todos prudentes (con pocos datos casi no corrigen) y con mínim
    lo de fábrica con lo observado (pesos: 150 partidos por prueba, 600 globales, 300 para W.O. y dispersión; 4 jornadas para la variación del ritmo).
 3. **Calibración** (`calibration.ts`): corrige lo publicado, no el registro.
    - Desvío de fin = −mediana del error medio de cada jornada × n/(n+4), con tope de ±20 min; desvío de inicio igual con tope de ±8 min.
-   - Anchura del margen (`spread`): el factor más pequeño entre 0,75 y 1,5 con el que, ya corregido el sesgo, el margen acierta al menos el 80 % de las
-     veces, reducido por n/(n+4).
+   - Anchura del margen: regresión cuantílica conformalizada (CQR) con nivel adaptativo (ACI), por horizonte (≈120, 60 y 30 min del final): corrección en minutos
+     que se resta al límite inferior y se suma al superior (entre −20 y +60), para que el margen acierte ≈80 % a largo plazo.
    - Se registra siempre la estimación **en bruto**, de modo que corregir no falsea el aprendizaje.
 
 Regla de ingeniería para cambiar parámetros fijos (`endQuantile`, `startQuantile`, `changeoverMin`, `spread`, valores de partida): solo si el error de fin
