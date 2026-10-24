@@ -50,6 +50,7 @@ describe('captura del itinerario en vivo', () => {
     expect(sent).toHaveLength(1);
     expect(sent[0].url).toBe('https://formsubmit.co/ajax/club@example.com');
     const link = /https:\/\/servidor\.example\/captura\/([0-9a-f]{24})\.png/.exec(sent[0].body.mensaje);
+    expect(sent[0].body._subject).toBe('HISTORIAS RRSS DIRECTO TORNEOS JORNADA');
     expect(link).toBeTruthy();
     expect(captureImage(db, link![1])?.subarray(0, 4).toString('hex')).toBe('89504e47');
     // No se repite.

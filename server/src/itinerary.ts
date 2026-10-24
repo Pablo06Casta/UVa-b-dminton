@@ -178,7 +178,7 @@ export async function sendDueItineraries(db: Db, state: PublicState, now: Date, 
     const res = await (deps.fetchImpl ?? fetch)(`https://formsubmit.co/ajax/${c.email}`, {
       method: 'POST',
       headers: { 'content-type': 'application/json', accept: 'application/json', origin: new URL(site).origin, referer: `${site}/contacto` },
-      body: JSON.stringify({ nombre: 'Itinerario', apellidos: 'En vivo', email: c.email, mensaje: msg, _subject: `Itinerario en vivo · ${t.name} · ${when}`, _template: 'table', _captcha: 'false' }),
+      body: JSON.stringify({ nombre: 'Itinerario', apellidos: 'En vivo', email: c.email, mensaje: msg, _subject: 'HISTORIAS RRSS DIRECTO TORNEOS JORNADA', _template: 'table', _captcha: 'false' }),
       signal: AbortSignal.timeout(60_000),
     });
     if (!res.ok) throw new Error(`Correo del itinerario: HTTP ${res.status}`); // sin guardar: se reintenta el minuto siguiente dentro de la ventana

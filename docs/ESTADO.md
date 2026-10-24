@@ -163,7 +163,7 @@ badminton.es no avisa cuando publica algo, así que el servidor lo detecta con l
 
 ## Captura del itinerario en vivo por correo (`server/src/itinerary.ts`)
 - 15 min antes del primer partido del día de cada torneo con jugadores públicos del club (`ITINERARY_MINUTES_BEFORE`), el servidor dibuja la sección «Partidos por horas» de Directo como imagen (horas, tarjetas con estado, marcadores, EST, línea de «ahora») y la guarda en la tabla `captures` (una por torneo y día; se borra a los 30 días). Se comprueba cada minuto; ventana de envío: de 15 min antes a 30 min después, por si el servidor se reinicia.
-- El correo (FormSubmit, a `ITINERARY_EMAIL`, por defecto pablitocastaneda06@gmail.com; `off` lo desactiva) lleva el enlace `/captura/<id>.png` de la imagen congelada y el de Directo. FormSubmit no admite adjuntos: es un enlace, igual que el Publicista. Solo datos públicos, sin rivales.
+- El correo (asunto fijo «HISTORIAS RRSS DIRECTO TORNEOS JORNADA»; el torneo va en el texto; FormSubmit, a `ITINERARY_EMAIL`, por defecto pablitocastaneda06@gmail.com; `off` lo desactiva) lleva el enlace `/captura/<id>.png` de la imagen congelada y el de Directo. FormSubmit no admite adjuntos: es un enlace, igual que el Publicista. Solo datos públicos, sin rivales.
 
 ## Cambio de nombre de la cuenta de GitHub (22/10/2026)
 - La cuenta pasó de `Pablo06Casta` a `badmiton-uva`: la web está ahora en https://badmiton-uva.github.io/UVa-b-dminton/ (la dirección antigua da 404) y Web-cerca en https://badmiton-uva.github.io/PABLO-APP/.
