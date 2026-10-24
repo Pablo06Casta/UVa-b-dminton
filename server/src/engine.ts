@@ -14,6 +14,12 @@ import type { OfficialSource } from './source';
 import { transformCalendar } from './calendar';
 import { applyShift, currentShift } from './calibration';
 import { currentPriors, currentTiming } from './patterns';
+
+/** Hueco real aprendido y descanso entre partidos de una misma persona: el programado (10 min) es el mínimo; si los tiempos reales muestran uno mayor, manda ese. */
+const learnedTimingFor = (db: Db, now: Date) => {
+  const t = currentTiming(db, now);
+  return { gapSample: t.gapSample, restMin: Math.max(settings.restMinutes, t.restMin) };
+};
 import { latestEdition, ligaEveryMs, type LigaSnapshot } from './liga';
 import { defaultEstimateConfig, estimate, type Estimate, type Slot } from './estimate';
 import type { MatchRow } from './model';
@@ -701,7 +707,7 @@ export class SyncEngine {
       players: r.pids ? String(r.pids).split(',').map(Number) : undefined,
     }));
     // Valores de partida: los de fábrica, reajustados con lo aprendido de cada jornada terminada (ver patterns.ts).
-    const est = estimate(slots, now, { ...defaultEstimateConfig, priors: currentPriors(this.db, now).priors, ...currentTiming(this.db, now), defaultMatchMin: settings.defaultMatchMin, changeoverMin: settings.changeoverMin });
+    const est = estimate(slots, now, { ...defaultEstimateConfig, priors: currentPriors(this.db, now).priors, ...learnedTimingFor(this.db, now), defaultMatchMin: settings.defaultMatchMin, changeoverMin: settings.changeoverMin });
     // Se registra la estimación en bruto (para medir el modelo) y se publica la corregida con lo aprendido (ver calibration.ts).
     const shown = applyShift(est, currentShift(this.db, now));
     kvSet(this.db, `estimate:${guid}`, { date, ...shown }, now.toISOString());

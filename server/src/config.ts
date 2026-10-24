@@ -83,6 +83,8 @@ export const settings = {
   vapid: { publicKey: process.env.VAPID_PUBLIC_KEY ?? '', privateKey: process.env.VAPID_PRIVATE_KEY ?? '', subject: process.env.VAPID_SUBJECT ?? '' },
   defaultMatchMin: process.env.DEFAULT_MATCH_MINUTES ? num(process.env.DEFAULT_MATCH_MINUTES, 0) || undefined : undefined,
   changeoverMin: num(process.env.CHANGEOVER_MINUTES, 3),
+  /** Descanso programado entre dos partidos de una misma persona (minutos; el club confirma 10). Si los tiempos reales muestran un descanso mayor, manda ese. */
+  restMinutes: num(process.env.REST_MINUTES, 10),
   /** Qué se publica de los rivales: su nombre (nombre y primer apellido) o nada (`PUBLIC_OPPONENTS=none`). Por decisión del club, por defecto el nombre; nunca en pruebas de menores (ver `shareRivals.ts`). */
   opponents: (process.env.PUBLIC_OPPONENTS ?? 'names') as OpponentPolicy,
   /** Imagen de «compartir torneo»: el rival sale con nombre y primer apellido (con el consentimiento del club). `SHARE_RIVAL_NAMES=off` lo quita. */

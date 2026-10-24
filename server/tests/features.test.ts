@@ -109,6 +109,37 @@ describe('partidos fantasma: el torneo acaba aunque la fuente deje de publicar p
   });
 });
 
+describe('descanso programado de 10 min entre partidos de una misma persona', () => {
+  async function run(rest: number) {
+    const old = settings.restMinutes;
+    settings.restMinutes = rest;
+    try {
+      const db = memDb();
+      const src = new FakeSource();
+      createPlayer(db, { name: 'Ana Prueba', profile: PROFILE, public: true, ...consent });
+      const plan = (m: number) => new Date(NOW.getTime() + m * 60_000).toISOString();
+      // Ana juega ahora en la pista 1 (empezó hace 2 min) y su siguiente partido está programado ya en la pista 2, que está libre.
+      src.dayRows = [
+        { ...row({ key: 'ahora', status: 'on_court', court: '1', names1: [['Ana Prueba', 1]], names2: [['Rival Uno', 2]] }), plannedUtc: plan(-2), orderIndex: 0 },
+        { ...row({ key: 'luego', status: 'scheduled', court: '2', names1: [['Ana Prueba', 1]], names2: [['Rival Dos', 3]] }), plannedUtc: plan(0), orderIndex: 1 },
+      ] as ReturnType<typeof row>[];
+      const engine = new SyncEngine(db, src, () => NOW);
+      for (let t = 0; t < 12; t++) await engine.tick(new Date(NOW.getTime() + t * 1000));
+      const m = buildPublicState(db, NOW).tournaments[0].matches.find((x) => x.id === 'luego')!;
+      return (Date.parse(m.earliestStart!) - NOW.getTime()) / 60_000;
+    } finally {
+      settings.restMinutes = old;
+    }
+  }
+
+  it('el siguiente partido de una persona no puede empezar hasta que acabe el anterior y descanse 10 min', async () => {
+    const without = await run(0);
+    const withRest = await run(10);
+    expect(without).toBeLessThan(5); // sin descanso, la pista 2 está libre: podría empezar ya
+    expect(withRest).toBeGreaterThan(without + 15); // con descanso: tras el partido en pista (≥ 10 min y normalmente ~25) + 10 min
+  });
+});
+
 describe('relación anónima de quién juega', () => {
   it('guarda índices anónimos por partido (misma persona = mismo índice), nunca identidades', async () => {
     const db = memDb();

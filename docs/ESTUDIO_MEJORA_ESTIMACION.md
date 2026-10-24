@@ -50,7 +50,8 @@ Siguiendo la asimetría del coste (llegar tarde cuesta más que esperar):
 - **Hueco entre partidos aprendido** (`learnedTiming`): huecos entre partidos consecutivos de la misma pista, solo cuando la pista era el límite (el partido
   empezó > 2 min después de su hora programada) y sin pausas > 25 min. Con ≥ 150 huecos se remuestrean en la simulación (el simulador deja de usar un cambio fijo
   de 3 min). Con menos, comportamiento de siempre.
-- **Descanso mínimo entre partidos de una misma persona**: percentil 5 del descanso observado, con ≥ 60 pares y ≥ 10 min (tope 45); el simulador no empieza el
+- **Descanso programado confirmado por el club (24/10/2026): 10 min entre un partido y el siguiente de la misma persona.** Se aplica desde ya (`REST_MINUTES`, por defecto 10): el simulador no empieza el siguiente partido de alguien hasta 10 min después de que acabe el anterior; si los tiempos reales muestran un descanso mínimo mayor, manda ese. Antes de este dato el descanso solo se activaba con datos suficientes.
+- **Descanso mínimo observado entre partidos de una misma persona**: percentil 5 del descanso observado, con ≥ 60 pares y ≥ 10 min (tope 45); el simulador no empieza el
   siguiente partido de alguien hasta que descansa. Con menos, no se aplica. No se ha fijado a 30/60 min porque en torneos territoriales puede renunciarse al descanso.
 - Probado con pruebas unitarias sintéticas (el descanso retrasa el 2.º partido; los huecos largos retrasan el fin; sin datos suficientes no cambia nada).
 

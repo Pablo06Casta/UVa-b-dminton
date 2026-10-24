@@ -47,8 +47,7 @@ Simulación de Monte Carlo (1.000 repeticiones, semilla determinista: misma entr
 5. **Pistas**: si todos los partidos pendientes ya traen pista, cada uno va a la suya; si no, entran en la primera pista libre. El número de pistas es el
    de pistas publicadas o, como mínimo, cuántos partidos coinciden a la misma hora programada.
 6. **Orden y holgura**: cada pista atiende sus partidos en orden; un partido empieza en `max(pista libre + hueco, hora programada, ahora, descanso)`.
-   El hueco es de 3 min o, cuando hay ≥150 huecos reales medidos, una muestra de ellos; el descanso (mínimo entre dos partidos de una misma persona, aprendido) solo
-   se aplica con datos suficientes. La hora programada es siempre un suelo (nadie empieza antes).
+   El hueco es de 3 min o, cuando hay ≥150 huecos reales medidos, una muestra de ellos; el descanso (10 min programados entre dos partidos de una misma persona, confirmado por el club; si los tiempos reales muestran un mínimo mayor, manda ese). La hora programada es siempre un suelo (nadie empieza antes).
 7. **Resultado de la repetición**: hora del último partido que acaba.
 
 **Salidas** (tras las 400 repeticiones):
