@@ -80,21 +80,34 @@ describe('tarjeta de resultados con podio', () => {
     ],
   } as unknown as PublicTournament;
 
-  it('con medallas dibuja el podio 2-1-3 con los nombres, el titular publicitario y la llamada a la acción (cuadrada y vertical)', () => {
+  it('con medallas dibuja la tarjeta «Medallas confirmadas» (cuadrada y vertical): un panel por medalla con prueba, nombres y marcador de la final', () => {
+    const withScores = { ...t, uvaPlayers: ['Ana Prueba', 'Luis Prueba', 'Eva Prueba', 'Marta Prueba', 'Otra Prueba'], results: t.results.map((r, i) => (i === 0 ? { ...r, score: '21-14 17-21 21-12' } : r)) } as unknown as PublicTournament;
     for (const size of ['square', 'story'] as const) {
-      const svg = tournamentSvg(t, size, 'resultados');
-      expect(svg).toContain('EL TALENTO UVA');
-      expect(svg).toContain('SUBE AL PODIO');
-      expect(svg).toContain('ANA PRUEBA');
-      expect(svg).toContain('LUIS PRUEBA'); // las parejas, una línea por persona
-      expect(svg).toContain('EVA PRUEBA');
-      expect(svg).toContain('+1 MEDALLA MÁS'); // hay 4 medallas y el podio enseña 3
-      expect(svg).toContain('Súmate al club');
+      const svg = tournamentSvg(withScores, size, 'resultados');
+      expect(svg).toContain('MEDALLAS');
+      expect(svg).toContain('CONFIRMADAS');
+      expect(svg).toContain('RESULTADOS DEL CLUB BÁDMINTON UVA');
+      expect(svg).toContain('>ORO<');
+      expect(svg).toContain('>PLATA<');
+      expect(svg).toContain('>BRONCE<');
+      expect(svg).toContain('Ana Prueba');
+      expect(svg).toContain('Luis Prueba /'); // las parejas, una línea por persona
+      expect(svg).toContain('Eva Prueba');
+      expect(svg).toContain('Final: 21-14 · 17-21 · 21-12');
+      expect(svg).toContain('>4<'); // total de medallas
+      expect(svg).toContain('2 BRONCE');
     }
   });
 
+  it('una pareja con alguien de otro club lo indica como «con …» y no lo cuenta entre las personas del club', () => {
+    const mixed = { ...t, uvaPlayers: ['Ana Prueba'], results: [{ event: 'DM', entrant: 'Ana Prueba / D. M.', place: 1, text: 'Oro', done: true, score: '21-10 21-12' }] } as unknown as PublicTournament;
+    const svg = tournamentSvg(mixed, 'square', 'resultados');
+    expect(svg).toContain('(con D. M.)');
+    expect(svg).toContain('1 MEDALLA');
+  });
+
   it('sin medallas, o en formato panorámico, sigue la lista de resultados', () => {
-    expect(tournamentSvg({ ...t, results: [{ event: 'IM', entrant: 'Ana Prueba', text: 'Cae en Cuartos', done: true }] } as unknown as PublicTournament, 'square', 'resultados')).not.toContain('SUBE AL PODIO');
-    expect(tournamentSvg(t, 'og', 'resultados')).not.toContain('SUBE AL PODIO');
+    expect(tournamentSvg({ ...t, results: [{ event: 'IM', entrant: 'Ana Prueba', text: 'Cae en Cuartos', done: true }] } as unknown as PublicTournament, 'square', 'resultados')).not.toContain('CONFIRMADAS');
+    expect(tournamentSvg(t, 'og', 'resultados')).not.toContain('CONFIRMADAS');
   });
 });

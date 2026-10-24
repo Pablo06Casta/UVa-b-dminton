@@ -172,9 +172,37 @@ function titleBlock(t: PublicTournament, w: number, x: number, y: number, vertic
 /** Pelota de bádminton (volante) dibujada con formas simples, centrada en (0,0) y apuntando a la izquierda. */
 const SHUTTLE = `<g><ellipse cx="0" cy="0" rx="34" ry="30" fill="#f4f1e8" stroke="#cfd6e2" stroke-width="2"/><path d="M30 -22 L150 -60 L150 60 L30 22 Z" fill="#fbfbf7" stroke="#cfd6e2" stroke-width="2"/><path d="M60 -30V30M90 -42V42M120 -52V52" stroke="#cfd6e2" stroke-width="3"/><rect x="26" y="-30" width="10" height="60" fill="#1f7a4d"/></g>`;
 
+/** Fondo de pabellón: azul noche con luces desenfocadas, red al fondo y suelo azul con líneas de pista. Se dibuja en 1080×1350. */
+const COURT_BG = `<defs>
+  <linearGradient id="bgNight" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0b1330"/><stop offset=".45" stop-color="#172a5a"/><stop offset="1" stop-color="#0d1a3d"/></linearGradient>
+  <linearGradient id="bgFloor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2d5ba5"/><stop offset="1" stop-color="#16346c"/></linearGradient>
+  <filter id="blurL" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="22"/></filter>
+  <filter id="blurS" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="8"/></filter>
+  <pattern id="netMesh" width="26" height="26" patternUnits="userSpaceOnUse"><path d="M0 0L26 26M26 0L0 26" stroke="#9fb6e8" stroke-opacity=".28" stroke-width="2"/></pattern>
+</defs>
+<rect width="1080" height="1350" fill="url(#bgNight)"/>
+<g filter="url(#blurL)"><rect x="620" y="40" width="360" height="70" fill="#dbe6ff" fill-opacity=".55"/><rect x="60" y="120" width="260" height="46" fill="#9db6f5" fill-opacity=".25"/><rect x="760" y="300" width="300" height="60" fill="#b9ccff" fill-opacity=".28"/><rect x="-40" y="420" width="260" height="400" fill="#3c64b8" fill-opacity=".3"/></g>
+<g filter="url(#blurS)"><rect x="0" y="440" width="1080" height="150" fill="url(#netMesh)"/><rect x="0" y="436" width="1080" height="12" fill="#e9efff" fill-opacity=".55"/><rect x="0" y="446" width="14" height="420" fill="#0a1226"/><rect x="1060" y="446" width="20" height="420" fill="#0a1226"/></g>
+<path d="M0 840H1080V1350H0Z" fill="url(#bgFloor)"/>
+<g stroke="#fff" stroke-opacity=".5" stroke-width="5" filter="url(#blurS)"><path d="M-100 1010L1180 930M-100 1230L1180 1150M120 840L-260 1350M700 840L1080 1350"/></g>
+<rect width="1080" height="1350" fill="#06102b" fill-opacity=".38"/>`;
+
+const PANEL = {
+  1: { grad: ['#f6d65c', '#d9a514'], word: 'ORO', ink: '#1a1400', ring: '#f2c230' },
+  2: { grad: ['#eef1f6', '#b9c1ce'], word: 'PLATA', ink: '#14203f', ring: '#dfe5ee' },
+  3: { grad: ['#e9a56d', '#b87142'], word: 'BRONCE', ink: '#2b1405', ring: '#e39a58' },
+} as const;
+
+/** Medalla pequeña (cinta + disco) centrada en (cx, cy). */
+const medalIcon = (cx: number, cy: number, r: number, fill: string, ink: string, ribbon = false) =>
+  `<g>${ribbon ? `<polygon points="${cx - r * 0.8},${cy - r * 0.95} ${cx - r * 0.15},${cy - r * 0.95} ${cx + r * 0.2},${cy} ${cx - r * 0.6},${cy}" fill="#2f4ea5"/><polygon points="${cx + r * 0.8},${cy - r * 0.95} ${cx + r * 0.15},${cy - r * 0.95} ${cx - r * 0.2},${cy} ${cx + r * 0.6},${cy}" fill="#1f356f"/>` : ''}<circle cx="${cx}" cy="${cy + r * 0.3}" r="${r}" fill="${fill}" stroke="${ink}" stroke-opacity=".5" stroke-width="2"/><circle cx="${cx}" cy="${cy + r * 0.3}" r="${r * 0.62}" fill="none" stroke="${ink}" stroke-opacity=".45" stroke-width="2"/></g>`;
+
+const INITIALS = /^(?:\p{Lu}\.\s?)+$/u;
+
 /**
- * Tarjeta de resultados con podio en tres alturas (1.º en el centro), titular publicitario y llamada a la acción.
- * Se dibuja en un lienzo de 1080×1350 y se escala para que quepa en cuadrado o vertical.
+ * Tarjeta «Medallas confirmadas»: fondo de pabellón, titular, un panel por tipo de medalla con la prueba, quién y el marcador de la final,
+ * y el total. Se dibuja en 1080×1350 y se escala (centrada) para cuadrado o vertical. Si hay muchas medallas, las filas se comprimen
+ * y, si aun así no caben, se resume el resto («+N medallas más»).
  */
 export function podiumSvg(t: PublicTournament, size: CardSize): string {
   const { w, h } = SIZES[size];
@@ -182,57 +210,103 @@ export function podiumSvg(t: PublicTournament, size: CardSize): string {
   const ox = (w - 1080 * k) / 2;
   const oy = (h - 1350 * k) / 2;
   const medals = t.results.filter((r) => r.place);
-  const pick = (p: 1 | 2 | 3) => medals.find((r) => r.place === p);
-  const extra = medals.length - [1, 2, 3].filter((p) => pick(p as 1 | 2 | 3)).length;
-  // Alturas: escalón central más alto. Cada uno: [x, ancho, arriba, color, número].
-  const steps = [
-    { p: 2 as const, x: 64, w: 330, top: 800, fill: 'url(#silver)', line: '#9aa3af' },
-    { p: 1 as const, x: 372, w: 336, top: 730, fill: 'url(#gold)', line: '#e0a914' },
-    { p: 3 as const, x: 686, w: 330, top: 850, fill: 'url(#bronze)', line: '#b8793f' },
-  ];
-  const NAVY = '#14132f';
-  const nameLines = (who: string): string[] => {
-    const parts = who.split(/\s+\/\s+/);
-    return parts.length > 1 ? parts : wrap(who, 15, 2);
+  const club = new Set(t.uvaPlayers.map((n) => n.toLowerCase()));
+
+  // Filas: quién gana (personas del club) y, si la pareja es de otro club, «con …» en una segunda línea.
+  interface Row { place: 1 | 2 | 3; event: string; lines: string[]; with?: string; detail?: string }
+  const rows: Row[] = medals.sort((a, b) => a.place! - b.place!).map((r) => {
+    const parts = r.entrant.split(/\s+\/\s+/);
+    const own = club.size ? parts.filter((p) => club.has(p.toLowerCase())) : parts.filter((p) => !INITIALS.test(p) && !/^Jugador\/a UVa$/i.test(p));
+    const other = parts.filter((p) => !own.includes(p) && !/^Jugador\/a UVa$/i.test(p));
+    const lines = own.length ? own : parts;
+    return {
+      place: r.place!,
+      event: r.event.toUpperCase(),
+      lines,
+      with: own.length && other.length ? other.join(' / ') : undefined,
+      detail: r.score ? `${r.place === 3 ? 'Semifinal' : 'Final'}:  ${r.score.replace(/\s+/g, '  ·  ')}` : r.place === 3 ? 'Semifinal' : undefined,
+    };
+  });
+
+  // Reparto de altura: cabecera de cada panel 70, filas de 64 (80 si son dos líneas), huecos de 22.
+  const rowH = (r: Row, f: number) => (r.lines.length > 1 || r.with ? 84 : 62) * f;
+  const top = 530;
+  const bottom = 1200;
+  const avail = bottom - top;
+  const need = (list: Row[], f: number) => {
+    const places = [...new Set(list.map((r) => r.place))];
+    return places.length * (70 + 22) + list.reduce((a, r) => a + rowH(r, f), 0) - 22;
   };
-  const stepSvg = steps
-    .map((s) => {
-      const r = pick(s.p);
-      const lines = r ? nameLines(r.entrant) : [];
-      const cx = s.x + s.w / 2;
-      const hgt = 1050 - s.top;
-      const evY = s.top - 26;
-      const nameY = evY - 64 - (lines.length - 1) * 46;
-      const label = lines.map((l, i) => `<text x="${cx}" y="${nameY + i * 46}" text-anchor="middle" font-weight="800" font-size="44" fill="${NAVY}">${esc(clip(upper(l), s.w + 20, 44))}</text>`).join('');
-      const ev = r ? `<rect x="${cx - 36}" y="${evY - 50}" width="72" height="6" fill="${s.line}"/><text x="${cx}" y="${evY}" text-anchor="middle" font-weight="700" font-size="26" letter-spacing="2" fill="#44506b">${esc(clip(upper(eventName(r.event)), s.w + 20, 26))}</text>` : '';
-      const numSize = Math.min(190, hgt * 0.6);
-      return `${label}${ev}<rect x="${s.x}" y="${s.top}" width="${s.w}" height="${hgt}" fill="${s.fill}"/><rect x="${s.x}" y="${s.top}" width="${s.w}" height="10" fill="#fff" fill-opacity=".35"/>
-<text x="${cx}" y="${s.top + hgt * 0.62}" text-anchor="middle" font-weight="800" font-size="${numSize}" fill="${NAVY}">${s.p}</text><text x="${cx}" y="${s.top + hgt * 0.93}" text-anchor="middle" font-weight="800" font-size="${Math.min(64, hgt * 0.24)}" fill="${NAVY}">UVa</text>`;
-    })
-    .join('');
-  const place = [t.name, t.city].filter(Boolean).join(' · ');
-  const body = `
-<defs>
-  <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset=".6" stop-color="#eef2f9"/><stop offset="1" stop-color="#dfe6f2"/></linearGradient>
-  <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f3cf55"/><stop offset="1" stop-color="#d9a514"/></linearGradient>
-  <linearGradient id="silver" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d9dde4"/><stop offset="1" stop-color="#a7aeb9"/></linearGradient>
-  <linearGradient id="bronze" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d9965c"/><stop offset="1" stop-color="#a8683a"/></linearGradient>
-  <clipPath id="logoClip"><rect width="112" height="112"/></clipPath>
-</defs>
-<g stroke="#9fb0cf" stroke-opacity=".45" stroke-width="2"><path d="M-600 640H1700M-600 700H1700M-600 760H1700M-600 820H1700M-600 880H1700M-90 600V900M90 600V900M270 600V900M450 600V900M630 600V900M810 600V900M990 600V900M1170 600V900"/></g>
-<g stroke="#fff" stroke-opacity=".8" stroke-width="5"><path d="M-600 1070H1700M-600 1140H1700M540 1050V1190"/></g>
-<g transform="translate(64 56)"><image href="${LOGO}" width="112" height="112" clip-path="url(#logoClip)"/></g>
-<rect x="206" y="62" width="3" height="100" fill="#14132f" fill-opacity=".6"/>
-<text x="232" y="98" font-weight="800" font-size="48" fill="${NAVY}">CLUB</text><text x="232" y="140" font-weight="800" font-size="48" fill="${NAVY}">BÁDMINTON UVA</text>
-<text x="540" y="360" text-anchor="middle" font-weight="800" font-size="168" fill="${NAVY}">EL TALENTO UVA</text>
-<text x="540" y="506" text-anchor="middle" font-weight="800" font-size="150" fill="#e0a914">SUBE AL PODIO</text>
-${stepSvg}
-<g transform="translate(900 1125) rotate(-8)">${SHUTTLE}</g>
-<line x1="64" x2="1016" y1="1182" y2="1182" stroke="#fff" stroke-opacity=".7" stroke-width="2"/>
-<text x="540" y="1244" text-anchor="middle" font-weight="800" font-size="46" fill="#fff">${esc(clip(upper(place), 960, 46))}</text>
-<line x1="64" x2="1016" y1="1268" y2="1268" stroke="#fff" stroke-opacity=".7" stroke-width="2"/>
-<text x="540" y="1318" text-anchor="middle" font-weight="700" font-size="36" fill="#fff" letter-spacing="1">${esc(upper(extra > 0 ? `+${extra} ${extra === 1 ? 'medalla más' : 'medallas más'} · ` : ''))}¡Súmate al club! #ClubBadmintonUVA</text>`;
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" font-family="Barlow Condensed"><defs><linearGradient id="floor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3b5f95"/><stop offset="1" stop-color="#25406d"/></linearGradient><linearGradient id="skyBg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#dfe6f2"/></linearGradient></defs><rect width="${w}" height="${h}" fill="url(#skyBg)"/><rect y="${oy + 1030 * k}" width="${w}" height="${h}" fill="url(#floor)"/><g transform="translate(${ox} ${oy}) scale(${k})">${body}</g></svg>`;
+  let shown = rows;
+  let f = 1;
+  while (need(shown, f) > avail && f > 0.7) f -= 0.05;
+  while (need(shown, f) > avail && shown.length > 1) shown = shown.slice(0, -1);
+  const hidden = rows.length - shown.length;
+
+  let y = top;
+  let panels = '';
+  for (const place of [1, 2, 3] as const) {
+    const list = shown.filter((r) => r.place === place);
+    if (!list.length) continue;
+    const c = PANEL[place];
+    const total = rows.filter((r) => r.place === place).length;
+    const bodyH = list.reduce((a, r) => a + rowH(r, f), 0);
+    panels += `<g><linearGradient id="g${place}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="${c.grad[0]}"/><stop offset="1" stop-color="${c.grad[1]}"/></linearGradient>
+<rect x="94" y="${y}" width="892" height="${70 + bodyH}" rx="14" fill="#101c43" fill-opacity=".92" stroke="${c.ring}" stroke-opacity=".7" stroke-width="2"/>
+<path d="M94 ${y + 14}a14 14 0 0 1 14 -14H972a14 14 0 0 1 14 14V${y + 70}H94Z" fill="url(#g${place})"/>
+${medalIcon(152, y + 24, 19, c.ring, c.ink, true)}
+<text x="206" y="${y + 51}" font-weight="800" font-size="50" fill="${c.ink}">${c.word}</text>
+<text x="962" y="${y + 47}" text-anchor="end" font-weight="800" font-size="30" fill="${c.ink}">${total} ${total === 1 ? 'MEDALLA' : 'MEDALLAS'}</text>`;
+    let ry = y + 70;
+    list.forEach((r, i) => {
+      const hh = rowH(r, f);
+      const cy = ry + hh / 2;
+      if (i > 0) panels += `<line x1="120" x2="960" y1="${ry}" y2="${ry}" stroke="#fff" stroke-opacity=".18" stroke-width="2"/>`;
+      panels += medalIcon(152, cy - 8, 16, c.ring, c.ink);
+      panels += `<text x="204" y="${cy + 9}" font-weight="800" font-size="30" fill="#fff">${esc(upper(r.event))}</text><line x1="268" x2="268" y1="${cy - 24}" y2="${cy + 24}" stroke="#fff" stroke-opacity=".3" stroke-width="2"/>`;
+      const many = r.lines.length > 1;
+      const names = r.lines.map((l, j) => ({ text: many ? (j < r.lines.length - 1 ? `${l} /` : l) : l, size: many || r.with ? 28 : 32 }));
+      const rows2 = names.length + (r.with ? 1 : 0);
+      let ny = cy - (rows2 - 1) * 14 + 8;
+      for (const n of names) {
+        panels += `<text x="290" y="${ny}" font-weight="700" font-size="${n.size}" fill="#fff">${esc(clip(n.text, 360, n.size))}</text>`;
+        ny += 28;
+      }
+      if (r.with) panels += `<text x="290" y="${ny}" font-weight="700" font-size="22" fill="#b9c8ee">${esc(clip(`(con ${r.with})`, 360, 22))}</text>`;
+      if (r.detail) {
+        panels += `<line x1="662" x2="662" y1="${cy - 24}" y2="${cy + 24}" stroke="#fff" stroke-opacity=".3" stroke-width="2"/>`;
+        const lines = wrap(r.detail, 34, 2);
+        const dy = lines.length > 1 ? 12 : 0;
+        lines.forEach((l, j) => (panels += `<text x="678" y="${cy + 8 - dy + j * 24}" font-weight="700" font-size="23" fill="#fff">${esc(l)}</text>`));
+      }
+      ry += hh;
+    });
+    panels += '</g>';
+    y += 70 + bodyH + 22;
+  }
+
+  const count = (p: number) => medals.filter((r) => r.place === p).length;
+  const label = [[1, 'ORO', 'OROS', '#f2c230'], [2, 'PLATA', 'PLATA', '#dfe5ee'], [3, 'BRONCE', 'BRONCE', '#e39a58']] as const;
+  const tally = label.filter(([p]) => count(p) > 0).map(([p, one, many, col]) => `<tspan fill="${col}">${count(p)} ${count(p) === 1 ? one : many}</tspan>`).join('<tspan fill="#fff">  ·  </tspan>');
+  const place = t.name;
+  const cover = Math.max(w / 1080, h / 1350);
+  const bg = `<g transform="translate(${(w - 1080 * cover) / 2} ${(h - 1350 * cover) / 2}) scale(${cover})">${COURT_BG}</g>`;
+  const body = `<g transform="translate(64 56)"><clipPath id="logoClip"><rect width="112" height="112"/></clipPath><image href="${LOGO}" width="112" height="112" clip-path="url(#logoClip)"/><rect width="112" height="112" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="2"/></g>
+<rect x="206" y="60" width="3" height="108" fill="#fff" fill-opacity=".5"/>
+<text x="234" y="94" font-weight="800" font-size="38" fill="#fff">CLUB</text><text x="234" y="138" font-weight="800" font-size="38" fill="#fff">BÁDMINTON</text><text x="234" y="178" font-weight="800" font-size="38" fill="#fff">UVA</text>
+<text x="540" y="338" text-anchor="middle" font-weight="800" font-size="196" fill="#fff">MEDALLAS</text>
+<text x="540" y="456" text-anchor="middle" font-weight="800" font-size="148" fill="#c9d4f7">${t.results.every((r) => !r.place || r.done) && t.progress?.done ? 'CONSEGUIDAS' : 'CONFIRMADAS'}</text>
+<text x="540" y="502" text-anchor="middle" font-weight="700" font-size="27" letter-spacing="9" fill="#e6ecff">RESULTADOS DEL CLUB BÁDMINTON UVA</text>
+<line x1="400" x2="680" y1="514" y2="514" stroke="#fff" stroke-opacity=".6" stroke-width="2"/>
+${panels}
+<rect x="94" y="1222" width="892" height="92" rx="12" fill="#0d1a3d" fill-opacity=".92" stroke="#fff" stroke-opacity=".25" stroke-width="2"/>
+<text x="130" y="1290" font-weight="800" font-size="100" fill="#fff">${medals.length}</text>
+<text x="${130 + String(medals.length).length * 52 + 24}" y="1285" font-weight="800" font-size="52" fill="#fff">${medals.length === 1 ? 'MEDALLA' : 'MEDALLAS'}</text>
+<line x1="470" x2="470" y1="1238" y2="1298" stroke="#fff" stroke-opacity=".35" stroke-width="2"/>
+<text x="496" y="1280" font-weight="800" font-size="40">${tally}</text>
+<text x="94" y="1340" font-weight="700" font-size="24" fill="#e6ecff">${esc(clip(`${hidden > 0 ? `+${hidden} ${hidden === 1 ? 'MEDALLA MÁS' : 'MEDALLAS MÁS'} · ` : ''}#ClubBadmintonUVa · ${upper(place)}`, 760, 24))}</text>
+<g transform="translate(980 1262) rotate(-14) scale(1.1)">${SHUTTLE}</g>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" font-family="Barlow Condensed"><rect width="${w}" height="${h}" fill="#0b1330"/>${bg}<g transform="translate(${ox} ${oy}) scale(${k})">${body}</g></svg>`;
 }
 
 export function tournamentSvg(t: PublicTournament, size: CardSize, kind: 'torneo' | 'resultados', rivals: Record<string, string> = {}): string {

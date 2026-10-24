@@ -170,6 +170,9 @@ badminton.es no avisa cuando publica algo, así que el servidor lo detecta con l
 - Encima de las noticias, una tarjeta por cada torneo que se juega hoy con jugadores del club (varios a la vez si coinciden): quién juega ahora, los próximos con hora estimada, el balance de hoy (victorias/derrotas), partidos que quedan y avance del torneo con fin estimado. Enlaza a Directo con ese torneo (`/directo?torneo=<id>`).
 - Se quita sola cuando el torneo acaba (último día y todos los partidos terminados, o la estimación del servidor lo da por terminado), si sus datos están desactualizados o si no hay torneos en juego. Lógica en `src/lib/live.ts` (`liveTournaments`, `summarize`).
 
+## Tarjeta «Medallas confirmadas» (compartir resultados)
+- La imagen de resultados (cuadrada y vertical; la panorámica sigue siendo lista) usa la plantilla «MEDALLAS CONFIRMADAS»: fondo de pabellón, logotipo, un panel por oro/plata/bronce con la prueba, quién y el marcador de la final («Semifinal» en el bronce), el total y el volante. Las parejas con alguien de otro club salen como «(con Nombre Apellido)» (misma norma que los rivales). Si hay muchas medallas, las filas se comprimen y se resume el resto («+N medallas más»). Código: `podiumSvg` en `server/src/share.ts`.
+
 ## Cambio de nombre de la cuenta de GitHub (22/10/2026)
 - La cuenta pasó de `Pablo06Casta` a `badmiton-uva`: la web está ahora en https://badmiton-uva.github.io/UVa-b-dminton/ (la dirección antigua da 404) y Web-cerca en https://badmiton-uva.github.io/PABLO-APP/.
 - El servidor autoriza siempre las dos direcciones (`CLUB_ORIGINS` en `server/src/config.ts`); antes solo la antigua y por eso la web nueva no recibía noticias ni datos en vivo.

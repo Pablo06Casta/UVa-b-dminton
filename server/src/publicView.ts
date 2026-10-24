@@ -205,7 +205,7 @@ export function entrantLabel(names: string[], club: string | undefined, publicPl
   return { label: parts.map((p) => p.text).join(' / '), uva: parts.some((p) => p.uva) };
 }
 
-/** Rivales (en minúsculas) de las personas del club en un torneo, los mismos que se nombran en sus partidos; vacío si la política los oculta. */
+/** Rivales y parejas de otro club (en minúsculas) de las personas del club en un torneo, los que se nombran en sus partidos; vacío si la política los oculta. */
 function rivalsOf(db: Db, guid: string): Set<string> {
   const out = new Set<string>();
   if (settings.opponents !== 'names') return out;
@@ -215,6 +215,7 @@ function rivalsOf(db: Db, guid: string): Set<string> {
     const uvaOn = m.sides.map((x) => x.players.some((p) => p.uva));
     if (uvaOn[0] === uvaOn[1] || !rivalVisible(name, m.drawName, m.eventCode)) continue;
     for (const p of m.sides[uvaOn[0] ? 1 : 0].players) if (!p.uva) out.add(p.name.toLowerCase());
+    for (const p of m.sides[uvaOn[0] ? 0 : 1].players) if (!p.uva) out.add(p.name.toLowerCase()); // la pareja de otro club de alguien del club, igual
   }
   return out;
 }
