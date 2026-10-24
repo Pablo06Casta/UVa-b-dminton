@@ -10,7 +10,7 @@ export function NextMatch({ match, progress, now }: { match: UvaMatch; progress?
     <section className="nextm" aria-labelledby="nextm-title">
       <h3 id="nextm-title">Siguiente partido de la UVa</h3>
       <p className="nextm__who">
-        <strong>{match.players.join(' / ')}</strong>
+        <strong>{match.players.join(' / ')}</strong>{match.opponent && <span> vs <strong>{match.opponent}</strong></span>}
         {match.event && <span> · {match.event}</span>}
         {match.court && <span> · Pista {match.court}</span>}
         {match.date && <span> · {formatDay(match.date)}</span>}

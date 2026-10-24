@@ -139,7 +139,7 @@ badminton.es no avisa cuando publica algo, así que el servidor lo detecta con l
 
 ## Imagen de «compartir torneo»: jornada por horas con rivales
 - La tarjeta del torneo lista todos los partidos de la jornada por hora (los terminados con V/D y marcador, el que se juega como AHORA, los pendientes con hora estimada) y el rival con **nombre y primer apellido** (`server/src/shareRivals.ts`), con el consentimiento expreso del club (Pablo, 22/10/2026).
-- Solo viaja en la imagen y en su página de compartir: la API pública (`/api/public/state`) sigue sin rivales (`PUBLIC_OPPONENTS=none`).
+- Desde el 24/10/2026, por decisión del club, los rivales también salen en la web, la API pública, Directo, Inicio, las imágenes, las capturas del itinerario y los avisos push (`PUBLIC_OPPONENTS=names` por defecto; `none` los oculta). Siempre nombre y primer apellido (`shareRivals.ts › nameAndFirstSurname`) y en los cuadros solo los rivales de gente del club; nunca en pruebas o torneos de menores (`rivalVisible`).
 - Salvaguardas: no se nombra a rivales de pruebas de menores (Sub-xx, infantil, juvenil… en el nombre de la prueba) ni en torneos solo de menores (`SHARE_RIVAL_YOUTH=true` lo permite); `SHARE_RIVAL_NAMES=off` lo quita del todo. El texto de privacidad lo recoge.
 
 ## Imágenes para Instagram por correo (agente Publicista)

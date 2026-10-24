@@ -83,8 +83,8 @@ export const settings = {
   vapid: { publicKey: process.env.VAPID_PUBLIC_KEY ?? '', privateKey: process.env.VAPID_PRIVATE_KEY ?? '', subject: process.env.VAPID_SUBJECT ?? '' },
   defaultMatchMin: process.env.DEFAULT_MATCH_MINUTES ? num(process.env.DEFAULT_MATCH_MINUTES, 0) || undefined : undefined,
   changeoverMin: num(process.env.CHANGEOVER_MINUTES, 3),
-  /** Qué se publica de los rivales: nada o su nombre. Por defecto, nada (datos de terceros, posibles menores). */
-  opponents: (process.env.PUBLIC_OPPONENTS ?? 'none') as OpponentPolicy,
+  /** Qué se publica de los rivales: su nombre (nombre y primer apellido) o nada (`PUBLIC_OPPONENTS=none`). Por decisión del club, por defecto el nombre; nunca en pruebas de menores (ver `shareRivals.ts`). */
+  opponents: (process.env.PUBLIC_OPPONENTS ?? 'names') as OpponentPolicy,
   /** Imagen de «compartir torneo»: el rival sale con nombre y primer apellido (con el consentimiento del club). `SHARE_RIVAL_NAMES=off` lo quita. */
   shareRivalNames: process.env.SHARE_RIVAL_NAMES !== 'off',
   /** Por defecto no se nombra a rivales en torneos con categorías de menores (Sub-13, Sub-17…). `SHARE_RIVAL_YOUTH=true` lo permite. */

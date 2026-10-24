@@ -25,6 +25,17 @@ export const hasYouthCategories = (name: string) => /\bsub[\s-]?\d{2}\b|infantil
  * Solo sale en la imagen, no en la API pública. Con SHARE_RIVAL_NAMES=off queda vacío; no se nombra a rivales de pruebas de menores
  * (por el nombre de la prueba o del cuadro) ni, salvo SHARE_RIVAL_YOUTH=true, en torneos cuyo nombre no deja ver la prueba (solo torneos de menores).
  */
+/**
+ * ¿Se puede nombrar al rival de este partido? No en pruebas de menores (por el nombre de la prueba o del cuadro) ni, salvo
+ * SHARE_RIVAL_YOUTH=true, en torneos de menores cuyo nombre no deja ver la prueba. Con SHARE_RIVAL_NAMES=off, nunca.
+ */
+export function rivalVisible(tournamentName: string | undefined, drawName: string | undefined, eventCode: string | undefined): boolean {
+  if (!settings.shareRivalNames) return false;
+  // Un torneo con varias categorías («Sub-13, Sub-17 y Absoluto») solo se bloquea en las pruebas que se identifican como de menores.
+  if (!settings.shareRivalYouth && tournamentName && hasYouthCategories(tournamentName) && !/absolut|sénior|senior|\bn[1-9]\b/i.test(tournamentName)) return false;
+  return settings.shareRivalYouth || !hasYouthCategories(`${drawName ?? ''} ${eventCode ?? ''}`);
+}
+
 export function rivalNamesFor(db: Db, tournamentGuid: string, tournamentName: string): Record<string, string> {
   if (!settings.shareRivalNames) return {};
   // Un torneo con varias categorías («Sub-13, Sub-17 y Absoluto») solo se bloquea en las pruebas que se identifican como de menores.

@@ -63,7 +63,7 @@ function cardItem(m: PublicMatch, f: ItineraryFormat): Item {
   const h = wide ? (hasResult ? 124 : done ? 96 : 92) : hasResult ? 168 : 124;
   const hour = Math.floor(clockMin(at) / 60);
   const names = m.players.join(' / ');
-  const sub = [m.event, m.court ? `Pista ${m.court}` : ''].filter(Boolean).join(' · ');
+  const sub = [m.opponent ? `vs ${m.opponent}` : '', m.event, m.court ? `Pista ${m.court}` : ''].filter(Boolean).join(' · ');
 
   const draw = (y: number, showHour: boolean) => {
     let g = '';

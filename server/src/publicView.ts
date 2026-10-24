@@ -1,3 +1,4 @@
+import { nameAndFirstSurname, rivalVisible } from './shareRivals';
 import { createHash } from 'node:crypto';
 import { todayIn } from './dates';
 import { settings } from './config';
@@ -146,7 +147,7 @@ const stateOf = (s: StoredMatch['status']): PublicMatch['state'] => (s === 'on_c
 /** Lo que la estimación aporta a un partido: hora estimada por partido y, en datos manuales, un retraso común. */
 export type StartHints = Pick<Estimate, 'starts'> & Partial<Pick<Estimate, 'delayMin' | 'basis'>>;
 
-export function toPublicMatch(m: StoredMatch, publicIds: Set<number>, hints: StartHints = { starts: {} }, names?: Map<number, string>): PublicMatch | undefined {
+export function toPublicMatch(m: StoredMatch, publicIds: Set<number>, hints: StartHints = { starts: {} }, names?: Map<number, string>, tournamentName?: string): PublicMatch | undefined {
   const uvaOn = m.sides.map((s) => s.players.filter((p) => p.uva));
   const all = uvaOn.flat();
   // Si alguien del club en el partido no es público, no se publica el partido entero.
@@ -154,7 +155,7 @@ export function toPublicMatch(m: StoredMatch, publicIds: Set<number>, hints: Sta
 
   const bothSides = uvaOn[0].length > 0 && uvaOn[1].length > 0;
   const uvaSide = uvaOn[0].length > 0 ? 0 : 1;
-  const other = m.sides[1 - uvaSide].players.map((p) => p.name).join(' / ');
+  const other = m.sides[1 - uvaSide].players.map((p) => nameAndFirstSurname(p.name)).join(' / ');
   const flip = (s: [number, number]): [number, number] => (uvaSide === 0 ? s : [s[1], s[0]]);
   const sets = m.sets.map(flip);
 
@@ -167,7 +168,7 @@ export function toPublicMatch(m: StoredMatch, publicIds: Set<number>, hints: Sta
     id: m.key,
     event: [m.eventCode ?? m.drawName, m.round].filter(Boolean).join(' · ') || undefined,
     players: all.map((p) => (p.rosterId !== undefined ? names?.get(p.rosterId) : undefined) ?? p.name),
-    opponent: !bothSides && settings.opponents === 'names' && other ? other : undefined,
+    opponent: !bothSides && settings.opponents === 'names' && other && rivalVisible(tournamentName, m.drawName, m.eventCode) ? other : undefined,
     state: stateOf(m.status),
     date: m.date,
     time: m.plannedClock,
@@ -190,7 +191,7 @@ const initials = (name: string) =>
  * Cómo se muestra a cada persona de un cuadro. Los jugadores públicos del club, con su nombre. El resto no consintió su
  * publicación aquí: iniciales (o nada), y las personas del club que no son públicas, siempre como «Jugador/a UVa».
  */
-export function entrantLabel(names: string[], club: string | undefined, publicPlayers: Player[]): { label: string; uva: boolean } {
+export function entrantLabel(names: string[], club: string | undefined, publicPlayers: Player[], rivals?: Set<string>): { label: string; uva: boolean } {
   const parts = names.map((n) => {
     // Nombre corto del torneo frente al completo de la lista; y si el club publicado es otro, es un homónimo, no del club.
     // (En parejas el club publicado puede ser el del compañero: la comprobación del club solo se aplica a individuales.)
@@ -198,13 +199,29 @@ export function entrantLabel(names: string[], club: string | undefined, publicPl
     if (pub) return { text: pub.name, uva: true };
     if (isUvaClub(club)) return { text: 'Jugador/a UVa', uva: false };
     if (settings.drawNames === 'full') return { text: n, uva: false };
+    if (rivals?.has(n.toLowerCase())) return { text: nameAndFirstSurname(n), uva: false }; // rival de alguien del club: con nombre, como en sus partidos
     return { text: initials(n), uva: false };
   });
   return { label: parts.map((p) => p.text).join(' / '), uva: parts.some((p) => p.uva) };
 }
 
+/** Rivales (en minúsculas) de las personas del club en un torneo, los mismos que se nombran en sus partidos; vacío si la política los oculta. */
+function rivalsOf(db: Db, guid: string): Set<string> {
+  const out = new Set<string>();
+  if (settings.opponents !== 'names') return out;
+  const name = (db.prepare('select name from tournaments where guid = ?').get(guid) as unknown as { name: string } | undefined)?.name;
+  for (const r of db.prepare('select json from matches where tournament_guid = ?').all(guid) as unknown as { json: string }[]) {
+    const m = JSON.parse(r.json) as StoredMatch;
+    const uvaOn = m.sides.map((x) => x.players.some((p) => p.uva));
+    if (uvaOn[0] === uvaOn[1] || !rivalVisible(name, m.drawName, m.eventCode)) continue;
+    for (const p of m.sides[uvaOn[0] ? 1 : 0].players) if (!p.uva) out.add(p.name.toLowerCase());
+  }
+  return out;
+}
+
 export function buildPublicDraws(db: Db, guid: string, publicPlayers: Player[]): PublicDraw[] {
   if (settings.drawNames === 'off') return [];
+  const rivals = rivalsOf(db, guid);
   const out: PublicDraw[] = [];
   const pendingFinals: PublicDraw[] = [];
   const rows = db.prepare('select draw_id, name, type, json from draws where tournament_guid = ? order by draw_id').all(guid) as unknown as { draw_id: number; name: string; type: 'knockout' | 'roundrobin'; json: string }[];
@@ -220,7 +237,7 @@ export function buildPublicDraws(db: Db, guid: string, publicPlayers: Player[]):
       standings?: { rank: number; names: string[]; club?: string; played: number; won: number; lost: number; matches: string; games: string; points: string; pts: number }[];
       rounds?: { title: string; matches: { a: EntrantRaw; b: EntrantRaw; winner?: 1 | 2; sets: [number, number][]; when?: string; court?: string; note?: string }[] }[];
     };
-    const ent = (e: EntrantRaw): PublicEntrant => ({ ...entrantLabel(e.names, e.club, publicPlayers), club: e.club, bye: e.bye, placeholder: e.placeholder });
+    const ent = (e: EntrantRaw): PublicEntrant => ({ ...entrantLabel(e.names, e.club, publicPlayers, rivals), club: e.club, bye: e.bye, placeholder: e.placeholder });
     const g = r.name.match(/^(.*?)\s+-\s+(?:Grupo|Group)\s+(\S+)$/i);
     const base = g ? g[1] : r.name;
     const draw: PublicDraw = { id: r.draw_id, name: r.name, type: r.type, base };
@@ -232,7 +249,7 @@ export function buildPublicDraws(db: Db, guid: string, publicPlayers: Player[]):
     let hasUva = false;
     if (data.standings) {
       draw.standings = data.standings.map((s) => {
-        const entrant = { ...entrantLabel(s.names, s.club, publicPlayers), club: s.club };
+        const entrant = { ...entrantLabel(s.names, s.club, publicPlayers, rivals), club: s.club };
         hasUva ||= entrant.uva;
         return { rank: s.rank, entrant, played: s.played, won: s.won, lost: s.lost, matches: s.matches, games: s.games, points: s.points, pts: s.pts };
       });
@@ -312,7 +329,7 @@ export function buildPublicState(db: Db, now = new Date()): PublicState {
 
     const est = kvGet<Estimate & { date: string }>(db, `estimate:${t.guid}`);
     const matches = (db.prepare('select json from matches where tournament_guid = ?').all(t.guid) as unknown as { json: string }[])
-      .map((r) => toPublicMatch(JSON.parse(r.json) as StoredMatch, publicIds, est ?? { starts: {} }, new Map([...publicPlayers].map(([id, p]) => [id, p.name]))))
+      .map((r) => toPublicMatch(JSON.parse(r.json) as StoredMatch, publicIds, est ?? { starts: {} }, new Map([...publicPlayers].map(([id, p]) => [id, p.name])), t.name))
       .filter((m): m is PublicMatch => !!m)
       .sort((a, b) => `${a.date ?? ''} ${a.time ?? ''}`.localeCompare(`${b.date ?? ''} ${b.time ?? ''}`));
 

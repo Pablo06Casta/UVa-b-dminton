@@ -134,10 +134,8 @@ export function LegalPage() {
             <h3>Origen de los datos deportivos</h3>
             <p>
               Los datos de torneos, cuadros y resultados se obtienen de las páginas públicas de las federaciones de bádminton. Solo se muestran
-              en esta web los de las personas del club que han dado su consentimiento. Los datos de las personas rivales no se publican en la web: en los
-              partidos solo figura el equipo o la persona del club. Únicamente en la imagen que se genera al compartir la jornada de un torneo puede
-              aparecer el nombre y el primer apellido de la persona rival, tal como figura en la información pública de la federación; no se nombra a
-              rivales en torneos con categorías de menores. Cualquier persona puede pedir que se retire su nombre desde el formulario de contacto.
+              en esta web los de las personas del club que han dado su consentimiento. En los partidos de las personas del club figura también el nombre y el primer apellido de la persona rival, tal como aparece en la información
+              pública de la federación; no se nombra a rivales en pruebas o torneos con categorías de menores. Cualquier persona puede pedir que se retire su nombre desde el formulario de contacto.
             </p>
 
             <h3>Destinatarios y encargados del tratamiento</h3>

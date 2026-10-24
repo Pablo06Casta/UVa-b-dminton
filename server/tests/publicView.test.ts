@@ -57,6 +57,22 @@ describe('lo que se publica', () => {
     expect(buildPublicState(db, NOW).tournaments[0].matches[0].opponent).toBe('Rival Uno');
   });
 
+  it('el rival sale con nombre y primer apellido, también en el cuadro, pero nunca en pruebas de menores', async () => {
+    const { db, src, engine } = setup();
+    settings.opponents = 'names';
+    createPlayer(db, { name: 'Ana Prueba', profile: PROFILE, public: true, ...consent });
+    src.dayRows = [
+      row({ key: 'a', names2: [['Pedro de la Torre Gil', 2]] }),
+      { ...row({ key: 'b', names2: [['Lucía Menor Pérez', 3]] }), drawName: 'IM Sub-13', eventCode: 'IM Sub-13' } as ReturnType<typeof row>,
+    ];
+    await runAll(engine);
+    const t = buildPublicState(db, NOW).tournaments[0];
+    expect(t.matches.find((m) => m.id === 'a')?.opponent).toBe('Pedro de la Torre');
+    expect(t.matches.find((m) => m.id === 'b')?.opponent).toBeUndefined();
+    expect(JSON.stringify(t)).not.toContain('Lucía Menor');
+    expect(JSON.stringify(t)).not.toContain('Gil');
+  });
+
   it('un partido de dobles se oculta entero si alguien del club no es público', async () => {
     const { db, src, engine } = setup();
     createPlayer(db, { name: 'Ana Prueba', profile: PROFILE, public: true, ...consent });

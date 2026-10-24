@@ -7,7 +7,7 @@ import type { UvaMatch } from '../../types';
 import { SectionHeading } from '../ui';
 
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
-const who = (m: UvaMatch) => m.players.join(' / ');
+const who = (m: UvaMatch) => `${m.players.join(' / ')}${m.opponent ? ` vs ${m.opponent}` : ''}`;
 const where = (m: UvaMatch) => [m.event, m.court ? `Pista ${m.court}` : ''].filter(Boolean).join(' · ');
 
 function Card({ s }: { s: LiveSummary }) {

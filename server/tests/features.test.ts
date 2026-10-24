@@ -83,7 +83,9 @@ describe('progreso y estimación publicados', () => {
     expect(t.matches).toHaveLength(1);
     expect(t.matches[0].estimatedStart).toBeDefined();
     expect(JSON.stringify(t.progress)).not.toContain('starts'); // las horas por partido de terceros no se publican
-    expect(JSON.stringify(buildPublicState(db, NOW))).not.toMatch(/Otro (Uno|Dos)/);
+    // Las personas de partidos ajenos al club no se publican; solo el rival de Ana (Otro Dos), con la política de rivales por defecto.
+    expect(JSON.stringify(buildPublicState(db, NOW))).not.toMatch(/Otro Uno/);
+    expect(t.matches[0].opponent).toBe('Otro Dos');
   });
 });
 

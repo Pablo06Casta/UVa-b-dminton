@@ -21,7 +21,7 @@ Para pausarlo: crear ese archivo y subirlo. Para reanudarlo: borrarlo.
 
 - Fallos de código con causa clara (se reproduce con una prueba, se corrige y la prueba queda en el repositorio).
 - Noticias que no se generaron: si el servidor no las creó, añadir una noticia **escrita a mano** en `src/data/news.json` con el `tournamentGuid`
-  (solo jugadores de la lista pública de `/api/public/state`, sin rivales, con enlace a badminton.es).
+  (solo jugadores de la lista pública de `/api/public/state`; los rivales salen con nombre y primer apellido tal como los publica el servidor, nunca en pruebas de menores, con enlace a badminton.es).
 - Texto, estilos o datos incluidos en la web que estén rotos.
 - Ajustes **numéricos** de la estimación (ver más abajo).
 
@@ -29,7 +29,7 @@ Para pausarlo: crear ese archivo y subirlo. Para reanudarlo: borrarlo.
 
 - Tocar secretos, variables de entorno de Render, GitHub o Upstash, ni cambiar la lista de jugadores, los consentimientos o qué se publica
   (`PUBLIC_OPPONENTS`, `PUBLIC_DRAW_NAMES`, `HIDDEN_PLAYERS`, `AUTO_ROSTER_CONSENT`).
-- Publicar nombres de personas que no estén en `/api/public/state › players`, ni nombres de menores, ni de rivales.
+- Publicar nombres de personas que no estén en `/api/public/state › players`, ni nombres de menores, ni de rivales que no vengan del servidor (el servidor ya publica el nombre y primer apellido de los rivales salvo en pruebas de menores).
 - Desactivar, saltarse o borrar pruebas; subir con las pruebas en rojo; forzar pushes; reescribir historia; abrir PR sin que se le pida.
 - Cambiar la cadencia de lectura a badminton.es por debajo de 2,5 s entre peticiones ni leer más de lo necesario (máx. ~150 peticiones por ejecución).
 - Hacer cambios grandes (refactors, dependencias nuevas, cambios de diseño, textos legales): en esos casos solo **informa** con una propuesta.
