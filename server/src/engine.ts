@@ -627,6 +627,13 @@ export class SyncEngine {
       const m = buildStoredMatch(row, { tournamentGuid: guid, entrants });
       if (m && this.ingest(m, now) === 'pending' && (m.status === 'finished' || m.status === 'walkover' || m.status === 'retired')) resultPending = true;
     }
+    // Partidos «fantasma»: los que la fuente ya no publica (cambian de clave al asignarse jugadores, se suspenden o se reordenan) y quedaron
+    // como pendientes. Si no se retiran, el torneo parece no acabar nunca y la hora estimada de fin queda en el futuro para siempre.
+    if (rows.length > 0) {
+      const iso = now.toISOString();
+      this.db.prepare("delete from slots where tournament_guid = ? and date = ? and updated_at < ? and status in ('scheduled', 'unknown')").run(guid, job.date!, iso);
+      this.db.prepare("delete from slots where tournament_guid = ? and date = ? and updated_at < ? and status = 'on_court'").run(guid, job.date!, new Date(now.getTime() - 30 * 60_000).toISOString());
+    }
     // Partidos que acaban de terminar: los cuadros y las clasificaciones cambian con ellos, así que se leen ya (no a su hora).
     if (finishedNow > 0) this.kick(`draws:${guid}`, now);
     kvSet(this.db, `ok:${job.key}`, { at: now.toISOString() });

@@ -71,7 +71,7 @@ Para cada torneo/día de `/api/public/accuracy` con `finished=true` que **no fig
 ### Torneos analizados (estimación)
 | Torneo (GUID) | Día | Error fin (min) | Error inicio club (min) | Cambio aplicado |
 | --- | --- | --- | --- | --- |
-| _(vacío)_ | | | | |
+| Estella · Viladecans · Utrillas (24/10/2026) | sáb | (no medible: la jornada no se cerraba por partidos fantasma) | — | Arreglado el cierre; 3 días añadidos a real-days.json; parámetros sin cambios (mejora < 3 %) |
 
 ### Ejecuciones con cambios o incidencias
 | Fecha | Qué pasó | Qué se hizo |

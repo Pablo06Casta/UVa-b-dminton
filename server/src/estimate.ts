@@ -23,7 +23,7 @@ export interface Slot {
 }
 
 /**
- * Valores de partida (a priori) medidos en 1.299 partidos reales de 11 jornadas de torneos absolutos españoles (2026):
+ * Valores de partida (a priori) medidos en 1.522 partidos reales de 14 jornadas de torneos españoles (2026; la última revisión, 24/10, confirmó los anteriores):
  * duración media por prueba y dispersión, y proporción de W.O. Se usan hasta que el torneo en curso aporta datos propios, y
  * después se mezclan con ellos (ver `estimate`). Se pueden sustituir (las pruebas lo hacen para no «ver» la jornada que evalúan).
  */
@@ -41,11 +41,11 @@ export interface Priors {
 }
 
 export const defaultPriors: Priors = {
-  mean: { IM: 28.3, IF: 26.2, DM: 31.2, DF: 30.9, DX: 29.5 },
+  mean: { IM: 28.7, IF: 26.2, DM: 31.5, DF: 31.1, DX: 29.1 },
   globalMean: 28.9,
-  cv: 0.32,
-  walkover: 0.074,
-  paceTau: 0.076,
+  cv: 0.326,
+  walkover: 0.076,
+  paceTau: 0.071,
 };
 
 export interface EstimateConfig {
@@ -185,21 +185,29 @@ export function estimate(slots: Slot[], now: Date, cfg: EstimateConfig = default
   const preassigned = pending.length > 0 && pending.filter((s) => s.status !== 'walkover').every(knownCourt);
   const courts = preassigned ? courtIds.size : Math.max(courtIds.size, inferred);
 
+  // Jornada abandonada: nada en pista, nada ha empezado ni terminado en las dos últimas horas y todos los pendientes estaban programados
+  // hace más de una hora (partidos suspendidos o que la fuente sigue listando sin que se vayan a jugar). Se da por terminada.
+  const activity = slots.flatMap((x) => [x.startedSeenAt, x.finishedSeenAt]).filter((x): x is string => !!x).map((x) => Date.parse(x));
+  const lastActivity = activity.length ? Math.max(...activity) : undefined;
+  const abandoned =
+    pending.length > 0 && live.length === 0 && lastActivity !== undefined && nowMs - lastActivity > 120 * MIN && pending.every((s) => !s.plannedUtc || nowMs - Date.parse(s.plannedUtc) > 60 * MIN);
+
   const result: Estimate = {
     asOf: now.toISOString(),
     total: slots.length,
     finished: finished.length,
     live: live.length,
-    remaining: pending.length,
+    remaining: abandoned ? 0 : pending.length,
     avgDurationMin: n > 0 ? Math.round((sumObs / n) * 10) / 10 : undefined,
     plannedSlotMin: plannedSlotMin === undefined ? undefined : Math.round(plannedSlotMin),
     delayMin: delayMin === undefined ? undefined : Math.round(delayMin),
     courts,
     basis,
-    done: pending.length === 0 && live.length === 0 && slots.length > 0,
+    done: (pending.length === 0 || abandoned) && live.length === 0 && slots.length > 0,
     starts: {},
   };
 
+  if (abandoned) return { ...result, estimatedEnd: new Date(lastActivity!).toISOString() };
   if (result.done) {
     const last = finished.map((s) => s.finishedSeenAt).filter((x): x is string => !!x).sort().at(-1);
     return { ...result, estimatedEnd: last };

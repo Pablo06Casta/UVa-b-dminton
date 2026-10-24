@@ -89,6 +89,26 @@ describe('progreso y estimación publicados', () => {
   });
 });
 
+describe('partidos fantasma: el torneo acaba aunque la fuente deje de publicar partidos pendientes', () => {
+  it('retira los pendientes que ya no figuran en el orden de juego y da la jornada por terminada', async () => {
+    const db = memDb();
+    const src = new FakeSource();
+    createPlayer(db, { name: 'Ana Prueba', profile: PROFILE, public: true, ...consent });
+    const at = (i: number, status: 'finished' | 'scheduled') =>
+      ({ ...row({ key: `g${i}`, status, court: String((i % 2) + 1), names1: i === 0 ? [['Ana Prueba', 1]] : [['Otro Uno', 20 + i]], names2: [['Otro Dos', 40 + i]] }), plannedUtc: new Date(NOW.getTime() + (i * 10 - 60) * 60_000).toISOString(), durationMin: status === 'finished' ? 30 : undefined, orderIndex: i }) as ReturnType<typeof row>;
+    src.dayRows = [at(0, 'finished'), at(1, 'finished'), at(2, 'scheduled'), at(3, 'scheduled'), at(4, 'scheduled')];
+    const engine = new SyncEngine(db, src, () => NOW);
+    let t = 0;
+    const pump = async (min: number) => { for (const end = t + min; t < end; t++) await engine.tick(new Date(NOW.getTime() + t * 60_000)); };
+    await pump(12);
+    expect(buildPublicState(db, new Date(NOW.getTime() + t * 60_000)).tournaments[0].progress).toMatchObject({ total: 5, finished: 2, remaining: 3, done: false });
+    // La fuente deja de publicar los tres partidos pendientes (se suspendieron o cambiaron de clave).
+    src.dayRows = [at(0, 'finished'), at(1, 'finished')];
+    await pump(40);
+    expect(buildPublicState(db, new Date(NOW.getTime() + t * 60_000)).tournaments[0].progress).toMatchObject({ total: 2, finished: 2, remaining: 0, done: true });
+  });
+});
+
 describe('calendario oficial automático', () => {
   it('guarda el calendario y no lo sustituye si la fuente devuelve vacío', async () => {
     const db = memDb();

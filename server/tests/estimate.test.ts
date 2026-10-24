@@ -86,6 +86,29 @@ describe('estimación del fin del torneo', () => {
   });
 });
 
+describe('jornada abandonada', () => {
+  const fin = (i: number) => slot(i, { status: 'finished', durationMin: 25, startedSeenAt: at(i * 15), finishedSeenAt: at(i * 15 + 25) });
+  const slots = [fin(0), fin(1), fin(2), slot(3), slot(4)]; // los dos últimos nunca se juegan (la fuente los sigue listando)
+
+  it('sin actividad en dos horas y con los pendientes programados hace más de una, se da por terminada a la hora del último partido', () => {
+    const e = estimate(slots, new Date(at(30 + 3 * 15 + 130 + 60)));
+    expect(e.done).toBe(true);
+    expect(e.remaining).toBe(0);
+    expect(e.estimatedEnd).toBe(at(2 * 15 + 25));
+  });
+
+  it('un descanso corto, o un partido en pista, no la da por terminada', () => {
+    expect(estimate(slots, new Date(at(2 * 15 + 25 + 90))).done).toBe(false);
+    const live = [fin(0), fin(1), slot(2, { status: 'on_court', startedSeenAt: at(30) }), slot(3), slot(4)];
+    expect(estimate(live, new Date(at(400))).done).toBe(false);
+  });
+
+  it('un torneo que aún no ha empezado (sin actividad) no se da por abandonado', () => {
+    expect(estimate([slot(0), slot(1), slot(2)], new Date(at(-300))).done).toBe(false);
+    expect(estimate([slot(0), slot(1), slot(2)], new Date(at(500))).done).toBe(false); // sin nada visto, no se sabe: se sigue estimando
+  });
+});
+
 describe('horas estimadas sin pistas publicadas', () => {
   const T = (h: number, m = 0) => new Date(Date.UTC(2026, 9, 24, h, m)).toISOString();
   const slot = (key: string, at: string, over: Partial<Slot> = {}): Slot => ({ key, status: 'scheduled', plannedUtc: at, orderIdx: 0, ...over } as Slot);
