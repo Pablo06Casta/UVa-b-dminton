@@ -17,17 +17,17 @@ export type CardSize = 'og' | 'square' | 'story';
 export const SIZES: Record<CardSize, { w: number; h: number }> = { og: { w: 1200, h: 630 }, square: { w: 1080, h: 1080 }, story: { w: 1080, h: 1920 } };
 
 const FONT_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), 'assets', 'fonts');
-const FONT_FILES = ['BarlowCondensed_700Bold.ttf', 'BarlowCondensed_800ExtraBold.ttf'].map((f) => path.join(FONT_DIR, f));
+export const FONT_FILES = ['BarlowCondensed_700Bold.ttf', 'BarlowCondensed_800ExtraBold.ttf'].map((f) => path.join(FONT_DIR, f));
 
 /** Logotipo oficial de la UVa (el mismo de la web), incrustado en las tarjetas. */
-const LOGO = `data:image/png;base64,${fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), 'assets', 'logo-uva.png')).toString('base64')}`;
+export const LOGO = `data:image/png;base64,${fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), 'assets', 'logo-uva.png')).toString('base64')}`;
 
-const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
-const upper = (s: string) => s.toLocaleUpperCase('es-ES');
+export const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
+export const upper = (s: string) => s.toLocaleUpperCase('es-ES');
 
 /** Tamaño de letra para que `text` quepa en `maxW` (ancho medio de la tipografía condensada ≈ 0,44 em en mayúsculas). */
-const fit = (text: string, maxW: number, max: number, min = 26) => Math.max(min, Math.min(max, Math.floor(maxW / (Math.max(1, text.length) * 0.46))));
-const clip = (text: string, maxW: number, size: number) => {
+export const fit = (text: string, maxW: number, max: number, min = 26) => Math.max(min, Math.min(max, Math.floor(maxW / (Math.max(1, text.length) * 0.46))));
+export const clip = (text: string, maxW: number, size: number) => {
   const n = Math.floor(maxW / (size * 0.46));
   return text.length > n ? `${text.slice(0, Math.max(1, n - 1)).trimEnd()}…` : text;
 };
@@ -55,7 +55,7 @@ export function dayLabel(iso?: string): string {
   const d = new Date(`${iso}T12:00:00Z`);
   return `${DAYS[d.getUTCDay()]} ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
 }
-const clockOf = (iso?: string) => (iso ? new Intl.DateTimeFormat('es-ES', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Madrid' }).format(new Date(iso)) : undefined);
+export const clockOf = (iso?: string) => (iso ? new Intl.DateTimeFormat('es-ES', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Madrid' }).format(new Date(iso)) : undefined);
 export const dateRange = (a?: string, b?: string) => (a && b && a !== b ? `${dayLabel(a)} – ${dayLabel(b)}` : dayLabel(a));
 
 type Chip = { text: string; color: string; fg?: string };

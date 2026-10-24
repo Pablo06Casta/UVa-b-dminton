@@ -11,6 +11,7 @@ import { buildPublicState, cachedPublicState, invalidatePublicState, type Public
 import { pushConfigured, subscribe, unsubscribe } from './push';
 import { buildAccuracy } from './accuracy';
 import { currentShift } from './calibration';
+import { captureImage } from './itinerary';
 import { learnedPriors, loadPatterns } from './patterns';
 import { defaultPriors } from './estimate';
 import { cardVersion, findCard, metaOf, renderPng, shareHtmlPage, type CardKind, type Found } from './share';
@@ -266,6 +267,16 @@ export function createApp(db: Db, engine: SyncEngine | undefined, hub: Hub) {
         const b = (await readJson(req)) as { endpoint?: string; playerId?: number };
         if (b.endpoint) unsubscribe(db, b.endpoint, b.playerId);
         return send(res, 200, { ok: true }, cors(req));
+      }
+
+      // Captura del itinerario enviada por correo: /captura/<id>.png (el id es aleatorio; la imagen solo lleva datos públicos).
+      const cap = /^\/captura\/([0-9a-f]{24})\.png$/.exec(url.pathname);
+      if (req.method === 'GET' && cap) {
+        if (limited(req)) throw new HttpFail(429, 'Demasiadas consultas.');
+        const png = captureImage(db, cap[1]);
+        if (!png) throw new HttpFail(404, 'No disponible.');
+        res.writeHead(200, { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=86400', 'X-Content-Type-Options': 'nosniff', ...cors(req) });
+        return res.end(png);
       }
 
       // Imagen (PNG) de la tarjeta: /og/<partido|torneo|resultados>/<id>.png?size=og|square|story

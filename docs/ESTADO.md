@@ -161,6 +161,10 @@ badminton.es no avisa cuando publica algo, así que el servidor lo detecta con l
 ## Directo: panel «Siguiente partido de la UVa»
 - Arriba de Directo (`src/components/live/NextMatch.tsx`): partidos que van antes (`ahead`, de cualquiera, sin W.O. ni los ya empezados; lo calcula el servidor en `publicView.ts › addAhead` con el orden estimado), tiempo estimado hasta que empiece (se actualiza cada 30 s), hora oficial, hora estimada con su diferencia, y partidos que quedan por jugar hoy en el torneo. Las horas estimadas salen del modelo estadístico, que se mide y se corrige solo (ver «Patrones de seguimiento»).
 
+## Captura del itinerario en vivo por correo (`server/src/itinerary.ts`)
+- 15 min antes del primer partido del día de cada torneo con jugadores públicos del club (`ITINERARY_MINUTES_BEFORE`), el servidor dibuja la sección «Partidos por horas» de Directo como imagen (horas, tarjetas con estado, marcadores, EST, línea de «ahora») y la guarda en la tabla `captures` (una por torneo y día; se borra a los 30 días). Se comprueba cada minuto; ventana de envío: de 15 min antes a 30 min después, por si el servidor se reinicia.
+- El correo (FormSubmit, a `ITINERARY_EMAIL`, por defecto pablitocastaneda06@gmail.com; `off` lo desactiva) lleva el enlace `/captura/<id>.png` de la imagen congelada y el de Directo. FormSubmit no admite adjuntos: es un enlace, igual que el Publicista. Solo datos públicos, sin rivales.
+
 ## Cambio de nombre de la cuenta de GitHub (22/10/2026)
 - La cuenta pasó de `Pablo06Casta` a `badmiton-uva`: la web está ahora en https://badmiton-uva.github.io/UVa-b-dminton/ (la dirección antigua da 404) y Web-cerca en https://badmiton-uva.github.io/PABLO-APP/.
 - El servidor autoriza siempre las dos direcciones (`CLUB_ORIGINS` en `server/src/config.ts`); antes solo la antigua y por eso la web nueva no recibía noticias ni datos en vivo.

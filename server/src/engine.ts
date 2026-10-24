@@ -768,6 +768,7 @@ export class SyncEngine {
     const old = new Date(now.getTime() - 60 * 86_400_000).toISOString();
     this.db.prepare('delete from estimate_log where at < ?').run(old);
     this.db.prepare('delete from estimate_starts where at < ?').run(old);
+    this.db.prepare('delete from captures where created_at < ?').run(new Date(now.getTime() - 30 * 86_400_000).toISOString());
   }
 }
 

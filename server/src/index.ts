@@ -10,6 +10,7 @@ import { listPlayers } from './roster';
 import { SyncEngine } from './engine';
 import { cachedPublicState } from './publicView';
 import { draftChronicles } from './chronicle';
+import { sendDueItineraries } from './itinerary';
 import { notifyUpcoming, realSender } from './push';
 import { RealSource } from './source';
 import { OfficialLiveReaders } from './officialReaders';
@@ -103,6 +104,11 @@ if (settings.chronicle.apiKey && settings.chronicle.email) {
   setInterval(() => void draftChronicles(db, cachedPublicState(db).state, new Date()).catch((e) => console.error('crónicas', e)), 15 * 60_000).unref();
 }
 setInterval(() => engine?.prune(), 24 * 3600_000).unref();
+// Captura del itinerario en vivo 15 min antes de empezar cada torneo con gente del club: se comprueba cada minuto con lo ya guardado.
+if (settings.itinerary.email) {
+  console.log(`Itinerario en vivo: captura por correo ${settings.itinerary.minutesBefore} min antes de cada torneo.`);
+  setInterval(() => void sendDueItineraries(db, cachedPublicState(db).state, new Date()).catch((e) => console.error('itinerario', e)), 60_000).unref();
+}
 // Los avisos dependen de la hora: se comprueban cada minuto con lo ya guardado (sin pedir nada a badminton.es).
 if (sender) setInterval(() => void notifyUpcoming(db, new Date(), sender).catch((e) => console.error('push', e)), 60_000).unref();
 

@@ -97,6 +97,12 @@ export const settings = {
     /** Dirección pública de este servidor (Render la da en RENDER_EXTERNAL_URL): para el enlace de aprobación. */
     baseUrl: (process.env.PUBLIC_BASE_URL ?? process.env.RENDER_EXTERNAL_URL ?? '').replace(/\/$/, ''),
   },
+  /** Captura del itinerario en vivo: unos minutos antes del primer partido del día de cada torneo con gente del club, se guarda la imagen y se envía el enlace por correo (FormSubmit). `ITINERARY_EMAIL=off` lo desactiva. */
+  itinerary: {
+    email: process.env.ITINERARY_EMAIL === 'off' ? '' : process.env.ITINERARY_EMAIL ?? 'pablitocastaneda06@gmail.com',
+    minutesBefore: num(process.env.ITINERARY_MINUTES_BEFORE, 15),
+    baseUrl: (process.env.PUBLIC_BASE_URL ?? process.env.RENDER_EXTERNAL_URL ?? 'https://club-uva-badminton.onrender.com').replace(/\/$/, ''),
+  },
   /** Limita las consultas a la API pública por IP y minuto. */
   publicRatePerMinute: num(process.env.PUBLIC_RATE_PER_MINUTE, 120),
   /** Días que se conservan las entradas del registro de cambios. */

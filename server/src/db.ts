@@ -189,6 +189,15 @@ create table if not exists day_patterns (
   primary key (tournament_guid, date)
 );
 
+-- Capturas del itinerario en vivo enviadas por correo (solo imágenes con datos públicos). Una por torneo y día.
+create table if not exists captures (
+  id text primary key,
+  day_key text not null unique,
+  tournament_guid text not null,
+  created_at text not null,
+  png blob not null
+);
+
 -- Cuadros y clasificaciones tal como los publica la fuente. Con nombres de terceros: solo se sirven anonimizados.
 create table if not exists draws (
   tournament_guid text not null,
