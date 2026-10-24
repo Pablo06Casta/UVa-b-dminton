@@ -11,6 +11,7 @@ import { SyncEngine } from './engine';
 import { cachedPublicState } from './publicView';
 import { draftChronicles } from './chronicle';
 import { sendDueItineraries } from './itinerary';
+import { purgeGhostEra } from './patterns';
 import { notifyUpcoming, realSender } from './push';
 import { RealSource } from './source';
 import { OfficialLiveReaders } from './officialReaders';
@@ -32,6 +33,7 @@ server.listen(settings.port, () => console.log(`Servidor del club en http://loca
 const dbFile = path.join(settings.dataDir, 'club.sqlite');
 if (await restoreIfMissing(dbFile)) console.log('Base de datos restaurada desde la copia remota (Upstash).');
 const db = openDb(dbFile);
+if (purgeGhostEra(db, new Date())) console.log('Estimaciones anteriores a la retirada de partidos fantasma descartadas (no se aprende de ellas).');
 
 /** Copia de la base de datos (consentimientos, jugadores, partidos): al arrancar y cada 24 h; se conservan las 7 últimas. */
 function backup() {

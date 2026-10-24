@@ -184,3 +184,17 @@ export function currentPriors(db: Db, now: Date): LearnedPriors {
   cache.set(db, { at: now.getTime(), v });
   return v;
 }
+
+/**
+ * Migración única (24/10/2026): hasta entonces los partidos que la fuente dejaba de publicar quedaban como «por jugar» y falseaban la
+ * estimación (y su acierto). Se descartan las estimaciones guardadas y los patrones anteriores para que el modelo no aprenda de ese sesgo.
+ * Devuelve `true` si borró algo (solo la primera vez).
+ */
+export function purgeGhostEra(db: Db, now: Date): boolean {
+  if (db.prepare("select 1 from kv where k = 'ghostfix'").get()) return false;
+  db.prepare('delete from estimate_log').run();
+  db.prepare('delete from estimate_starts').run();
+  db.prepare('delete from day_patterns').run();
+  db.prepare("insert into kv(k, v, updated_at) values('ghostfix', ?, ?)").run(JSON.stringify({ at: now.toISOString() }), now.toISOString());
+  return true;
+}

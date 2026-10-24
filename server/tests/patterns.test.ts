@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { applyShift, learnedShift } from '../src/calibration';
 import { defaultPriors, type Estimate } from '../src/estimate';
-import { consolidate, learnedPriors, loadPatterns } from '../src/patterns';
+import { consolidate, learnedPriors, loadPatterns, purgeGhostEra } from '../src/patterns';
 import { memDb } from './helpers/fakes';
 
 const NOW = new Date('2026-11-20T10:00:00Z');
@@ -70,5 +70,20 @@ describe('patrones de seguimiento', () => {
     const db = memDb();
     for (const d of [1, 2, 3, 4, 5, 6]) seedDay(db, d, 30, 0, 40); // error 0 con margen ±40
     expect(learnedShift(db, NOW).spread).toBeLessThan(1);
+  });
+});
+
+describe('migración de partidos fantasma', () => {
+  it('descarta una sola vez las estimaciones y patrones anteriores', () => {
+    const db = memDb();
+    seedDay(db, 1, 30, 40);
+    consolidate(db, NOW);
+    expect(loadPatterns(db)).toHaveLength(1);
+    expect(purgeGhostEra(db, NOW)).toBe(true);
+    expect(loadPatterns(db)).toHaveLength(0);
+    expect((db.prepare('select count(*) n from estimate_log').get() as { n: number }).n).toBe(0);
+    seedDay(db, 2, 30, 0); // estimaciones nuevas: ya no se borran
+    expect(purgeGhostEra(db, NOW)).toBe(false);
+    expect((db.prepare('select count(*) n from estimate_log').get() as { n: number }).n).toBeGreaterThan(0);
   });
 });
