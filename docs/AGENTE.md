@@ -53,9 +53,8 @@ Para cada torneo/día de `/api/public/accuracy` con `finished=true` que **no fig
    `server/tests/data/real-days.json` (formato existente, sin nombres de personas).
 3. Probar mejoras **solo numéricas** con `npx tsx scripts/backtest.ts` (validación dejando uno fuera): `spread`, `endQuantile`, `startQuantile`,
    `changeoverMin` y los valores a priori de duración por prueba en `server/src/estimate.ts`.
-4. Aceptar un cambio únicamente si, con todos los torneos de `real-days.json`: el error absoluto medio de la hora de fin mejora al menos un 3 %,
-   ningún tramo empeora más de un 2 %, el margen probable sigue acertando entre el 70 % y el 90 %, y pasan todas las pruebas
-   (si una prueba de estimación fija un número que cambia por una mejora real, actualizarla justificando el cambio en el commit).
+4. Aceptar un cambio únicamente según la regla de `docs/ESTUDIO_MEJORA_ESTIMACION.md` (probar con `npx tsx scripts/compare.ts`: validación dejando fuera un torneo, pinball, puntuación de intervalo y comparación pareada): mejora ≥ 3 % en puntuación de intervalo o pinball medio, cota inferior del bootstrap pareado > 0, ningún tramo empeora más de un 2 %, cobertura del 70-90 % en cada tramo y confirmación en el conjunto reservado (T11-T13).
+   (Si una prueba de estimación fija un número que cambia por una mejora real, actualizarla justificando el cambio en el commit.)
 5. Si no hay mejora clara, **no cambiar nada** y anotarlo. Menos de 3 torneos terminados en total: no ajustar, solo medir.
 6. Registrar en la bitácora los números antes y después.
 
