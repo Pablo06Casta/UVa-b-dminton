@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { settings } from '../src/config';
-import { captureImage, itinerarySvg, renderItinerary, sendDueItineraries } from '../src/itinerary';
+import { captureImage, itineraryPages, itinerarySvg, renderItinerary, renderItineraryStories, sendDueItineraries } from '../src/itinerary';
 import type { PublicMatch, PublicState, PublicTournament } from '../src/publicView';
 import { memDb } from './helpers/fakes';
 
@@ -39,6 +39,18 @@ describe('captura del itinerario en vivo', () => {
     expect(png.subarray(0, 8).toString('hex')).toBe('89504e470d0a1a0a');
   });
 
+  it('en formato historia (1080×1920) cabe en una página; si hay muchos partidos, se reparte en varias y la hora se repite al empezar página', () => {
+    const one = itineraryPages(T, '2026-10-24', NOW, 'story');
+    expect(one).toHaveLength(1);
+    expect(one[0]).toContain('width="1080" height="1920"');
+    const many = { ...T, matches: [...T.matches, ...Array.from({ length: 12 }, (_, i) => m(`x${i}`, 'scheduled', '2026-10-24T11:00:00Z', { estimatedStart: `2026-10-24T${String(11 + (i >> 2)).padStart(2, '0')}:${String((i % 4) * 15).padStart(2, '0')}:00Z` }))] } as PublicTournament;
+    const pages = itineraryPages(many, '2026-10-24', NOW, 'story');
+    expect(pages.length).toBeGreaterThan(1);
+    expect(pages[1]).toContain('continúa');
+    expect(pages[0]).toContain(`1/${pages.length}`);
+    expect(renderItineraryStories(many, '2026-10-24', NOW)).toHaveLength(pages.length);
+  });
+
   it('se envía una sola vez, 15 min antes del primer partido, con el enlace a la imagen guardada', async () => {
     const db = memDb();
     const sent: { url: string; body: Record<string, string> }[] = [];
@@ -51,6 +63,7 @@ describe('captura del itinerario en vivo', () => {
     expect(sent[0].url).toBe('https://formsubmit.co/ajax/club@example.com');
     const link = /https:\/\/servidor\.example\/captura\/([0-9a-f]{24})\.png/.exec(sent[0].body.mensaje);
     expect(sent[0].body._subject).toBe('HISTORIAS RRSS DIRECTO TORNEOS JORNADA');
+    expect(sent[0].body.mensaje).toContain('Historia 1');
     expect(link).toBeTruthy();
     expect(captureImage(db, link![1])?.subarray(0, 4).toString('hex')).toBe('89504e47');
     // No se repite.

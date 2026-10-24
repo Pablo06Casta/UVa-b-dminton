@@ -30,7 +30,7 @@ export function LivePage() {
   const today = toISO(now);
 
   const candidates = useMemo(() => tournaments.filter((t) => t.liveId), [tournaments]);
-  const active: Tournament | undefined = candidates.find((t) => t.id === chosen) ?? pickActive(tournaments, today);
+  const active: Tournament | undefined = candidates.find((t) => t.id === (chosen ?? params.get('torneo'))) ?? pickActive(tournaments, today);
   const board = useMemo(() => boardOf((active?.matches ?? []).map((match) => ({ tournament: active!, match }))), [active]);
   const highlight = params.get('partido');
 

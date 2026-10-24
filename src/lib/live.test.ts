@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { LiveState, Tournament, UvaMatch } from '../types';
-import { boardOf, lateness, mergeLive, nextInfo, pickActive, spanText } from './live';
+import { boardOf, lateness, liveTournaments, mergeLive, nextInfo, pickActive, spanText, summarize } from './live';
 
 const t = (id: string, startDate: string, city: string, extra: Partial<Tournament> = {}): Tournament => ({ id, name: id, startDate, city, ...extra });
 const m = (id: string, state: UvaMatch['state'], plannedStart?: string, estimatedStart?: string): UvaMatch => ({ id, state, players: ['A'], plannedStart, estimatedStart });
@@ -77,5 +77,44 @@ describe('nextInfo', () => {
   it('spanText', () => {
     expect(spanText(25)).toBe('25 min');
     expect(spanText(65)).toBe('1 h 05 min');
+  });
+});
+
+describe('torneos en directo para Inicio', () => {
+  const TODAY = '2026-10-24';
+  const mm = (id: string, state: UvaMatch['state'], extra: Partial<UvaMatch> = {}): UvaMatch => ({ id, state, players: ['A'], date: TODAY, ...extra });
+  const base = (extra: Partial<Tournament> = {}): Tournament => ({ id: 't', name: 'T', startDate: TODAY, city: 'V', liveId: 'g', matches: [mm('a', 'live')], ...extra });
+
+  it('muestra los torneos de hoy con datos y no los de otros días ni los desactualizados', () => {
+    expect(liveTournaments([base()], TODAY)).toHaveLength(1);
+    expect(liveTournaments([base({ startDate: '2026-10-25' })], TODAY)).toHaveLength(0);
+    expect(liveTournaments([base({ stale: true })], TODAY)).toHaveLength(0);
+    expect(liveTournaments([base({ liveId: undefined })], TODAY)).toHaveLength(0);
+    expect(liveTournaments([base({ matches: [] })], TODAY)).toHaveLength(0);
+  });
+
+  it('con varios torneos a la vez salen todos', () => {
+    expect(liveTournaments([base({ id: 'a' }), base({ id: 'b' })], TODAY)).toHaveLength(2);
+  });
+
+  it('desaparece cuando acaba el torneo: último día y todo terminado', () => {
+    expect(liveTournaments([base({ matches: [mm('a', 'finished'), mm('b', 'finished')] })], TODAY)).toHaveLength(0);
+    // En un torneo de dos días, el primer día terminado no lo quita.
+    expect(liveTournaments([base({ endDate: '2026-10-25', matches: [mm('a', 'finished')] })], TODAY)).toHaveLength(1);
+    // La estimación del servidor también lo da por terminado.
+    const done = { date: TODAY, asOf: '', total: 4, finished: 4, live: 0, remaining: 0, courts: 2, basis: 'observed', done: true } as const;
+    expect(liveTournaments([base({ matches: [mm('a', 'scheduled')], progress: done })], TODAY)).toHaveLength(0);
+  });
+
+  it('resume quién juega, lo siguiente por hora estimada y el balance de hoy', () => {
+    const t = base({ matches: [
+      mm('w', 'finished', { outcome: 'win' }), mm('l', 'finished', { outcome: 'loss' }), mm('p', 'live'),
+      mm('n2', 'scheduled', { estimatedStart: '2026-10-24T11:00:00Z' }), mm('n1', 'scheduled', { estimatedStart: '2026-10-24T10:00:00Z' }),
+      mm('otro', 'scheduled', { date: '2026-10-25' }),
+    ] });
+    const s = summarize(t, TODAY);
+    expect(s.playing.map((m) => m.id)).toEqual(['p']);
+    expect(s.next.map((m) => m.id)).toEqual(['n1', 'n2']);
+    expect([s.finished, s.won, s.lost, s.pending]).toEqual([2, 1, 1, 2]);
   });
 });

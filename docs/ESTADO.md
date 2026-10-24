@@ -162,8 +162,13 @@ badminton.es no avisa cuando publica algo, así que el servidor lo detecta con l
 - Arriba de Directo (`src/components/live/NextMatch.tsx`): partidos que van antes (`ahead`, de cualquiera, sin W.O. ni los ya empezados; lo calcula el servidor en `publicView.ts › addAhead` con el orden estimado), tiempo estimado hasta que empiece (se actualiza cada 30 s), hora oficial, hora estimada con su diferencia, y partidos que quedan por jugar hoy en el torneo. Las horas estimadas salen del modelo estadístico, que se mide y se corrige solo (ver «Patrones de seguimiento»).
 
 ## Captura del itinerario en vivo por correo (`server/src/itinerary.ts`)
+- Dos formatos: **historias** (páginas verticales 1080×1920; si hay muchos partidos se reparten en varias, con la hora repetida al empezar página) y la versión ancha como la web. El correo lista los enlaces de cada página de historia y el de la ancha.
 - 15 min antes del primer partido del día de cada torneo con jugadores públicos del club (`ITINERARY_MINUTES_BEFORE`), el servidor dibuja la sección «Partidos por horas» de Directo como imagen (horas, tarjetas con estado, marcadores, EST, línea de «ahora») y la guarda en la tabla `captures` (una por torneo y día; se borra a los 30 días). Se comprueba cada minuto; ventana de envío: de 15 min antes a 30 min después, por si el servidor se reinicia.
 - El correo (asunto fijo «HISTORIAS RRSS DIRECTO TORNEOS JORNADA»; el torneo va en el texto; FormSubmit, a `ITINERARY_EMAIL`, por defecto pablitocastaneda06@gmail.com; `off` lo desactiva) lleva el enlace `/captura/<id>.png` de la imagen congelada y el de Directo. FormSubmit no admite adjuntos: es un enlace, igual que el Publicista. Solo datos públicos, sin rivales.
+
+## Inicio: «Así vamos en los torneos» (`src/components/home/LiveNow.tsx`)
+- Encima de las noticias, una tarjeta por cada torneo que se juega hoy con jugadores del club (varios a la vez si coinciden): quién juega ahora, los próximos con hora estimada, el balance de hoy (victorias/derrotas), partidos que quedan y avance del torneo con fin estimado. Enlaza a Directo con ese torneo (`/directo?torneo=<id>`).
+- Se quita sola cuando el torneo acaba (último día y todos los partidos terminados, o la estimación del servidor lo da por terminado), si sus datos están desactualizados o si no hay torneos en juego. Lógica en `src/lib/live.ts` (`liveTournaments`, `summarize`).
 
 ## Cambio de nombre de la cuenta de GitHub (22/10/2026)
 - La cuenta pasó de `Pablo06Casta` a `badmiton-uva`: la web está ahora en https://badmiton-uva.github.io/UVa-b-dminton/ (la dirección antigua da 404) y Web-cerca en https://badmiton-uva.github.io/PABLO-APP/.

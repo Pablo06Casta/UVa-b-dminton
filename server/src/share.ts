@@ -31,7 +31,7 @@ export const clip = (text: string, maxW: number, size: number) => {
   const n = Math.floor(maxW / (size * 0.46));
   return text.length > n ? `${text.slice(0, Math.max(1, n - 1)).trimEnd()}…` : text;
 };
-const wrap = (text: string, maxChars: number, lines = 2): string[] => {
+export const wrap = (text: string, maxChars: number, lines = 2): string[] => {
   const out: string[] = [];
   let cur = '';
   for (const w of text.split(/\s+/)) {

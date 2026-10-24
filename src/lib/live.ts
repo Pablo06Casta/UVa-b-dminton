@@ -120,3 +120,46 @@ export function nextInfo(m: UvaMatch, p: LiveProgress | undefined, now: Date): N
 
 /** «25 min», «1 h 05 min». */
 export const spanText = (min: number): string => (min < 60 ? `${min} min` : `${Math.floor(min / 60)} h ${String(min % 60).padStart(2, '0')} min`);
+
+/** Torneos que se están jugando hoy y todavía no han terminado (se quitan solos al acabar: último día y todo terminado). */
+export function liveTournaments(list: Tournament[], today: string): Tournament[] {
+  return list.filter((t) => {
+    const end = t.endDate ?? t.startDate;
+    if (!t.liveId || t.stale || today < t.startDate || today > end) return false;
+    const ms = t.matches ?? [];
+    if (ms.length === 0 && !t.progress) return false;
+    const over = today >= end && ((t.progress?.done && t.progress.date >= end) || (ms.length > 0 && ms.every((m) => m.state === 'finished')));
+    return !over;
+  });
+}
+
+export interface LiveSummary {
+  tournament: Tournament;
+  /** En pista ahora. */
+  playing: UvaMatch[];
+  /** Los siguientes pendientes de hoy, por hora estimada. */
+  next: UvaMatch[];
+  /** Partidos de hoy de la UVa ya terminados, ganados y perdidos. */
+  finished: number;
+  won: number;
+  lost: number;
+  /** Partidos de la UVa pendientes hoy. */
+  pending: number;
+}
+
+/** Resumen de «cómo vamos» en un torneo en juego, con los partidos de la UVa de hoy. */
+export function summarize(t: Tournament, today: string): LiveSummary {
+  const ms = (t.matches ?? []).filter((m) => !m.date || m.date === today);
+  const start = (m: UvaMatch) => m.estimatedStart ?? m.plannedStart ?? `${m.date ?? '9999'}T${m.time ?? '99:99'}`;
+  const done = ms.filter((m) => m.state === 'finished');
+  const scheduled = ms.filter((m) => m.state === 'scheduled').sort((a, b) => start(a).localeCompare(start(b)));
+  return {
+    tournament: t,
+    playing: ms.filter((m) => m.state === 'live'),
+    next: scheduled.slice(0, 3),
+    finished: done.length,
+    won: done.filter((m) => m.outcome === 'win').length,
+    lost: done.filter((m) => m.outcome === 'loss').length,
+    pending: scheduled.length,
+  };
+}
