@@ -60,9 +60,11 @@ export interface EstimateConfig {
   /** Percentil de la simulación que se da como hora de fin / de inicio (0,5 = mediana; algo más alto = más prudente). */
   endQuantile?: number;
   startQuantile?: number;
+  /** Percentil bajo de la hora de inicio, para «no antes de» (avisos y llegada): un aviso tarde cuesta más que uno pronto. */
+  startEarlyQuantile?: number;
 }
 
-export const defaultEstimateConfig: EstimateConfig = { changeoverMin: 3, simulations: 400, priors: defaultPriors, spread: 1.3, endQuantile: 0.65, startQuantile: 0.6 };
+export const defaultEstimateConfig: EstimateConfig = { changeoverMin: 3, simulations: 1000, priors: defaultPriors, spread: 1.6, endQuantile: 0.65, startQuantile: 0.5, startEarlyQuantile: 0.25 };
 
 export interface Estimate {
   asOf: string;
@@ -83,8 +85,10 @@ export interface Estimate {
   estimatedEnd?: string;
   estimatedEndLow?: string;
   estimatedEndHigh?: string;
-  /** Hora estimada de inicio de cada partido no terminado. */
+  /** Hora estimada (la más probable, la mediana) de inicio de cada partido no terminado. */
   starts: Record<string, string>;
+  /** Hora a partir de la cual podría empezar cada partido (percentil bajo): «no antes de…». */
+  startsEarly?: Record<string, string>;
 }
 
 const MIN = 60_000;
@@ -285,12 +289,10 @@ export function estimate(slots: Slot[], now: Date, cfg: EstimateConfig = default
   ends.sort();
   const spread = cfg.spread ?? 1;
   const mid = q(ends, cfg.endQuantile ?? 0.5);
-  result.starts = Object.fromEntries(
-    pend.map((p, i) => {
-      const a = startsBy[i].sort();
-      return [p.key, new Date(Math.max(q(a, cfg.startQuantile ?? 0.5), nowMs)).toISOString()];
-    }),
-  );
+  const sorted = pend.map((_, i) => startsBy[i].sort());
+  const startAt = (quantile: number) => Object.fromEntries(pend.map((p, i) => [p.key, new Date(Math.max(q(sorted[i], quantile), nowMs)).toISOString()]));
+  result.starts = startAt(cfg.startQuantile ?? 0.5);
+  result.startsEarly = startAt(Math.min(cfg.startEarlyQuantile ?? 0.25, cfg.startQuantile ?? 0.5));
   result.estimatedEnd = new Date(mid).toISOString();
   const median0 = q(ends, 0.5);
   result.estimatedEndLow = new Date(mid - (median0 - q(ends, 0.1)) * spread).toISOString();

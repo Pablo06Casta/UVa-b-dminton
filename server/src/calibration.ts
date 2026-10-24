@@ -84,6 +84,7 @@ export function applyShift(est: Estimate, shift: Shift): Estimate {
     estimatedEndLow: shiftIso(wide(est.estimatedEndLow), shift.endMin),
     estimatedEndHigh: shiftIso(wide(est.estimatedEndHigh), shift.endMin),
     starts: Object.fromEntries(Object.entries(est.starts).map(([k, v]) => [k, shiftIso(v, shift.startMin)!])),
+    startsEarly: est.startsEarly ? Object.fromEntries(Object.entries(est.startsEarly).map(([k, v]) => [k, shiftIso(v, shift.startMin)!])) : undefined,
   };
 }
 

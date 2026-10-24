@@ -72,15 +72,16 @@ export async function notifyUpcoming(db: Db, now: Date, sender: PushSender): Pro
       const tName = (db.prepare('select name from tournaments where guid = ?').get(r.tournament_guid) as unknown as { name: string } | undefined)?.name;
       const pub = toPublicMatch(stored, publicIds, est ?? { starts: {} }, undefined, tName);
       if (!pub || pub.state !== 'scheduled') continue;
-      const start = pub.estimatedStart ?? pub.plannedStart;
+      // El aviso se manda según la hora más temprana posible (percentil bajo): llegar antes cuesta menos que llegar tarde.
+      const start = pub.earliestStart ?? pub.estimatedStart ?? pub.plannedStart;
       if (!start) continue;
       const minutes = (Date.parse(start) - now.getTime()) / 60_000;
       if (minutes > sub.minutes_before || minutes < -5) continue;
       if (db.prepare('select 1 from push_sent where sub_id = ? and match_key = ?').get(sub.id, r.key)) continue;
 
       const payload = JSON.stringify({
-        title: `${player.name} juega en unos ${Math.max(1, Math.round(minutes))} min`,
-        body: [pub.opponent && `vs ${pub.opponent}`, pub.event, pub.court && `Pista ${pub.court}`, `EST ${clock(start)}`].filter(Boolean).join(' · '),
+        title: pub.earliestStart ? `${player.name} podría jugar en ${Math.max(1, Math.round(minutes))} min` : `${player.name} juega en unos ${Math.max(1, Math.round(minutes))} min`,
+        body: [pub.opponent && `vs ${pub.opponent}`, pub.event, pub.court && `Pista ${pub.court}`, `desde ${clock(start)}${pub.estimatedStart && pub.estimatedStart !== start ? ` · lo más probable ${clock(pub.estimatedStart)}` : ''}`].filter(Boolean).join(' · '),
         url: `${settings.siteUrl}/directo?partido=${encodeURIComponent(r.key)}`,
         tag: r.key,
       });

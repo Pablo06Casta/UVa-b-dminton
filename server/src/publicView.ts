@@ -26,6 +26,8 @@ export interface PublicMatch {
   /** Hora programada (ISO) y hora estimada de inicio según el ritmo real del torneo (ISO). */
   plannedStart?: string;
   estimatedStart?: string;
+  /** «Podría empezar desde»: percentil bajo de la hora de inicio (no antes de esta hora, salvo imprevistos). */
+  earliestStart?: string;
   /** Partidos del torneo (de cualquiera) que aún no han empezado y van antes que este según el orden estimado. */
   ahead?: number;
 }
@@ -145,7 +147,7 @@ const stateOf = (s: StoredMatch['status']): PublicMatch['state'] => (s === 'on_c
 
 /** Traduce un partido guardado a lo que se puede publicar. Devuelve `undefined` si hay alguien sin consentimiento. */
 /** Lo que la estimación aporta a un partido: hora estimada por partido y, en datos manuales, un retraso común. */
-export type StartHints = Pick<Estimate, 'starts'> & Partial<Pick<Estimate, 'delayMin' | 'basis'>>;
+export type StartHints = Pick<Estimate, 'starts'> & Partial<Pick<Estimate, 'delayMin' | 'basis' | 'startsEarly'>>;
 
 export function toPublicMatch(m: StoredMatch, publicIds: Set<number>, hints: StartHints = { starts: {} }, names?: Map<number, string>, tournamentName?: string): PublicMatch | undefined {
   const uvaOn = m.sides.map((s) => s.players.filter((p) => p.uva));
@@ -177,6 +179,7 @@ export function toPublicMatch(m: StoredMatch, publicIds: Set<number>, hints: Sta
     outcome: stateOf(m.status) === 'finished' && !bothSides && m.winner ? (m.winner === uvaSide + 1 ? 'win' : 'loss') : undefined,
     plannedStart: m.plannedUtc,
     estimatedStart: stateOf(m.status) === 'scheduled' ? hints.starts[m.key] ?? delayedStart(m, hints) : undefined,
+    earliestStart: stateOf(m.status) === 'scheduled' ? hints.startsEarly?.[m.key] : undefined,
   };
 }
 
@@ -294,8 +297,9 @@ function closeIfOver(db: Db, guid: string, e: Estimate & { date: string }, today
 }
 
 function toProgress(e: Estimate & { date: string }): PublicProgress {
-  const { starts: _starts, ...rest } = e; // las horas por partido solo se usan para los partidos públicos
+  const { starts: _starts, startsEarly: _early, ...rest } = e; // las horas por partido solo se usan para los partidos públicos
   void _starts;
+  void _early;
   return rest;
 }
 

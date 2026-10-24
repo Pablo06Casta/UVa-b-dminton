@@ -32,9 +32,9 @@ export function NextMatch({ match, progress, now }: { match: UvaMatch; progress?
           <small>según el calendario</small>
         </div>
         <div className="is-est">
-          <dt>Hora estimada</dt>
+          <dt>Hora más probable</dt>
           <dd>{i.estimatedAt ? <><abbr className="est" title="Estimación">EST</abbr> {clock(i.estimatedAt)}</> : '—'}</dd>
-          {late ? <small>{i.delay! > 0 ? `${i.delay} min más tarde` : `${-i.delay!} min antes`} que la oficial</small> : i.estimatedAt ? <small>como la oficial</small> : <small>aún sin estimación</small>}
+          {match.earliestStart && i.estimatedAt && match.earliestStart < i.estimatedAt ? <small>podría empezar desde las {clock(match.earliestStart)}</small> : late ? <small>{i.delay! > 0 ? `${i.delay} min más tarde` : `${-i.delay!} min antes`} que la oficial</small> : i.estimatedAt ? <small>como la oficial</small> : <small>aún sin estimación</small>}
         </div>
       </dl>
       {i.remaining !== undefined && <p className="nextm__rest">Quedan <strong>{i.remaining}</strong> partidos por jugar hoy en el torneo.</p>}
