@@ -242,6 +242,8 @@ create table if not exists fetch_log (
 function migrate(db: Db) {
   const cols = (db.prepare('pragma table_info(draws)').all() as unknown as { name: string }[]).map((c) => c.name);
   if (!cols.includes('has_club')) db.exec('alter table draws add column has_club integer not null default 0');
+  const scols = (db.prepare('pragma table_info(slots)').all() as unknown as { name: string }[]).map((c) => c.name);
+  if (!scols.includes('pids')) db.exec('alter table slots add column pids text');
   const ecols = (db.prepare('pragma table_info(entries)').all() as unknown as { name: string }[]).map((c) => c.name);
   if (!ecols.includes('seed')) db.exec('alter table entries add column seed integer');
   if (!ecols.includes('event_total')) db.exec('alter table entries add column event_total integer');

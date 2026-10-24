@@ -43,6 +43,27 @@ export interface DayPattern {
   end: EndSample[];
   startBias30?: { n: number; bias: number; mae: number };
   planBiasMin?: number;
+  /** Tiempos reales de cada partido de la jornada (anónimos, en minutos desde el primer partido programado): base de aprendizaje y de pruebas con datos reales. */
+  timing?: TimingRow[];
+}
+
+/** Un partido de la jornada con sus tiempos reales (minutos desde el primer partido programado). `x` = índices anónimos de quien juega. */
+export interface TimingRow {
+  /** Hora programada. */
+  p: number;
+  /** Pista (índice dentro de la jornada) o null. */
+  c: number | null;
+  /** Prueba (IM, IF, DM, DF, DX…). */
+  e: string;
+  /** Duración publicada (0 si no hay). */
+  d: number;
+  /** Inicio real (punto medio entre la lectura anterior y la primera en pista) o null. */
+  s: number | null;
+  /** Primera lectura en que se vio terminado o null. */
+  f: number | null;
+  /** f = terminado, w = W.O., r = retirada. */
+  w: 'f' | 'w' | 'r';
+  x: number[];
 }
 
 const MIN = 60_000;
@@ -51,8 +72,8 @@ const r1 = (x: number) => Math.round(x * 10) / 10;
 
 /** Resume una jornada terminada a partir de sus partidos y de la medición de acierto. */
 function summarize(db: Db, d: ReturnType<typeof buildAccuracy>[number]): DayPattern {
-  const rows = db.prepare('select planned_utc, court, event, status, duration_min, started_seen_at, prev_poll_at from slots where tournament_guid = ? and date = ?').all(d.tournamentId, d.date) as unknown as {
-    planned_utc: string | null; court: string | null; event: string | null; status: string; duration_min: number | null; started_seen_at: string | null; prev_poll_at: string | null;
+  const rows = db.prepare('select planned_utc, court, event, status, duration_min, started_seen_at, prev_poll_at, finished_seen_at, pids from slots where tournament_guid = ? and date = ?').all(d.tournamentId, d.date) as unknown as {
+    planned_utc: string | null; court: string | null; event: string | null; status: string; duration_min: number | null; started_seen_at: string | null; prev_poll_at: string | null; finished_seen_at: string | null; pids: string | null;
   }[];
   const perEvent: Record<string, EventStat> = {};
   let played = 0;
@@ -80,7 +101,33 @@ function summarize(db: Db, d: ReturnType<typeof buildAccuracy>[number]): DayPatt
   const planned = rows.map((r) => (r.planned_utc ? Date.parse(r.planned_utc) : NaN)).filter((x) => !Number.isNaN(x));
   const endVsPlan = d.actualEnd && planned.length ? (Date.parse(d.actualEnd) - Math.max(...planned)) / MIN : undefined;
   const s30 = d.starts.all['30'];
+  // Tiempos reales de cada partido terminado (anónimos): para aprender el hueco entre partidos y el descanso, y para pruebas con datos reales.
+  const base = planned.length ? Math.min(...planned) : undefined;
+  const rel = (ms: number) => Math.round((ms - base!) / MIN);
+  const courtIdx = new Map<string, number>();
+  const timing: TimingRow[] =
+    base === undefined
+      ? []
+      : rows
+          .filter((r) => r.planned_utc && ['finished', 'walkover', 'retired'].includes(r.status))
+          .map((r) => {
+            const seen = r.started_seen_at ? Date.parse(r.started_seen_at) : undefined;
+            const prev = r.prev_poll_at ? Date.parse(r.prev_poll_at) : undefined;
+            const start = seen === undefined ? undefined : prev !== undefined && prev < seen ? (prev + seen) / 2 : seen;
+            if (r.court && !courtIdx.has(r.court)) courtIdx.set(r.court, courtIdx.size);
+            return {
+              p: rel(Date.parse(r.planned_utc!)),
+              c: r.court ? courtIdx.get(r.court)! : null,
+              e: group(r.event),
+              d: r.duration_min && r.duration_min > 0 ? r.duration_min : 0,
+              s: start === undefined ? null : rel(start),
+              f: r.finished_seen_at ? rel(Date.parse(r.finished_seen_at)) : null,
+              w: r.status === 'walkover' ? 'w' : r.status === 'retired' ? 'r' : 'f',
+              x: r.pids ? r.pids.split(',').map(Number) : [],
+            } as TimingRow;
+          });
   return {
+    timing,
     tournamentId: d.tournamentId,
     tournament: d.tournament,
     date: d.date,
@@ -197,4 +244,70 @@ export function purgeGhostEra(db: Db, now: Date): boolean {
   db.prepare('delete from day_patterns').run();
   db.prepare("insert into kv(k, v, updated_at) values('ghostfix', ?, ?)").run(JSON.stringify({ at: now.toISOString() }), now.toISOString());
   return true;
+}
+
+// ---- Tiempos reales aprendidos: hueco entre partidos y descanso -----------------------------------------------------------
+const MIN_GAPS = 150;
+const MIN_REST_PAIRS = 60;
+
+export interface LearnedTiming {
+  /** Huecos reales entre el fin de un partido y el inicio del siguiente en la misma pista (minutos). Vacío si aún no hay datos suficientes. */
+  gapSample?: number[];
+  /** Descanso mínimo observado entre dos partidos de una misma persona (minutos); 0 si no se observa o no hay datos suficientes. */
+  restMin: number;
+  gaps: number;
+  restPairs: number;
+}
+
+const pct = (xs: number[], p: number) => {
+  const s = [...xs].sort((a, b) => a - b);
+  return s[Math.min(s.length - 1, Math.max(0, Math.floor(p * s.length)))];
+};
+
+/**
+ * Del tiempo real de cada partido (`timing` de cada patrón) saca:
+ *  - huecos entre partidos consecutivos de la misma pista, solo cuando la pista era el límite (el partido empezó claramente después de su hora
+ *    programada) y sin pausas largas (>25 min), para remuestrearlos en la simulación en vez de un cambio fijo;
+ *  - el descanso mínimo entre partidos de una misma persona (percentil 5), solo si hay pares suficientes y es apreciable (≥10 min).
+ * Sin datos suficientes devuelve el comportamiento de siempre (cambio fijo, sin descanso).
+ */
+export function learnedTiming(db: Db): LearnedTiming {
+  const gapsAll: number[] = [];
+  const rests: number[] = [];
+  for (const day of loadPatterns(db)) {
+    const rows = (day.timing ?? []).filter((r) => r.s !== null && r.d > 0 && r.w === 'f');
+    const byCourt = new Map<number, TimingRow[]>();
+    for (const r of rows) if (r.c !== null) byCourt.set(r.c, [...(byCourt.get(r.c) ?? []), r]);
+    for (const list of byCourt.values()) {
+      list.sort((a, b) => a.s! - b.s!);
+      for (let i = 1; i < list.length; i++) {
+        const gap = list[i].s! - (list[i - 1].s! + list[i - 1].d);
+        if (list[i].s! - list[i].p <= 2 || gap < -4 || gap > 25) continue; // esperó a su hora programada, o hubo una pausa: no mide el cambio
+        gapsAll.push(Math.max(0, Math.round(gap * 10) / 10));
+      }
+    }
+    const byPlayer = new Map<number, TimingRow[]>();
+    for (const r of rows) for (const id of r.x) byPlayer.set(id, [...(byPlayer.get(id) ?? []), r]);
+    for (const list of byPlayer.values()) {
+      list.sort((a, b) => a.s! - b.s!);
+      for (let i = 1; i < list.length; i++) rests.push(list[i].s! - (list[i - 1].s! + list[i - 1].d));
+    }
+  }
+  const restP5 = rests.length >= MIN_REST_PAIRS ? pct(rests, 0.05) : 0;
+  return {
+    gapSample: gapsAll.length >= MIN_GAPS ? gapsAll.slice(-400) : undefined,
+    restMin: restP5 >= 10 ? Math.min(45, Math.floor(restP5)) : 0,
+    gaps: gapsAll.length,
+    restPairs: rests.length,
+  };
+}
+
+const timingCache = new WeakMap<Db, { at: number; v: LearnedTiming }>();
+/** Lo que se pasa al simulador (`gapSample`, `restMin`); se reutiliza unos minutos. */
+export function currentTiming(db: Db, now: Date): Pick<LearnedTiming, 'gapSample' | 'restMin'> {
+  const hit = timingCache.get(db);
+  if (hit && now.getTime() - hit.at < 10 * 60_000) return hit.v;
+  const v = learnedTiming(db);
+  timingCache.set(db, { at: now.getTime(), v });
+  return v;
 }

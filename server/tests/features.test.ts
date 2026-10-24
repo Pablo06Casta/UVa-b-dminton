@@ -109,6 +109,22 @@ describe('partidos fantasma: el torneo acaba aunque la fuente deje de publicar p
   });
 });
 
+describe('relación anónima de quién juega', () => {
+  it('guarda índices anónimos por partido (misma persona = mismo índice), nunca identidades', async () => {
+    const db = memDb();
+    const src = new FakeSource();
+    createPlayer(db, { name: 'Ana Prueba', profile: PROFILE, public: true, ...consent });
+    src.dayRows = [row({ key: 'a', names1: [['Ana Prueba', 1001]], names2: [['Rival Uno', 2002]] }), row({ key: 'b', names1: [['Ana Prueba', 1001]], names2: [['Rival Dos', 3003]] })];
+    const engine = new SyncEngine(db, src, () => NOW);
+    for (let t = 0; t < 12; t++) await engine.tick(new Date(NOW.getTime() + t * 60_000));
+    const pids = (db.prepare('select key, pids from slots order by key').all() as { key: string; pids: string }[]).map((r) => r.pids.split(',').map(Number));
+    expect(pids).toHaveLength(2);
+    expect(pids[0][0]).toBe(pids[1][0]); // Ana juega los dos partidos
+    expect(pids[0][1]).not.toBe(pids[1][1]); // rivales distintos
+    expect(JSON.stringify(pids)).not.toMatch(/1001|2002|3003/); // ningún identificador real
+  });
+});
+
 describe('todos los torneos acaban: ni partidos del club fantasma ni días sin cerrar', () => {
   const mk = (src: FakeSource) => (i: number, status: 'finished' | 'scheduled', ana = false) =>
     ({ ...row({ key: `h${i}`, status, court: String((i % 2) + 1), names1: ana ? [['Ana Prueba', 1]] : [['Otro Uno', 20 + i]], names2: [['Otro Dos', 40 + i]] }), plannedUtc: new Date(NOW.getTime() + (i * 10 - 90) * 60_000).toISOString(), durationMin: status === 'finished' ? 30 : undefined, orderIndex: i }) as ReturnType<typeof row>;

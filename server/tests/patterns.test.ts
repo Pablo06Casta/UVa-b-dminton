@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { applyShift, learnedShift } from '../src/calibration';
 import { defaultPriors, type Estimate } from '../src/estimate';
-import { consolidate, learnedPriors, loadPatterns, purgeGhostEra } from '../src/patterns';
+import { consolidate, learnedPriors, learnedTiming, loadPatterns, purgeGhostEra } from '../src/patterns';
 import { memDb } from './helpers/fakes';
 
 const NOW = new Date('2026-11-20T10:00:00Z');
@@ -31,6 +31,8 @@ describe('patrones de seguimiento', () => {
     const [p] = loadPatterns(db);
     expect(p).toMatchObject({ matches: 32, played: 30, walkovers: 2, avgDurationMin: 40, courts: 4 });
     expect(p.perEvent.IM.n).toBe(30);
+    expect(p.timing).toHaveLength(32); // tiempos reales anónimos de cada partido terminado
+    expect(p.timing![5]).toMatchObject({ e: 'IM', w: 'f', c: expect.any(Number) });
     expect(Object.keys(p)).not.toContain('players'); // solo cifras
   });
 
@@ -85,5 +87,37 @@ describe('migración de partidos fantasma', () => {
     seedDay(db, 2, 30, 0); // estimaciones nuevas: ya no se borran
     expect(purgeGhostEra(db, NOW)).toBe(false);
     expect((db.prepare('select count(*) n from estimate_log').get() as { n: number }).n).toBeGreaterThan(0);
+  });
+});
+
+describe('tiempos reales aprendidos', () => {
+  const pattern = (day: number, rows: import('../src/patterns').TimingRow[]) => ({ tournamentId: `G${day}`, tournament: 'T', date: `2026-11-${String(day).padStart(2, '0')}`, matches: rows.length, played: rows.length, walkovers: 0, perEvent: {}, end: [], timing: rows });
+  const save = (db: ReturnType<typeof memDb>, p: ReturnType<typeof pattern>) => db.prepare('insert into day_patterns(tournament_guid, date, created_at, json) values(?,?,?,?)').run(p.tournamentId, p.date, NOW.toISOString(), JSON.stringify(p));
+  // Pista 0: partidos de 30 min, el siguiente empieza 5 min después de acabar el anterior (esperando pista, no su hora programada).
+  const court = (n: number, dur = 30, gap = 5) => Array.from({ length: n }, (_, i) => ({ p: i * 10, c: 0, e: 'IM', d: dur, s: i * (dur + gap), f: i * (dur + gap) + dur, w: 'f' as const, x: [i % 3 === 0 ? 1 : 100 + i] }));
+
+  it('sin datos suficientes mantiene el cambio fijo y sin descanso', () => {
+    const db = memDb();
+    save(db, pattern(1, court(10)));
+    const t = learnedTiming(db);
+    expect(t.gapSample).toBeUndefined();
+    expect(t.restMin).toBe(0);
+  });
+
+  it('con datos suficientes aprende el hueco real (ignorando esperas a la hora programada y pausas) y el descanso mínimo', () => {
+    const db = memDb();
+    for (let d = 1; d <= 8; d++) save(db, pattern(d, court(25)));
+    // Una espera a su hora programada (empieza justo a la hora) y una pausa larga: no son «cambio de pista».
+    const t0 = learnedTiming(db);
+    expect(t0.gapSample!.length).toBeGreaterThanOrEqual(150);
+    expect(Math.min(...t0.gapSample!)).toBeGreaterThanOrEqual(4);
+    expect(Math.max(...t0.gapSample!)).toBeLessThanOrEqual(6);
+    // La persona 1 juega cada 3 partidos: descanso observado = 2 partidos + huecos = 70 min → mínimo ≥ 10 → se aplica (tope 45).
+    expect(t0.restPairs).toBeGreaterThanOrEqual(60);
+    expect(t0.restMin).toBe(45);
+    const waiting = court(3).map((r) => ({ ...r, p: r.s! })); // empezó a su hora programada: no mide el cambio
+    const db2 = memDb();
+    for (let d = 1; d <= 8; d++) save(db2, pattern(d, waiting));
+    expect(learnedTiming(db2).gapSample).toBeUndefined();
   });
 });

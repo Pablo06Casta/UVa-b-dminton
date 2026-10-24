@@ -12,7 +12,7 @@ import { pushConfigured, subscribe, unsubscribe } from './push';
 import { buildAccuracy } from './accuracy';
 import { currentShift } from './calibration';
 import { captureImage } from './itinerary';
-import { learnedPriors, loadPatterns } from './patterns';
+import { learnedPriors, learnedTiming, loadPatterns } from './patterns';
 import { defaultPriors } from './estimate';
 import { cardVersion, findCard, metaOf, renderPng, shareHtmlPage, type CardKind, type Found } from './share';
 import { rivalNamesFor } from './shareRivals';
@@ -237,7 +237,7 @@ export function createApp(db: Db, engine: SyncEngine | undefined, hub: Hub) {
         const days = Math.min(120, Math.max(1, Number(new URL(req.url ?? '/', 'http://x').searchParams.get('days')) || 45));
         const since = new Date(Date.now() - days * 86_400_000).toISOString();
         res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, max-age=60', 'X-Content-Type-Options': 'nosniff', ...cors(req) });
-        return res.end(JSON.stringify({ generatedAt: nowIso(), calibration: currentShift(db, new Date()), learning: learningReport(db), days: buildAccuracy(db, since) }));
+        return res.end(JSON.stringify({ generatedAt: nowIso(), calibration: currentShift(db, new Date()), learning: learningReport(db, url.searchParams.get('timing') === '1'), days: buildAccuracy(db, since) }));
       }
 
       if (route === 'GET /api/public/stream') {
@@ -461,13 +461,14 @@ export function createApp(db: Db, engine: SyncEngine | undefined, hub: Hub) {
 }
 
 /** Qué ha aprendido el modelo: valores de partida frente a los de fábrica y resumen de cada jornada guardada (solo cifras). */
-function learningReport(db: Db) {
+function learningReport(db: Db, withTiming = false) {
   const patterns = loadPatterns(db);
   const learned = learnedPriors(db);
   return {
     patterns: patterns.length,
     learnedFrom: { days: learned.days, matches: learned.matches },
     priors: { default: defaultPriors, learned: learned.priors },
-    days: patterns.map(({ perEvent: _p, ...d }) => d),
+    timing: (({ gapSample, ...t }) => ({ ...t, gapSampleReady: !!gapSample }))(learnedTiming(db)),
+    days: patterns.map(({ perEvent: _p, timing, ...d }) => (withTiming ? { ...d, timing } : d)),
   };
 }

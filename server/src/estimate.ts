@@ -20,6 +20,8 @@ export interface Slot {
   /** Lectura anterior a verlo en pista: el inicio real está entre ambas. */
   prevPollAt?: string;
   finishedSeenAt?: string;
+  /** Quién juega, solo como índices anónimos dentro del día (para el descanso entre partidos de una misma persona). */
+  players?: number[];
 }
 
 /**
@@ -60,6 +62,10 @@ export interface EstimateConfig {
   /** Percentil de la simulación que se da como hora de fin / de inicio (0,5 = mediana; algo más alto = más prudente). */
   endQuantile?: number;
   startQuantile?: number;
+  /** Huecos reales entre el fin de un partido y el inicio del siguiente en la misma pista (minutos): se remuestrean en lugar del cambio fijo. */
+  gapSample?: number[];
+  /** Descanso mínimo (minutos) entre dos partidos de una misma persona; 0 = no se aplica. Se aprende de los torneos (ver `patterns.ts`). */
+  restMin?: number;
   /** Percentil bajo de la hora de inicio, para «no antes de» (avisos y llegada): un aviso tarde cuesta más que uno pronto. */
   startEarlyQuantile?: number;
 }
@@ -233,13 +239,14 @@ export function estimate(slots: Slot[], now: Date, cfg: EstimateConfig = default
     const seen = s.startedSeenAt ? Date.parse(s.startedSeenAt) : nowMs;
     const prev = s.prevPollAt ? Date.parse(s.prevPollAt) : seen;
     const startedAt = Math.min(nowMs, (seen + prev) / 2);
-    return { mean: priorMean(s.event), elapsed: Math.max(0, (nowMs - startedAt) / MIN), court: s.court ? courtIndex.get(s.court) : undefined };
+    return { mean: priorMean(s.event), elapsed: Math.max(0, (nowMs - startedAt) / MIN), court: s.court ? courtIndex.get(s.court) : undefined, players: s.players };
   });
   const pend = pending.map((s) => ({
     key: s.key,
     planned: s.plannedUtc ? Date.parse(s.plannedUtc) : 0,
     mean: priorMean(s.event),
     court: preassigned && s.court ? courtIndex.get(s.court) ?? -1 : -1,
+    players: s.players,
   }));
 
   const sims = Math.max(50, cfg.simulations);
@@ -247,10 +254,29 @@ export function estimate(slots: Slot[], now: Date, cfg: EstimateConfig = default
   const ends = new Float64Array(sims);
   const startsBy = pend.map(() => new Float64Array(sims));
   const changeover = cfg.changeoverMin * MIN;
+  const gapPool = cfg.gapSample && cfg.gapSample.length >= 20 ? cfg.gapSample : undefined;
+  const gapMs = () => (gapPool ? gapPool[Math.floor(rand() * gapPool.length)] * MIN : changeover);
   const free = new Float64Array(nCourts);
+  // Descanso entre partidos de una misma persona: cuándo puede volver a jugar cada una (índices anónimos del día).
+  const restMs = (cfg.restMin ?? 0) * MIN;
+  const maxPid = restMs > 0 ? Math.max(-1, ...slots.flatMap((x) => x.players ?? [])) : -1;
+  const ready0 = new Float64Array(maxPid + 1);
+  const ready = new Float64Array(maxPid + 1);
+  if (maxPid >= 0) {
+    for (const x of finished) {
+      if (x.status === 'walkover') continue;
+      const end = Math.min(nowMs, x.finishedSeenAt ? Date.parse(x.finishedSeenAt) : nowMs);
+      for (const id of x.players ?? []) ready0[id] = Math.max(ready0[id], end + restMs);
+    }
+  }
+  const readyFor = (players?: number[]) => (maxPid >= 0 && players ? Math.max(0, ...players.map((id) => ready[id] ?? 0)) : 0);
+  const markEnd = (players: number[] | undefined, end: number) => {
+    if (maxPid >= 0 && players) for (const id of players) ready[id] = Math.max(ready[id] ?? 0, end + restMs);
+  };
 
   for (let r = 0; r < sims; r++) {
     free.set(free0);
+    if (maxPid >= 0) ready.set(ready0);
     const paceS = pace * Math.exp(paceSd * normal(rand) - (paceSd * paceSd) / 2);
     const draw = (mean: number) => {
       const m = Math.max(10, Math.min(90, mean * paceS));
@@ -264,6 +290,7 @@ export function estimate(slots: Slot[], now: Date, cfg: EstimateConfig = default
       if (d <= l.elapsed) d = l.elapsed + 3 + rand() * 6;
       const end = nowMs + Math.max(1, d - l.elapsed) * MIN;
       free[lc] = Math.max(free[lc], end);
+      markEnd(l.players, end);
       last = Math.max(last, end);
     }
     for (let i = 0; i < pend.length; i++) {
@@ -277,10 +304,11 @@ export function estimate(slots: Slot[], now: Date, cfg: EstimateConfig = default
         last = Math.max(last, start);
         continue;
       }
-      const start = Math.max(freeAt > nowMs ? freeAt + changeover : nowMs, p.planned, nowMs);
+      const start = Math.max(freeAt > nowMs ? freeAt + gapMs() : nowMs, p.planned, nowMs, readyFor(p.players));
       const end = start + draw(p.mean) * MIN;
       startsBy[i][r] = start;
       free[c] = end;
+      markEnd(p.players, end);
       last = Math.max(last, end);
     }
     ends[r] = last;

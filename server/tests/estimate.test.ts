@@ -147,3 +147,28 @@ describe('horas estimadas sin pistas publicadas', () => {
     expect(end - lastStart).toBeLessThan(60 * 60_000); // duración típica, no una cola de horas
   });
 });
+
+describe('descanso entre partidos y huecos reales', () => {
+  const t = (i: number, o: Partial<Slot> = {}): Slot => slot(i, { court: String((i % 2) + 1), plannedUtc: at(0), ...o });
+  // Dos pistas: la persona 7 juega el partido 0 (pista 1, en pista ahora) y el 1 (pista 2, pendiente, libre ya).
+  const slots = [t(0, { status: 'on_court', players: [7], startedSeenAt: at(110), prevPollAt: at(105) }), t(1, { players: [7] }), t(2, { players: [8] })];
+
+  it('con descanso mínimo, el segundo partido de una persona no empieza hasta que descansa; sin él, sí', () => {
+    const free = estimate(slots, NOW, { simulations: 200, changeoverMin: 3, priors: undefined, restMin: 0 });
+    const rest = estimate(slots, NOW, { simulations: 200, changeoverMin: 3, priors: undefined, restMin: 30 });
+    const noPlayers = estimate(slots.map((s) => ({ ...s, players: undefined })), NOW, { simulations: 200, changeoverMin: 3, restMin: 30 });
+    expect(Date.parse(rest.starts.s1)).toBeGreaterThan(Date.parse(free.starts.s1) + 20 * 60_000);
+    expect(Date.parse(rest.starts.s1)).toBeGreaterThanOrEqual(NOW.getTime() + 30 * 60_000); // el partido en pista no acaba antes de ahora y luego, 30 min de descanso
+    expect(rest.starts.s2).toBe(free.starts.s2); // quien no repite no se ve afectado
+    expect(noPlayers.starts.s1).toBe(free.starts.s1); // sin saber quién juega, no se aplica
+  });
+
+  it('con huecos reales largos entre partidos de la pista, la hora de fin se retrasa; sin muestra se usa el cambio fijo', () => {
+    const queue = [0, 2, 4, 6, 8].map((i) => t(i, { court: '1' }));
+    const fixed = estimate(queue, NOW, { simulations: 300, changeoverMin: 3 });
+    const sample = estimate(queue, NOW, { simulations: 300, changeoverMin: 3, gapSample: Array.from({ length: 40 }, (_, i) => 10 + (i % 5)) });
+    expect(Date.parse(sample.estimatedEnd!)).toBeGreaterThan(Date.parse(fixed.estimatedEnd!) + 20 * 60_000);
+    const tiny = estimate(queue, NOW, { simulations: 300, changeoverMin: 3, gapSample: [20, 20] }); // muestra insuficiente (<20): se ignora
+    expect(tiny.estimatedEnd).toBe(fixed.estimatedEnd);
+  });
+});

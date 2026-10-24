@@ -13,7 +13,7 @@ import { isUvaClub } from './uva';
 import type { OfficialSource } from './source';
 import { transformCalendar } from './calendar';
 import { applyShift, currentShift } from './calibration';
-import { currentPriors } from './patterns';
+import { currentPriors, currentTiming } from './patterns';
 import { latestEdition, ligaEveryMs, type LigaSnapshot } from './liga';
 import { defaultEstimateConfig, estimate, type Estimate, type Slot } from './estimate';
 import type { MatchRow } from './model';
@@ -623,8 +623,12 @@ export class SyncEngine {
     const prevRead = kvGet<{ at: string }>(this.db, `ok:${job.key}`)?.at;
     let finishedNow = 0;
     let resultPending = false;
+    // Quién juega cada partido, solo como relación: índices anónimos dentro del día (no se guarda ninguna identidad). Sirve para el descanso entre partidos.
+    const pidIndex = new Map<number, number>();
+    for (const id of [...new Set(rows.flatMap((r) => [...r.team1.players, ...r.team2.players]).map((p) => p.tsPlayerId).filter((x): x is number => typeof x === 'number'))].sort((a, b) => a - b)) pidIndex.set(id, pidIndex.size);
     for (const row of rows) {
-      if (this.upsertSlot(guid, job.date!, row, now, prevRead)) finishedNow++;
+      const pids = [...row.team1.players, ...row.team2.players].map((p) => (typeof p.tsPlayerId === 'number' ? pidIndex.get(p.tsPlayerId) : undefined)).filter((x): x is number => x !== undefined);
+      if (this.upsertSlot(guid, job.date!, row, now, prevRead, pids)) finishedNow++;
       const m = buildStoredMatch(row, { tournamentGuid: guid, entrants });
       if (m && this.ingest(m, now) === 'pending' && (m.status === 'finished' || m.status === 'walkover' || m.status === 'retired')) resultPending = true;
     }
@@ -646,7 +650,7 @@ export class SyncEngine {
   }
 
   /** Datos anónimos de horario de TODOS los partidos del día (no solo los del club): base de la estimación. */
-  private upsertSlot(guid: string, date: string, r: MatchRow, now: Date, prevRead?: string): boolean {
+  private upsertSlot(guid: string, date: string, r: MatchRow, now: Date, prevRead?: string, pids: number[] = []): boolean {
     const iso = now.toISOString();
     const done = r.status === 'finished' || r.status === 'walkover' || r.status === 'retired';
     const row = this.db.prepare('select started_seen_at, finished_seen_at, duration_min from slots where key = ?').get(r.key) as unknown as
@@ -657,14 +661,14 @@ export class SyncEngine {
     const finishedAt = row?.finished_seen_at ?? (done ? iso : null);
     this.db
       .prepare(
-        `insert into slots(key, tournament_guid, date, planned_utc, order_idx, court, event, status, duration_min, started_seen_at, prev_poll_at, finished_seen_at, updated_at)
-         values(?,?,?,?,?,?,?,?,?,?,?,?,?)
-         on conflict(key) do update set planned_utc=excluded.planned_utc, order_idx=excluded.order_idx, court=excluded.court, status=excluded.status,
+        `insert into slots(key, tournament_guid, date, planned_utc, order_idx, court, event, status, duration_min, started_seen_at, prev_poll_at, finished_seen_at, updated_at, pids)
+         values(?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+         on conflict(key) do update set planned_utc=excluded.planned_utc, order_idx=excluded.order_idx, court=excluded.court, status=excluded.status, pids=excluded.pids,
            duration_min=coalesce(excluded.duration_min, slots.duration_min),
            started_seen_at=coalesce(slots.started_seen_at, excluded.started_seen_at), prev_poll_at=coalesce(slots.prev_poll_at, excluded.prev_poll_at),
            finished_seen_at=coalesce(slots.finished_seen_at, excluded.finished_seen_at), updated_at=excluded.updated_at`,
       )
-      .run(r.key, guid, date, r.plannedUtc ?? null, r.orderIndex ?? 0, r.court ?? null, r.eventCode ?? null, r.status, r.durationMin ?? row?.duration_min ?? null, started, prev ?? null, finishedAt, iso);
+      .run(r.key, guid, date, r.plannedUtc ?? null, r.orderIndex ?? 0, r.court ?? null, r.eventCode ?? null, r.status, r.durationMin ?? row?.duration_min ?? null, started, prev ?? null, finishedAt, iso, pids.length ? pids.join(',') : null);
     return done && !row?.finished_seen_at;
   }
 
@@ -694,9 +698,10 @@ export class SyncEngine {
       key: r.key as string, plannedUtc: (r.planned_utc as string) ?? undefined, orderIdx: r.order_idx as number, court: (r.court as string) ?? undefined,
       event: (r.event as string) ?? undefined, status: r.status as Slot['status'], durationMin: (r.duration_min as number) ?? undefined,
       startedSeenAt: (r.started_seen_at as string) ?? undefined, prevPollAt: (r.prev_poll_at as string) ?? undefined, finishedSeenAt: (r.finished_seen_at as string) ?? undefined,
+      players: r.pids ? String(r.pids).split(',').map(Number) : undefined,
     }));
     // Valores de partida: los de fábrica, reajustados con lo aprendido de cada jornada terminada (ver patterns.ts).
-    const est = estimate(slots, now, { ...defaultEstimateConfig, priors: currentPriors(this.db, now).priors, defaultMatchMin: settings.defaultMatchMin, changeoverMin: settings.changeoverMin });
+    const est = estimate(slots, now, { ...defaultEstimateConfig, priors: currentPriors(this.db, now).priors, ...currentTiming(this.db, now), defaultMatchMin: settings.defaultMatchMin, changeoverMin: settings.changeoverMin });
     // Se registra la estimación en bruto (para medir el modelo) y se publica la corregida con lo aprendido (ver calibration.ts).
     const shown = applyShift(est, currentShift(this.db, now));
     kvSet(this.db, `estimate:${guid}`, { date, ...shown }, now.toISOString());
