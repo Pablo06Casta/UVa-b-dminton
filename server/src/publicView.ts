@@ -25,6 +25,8 @@ export interface PublicMatch {
   /** Hora programada (ISO) y hora estimada de inicio según el ritmo real del torneo (ISO). */
   plannedStart?: string;
   estimatedStart?: string;
+  /** Partidos del torneo (de cualquiera) que aún no han empezado y van antes que este según el orden estimado. */
+  ahead?: number;
 }
 
 export interface PublicEntrant {
@@ -274,6 +276,24 @@ interface TRow {
   venue: string | null; level: string | null; info_ok_at: string | null; draws_ok_at: string | null; manual: number;
 }
 
+/**
+ * Cuántos partidos de todo el torneo van antes que cada partido pendiente del club: los que aún no han empezado y, según el orden
+ * estimado (si no hay estimación, el programado), les tocan antes. Los W.O. no cuentan: no ocupan pista.
+ */
+function addAhead(db: Db, guid: string, matches: PublicMatch[], starts: Record<string, string>) {
+  const pending = matches.filter((m) => m.state === 'scheduled');
+  if (pending.length === 0) return;
+  const slots = db.prepare("select key, date, planned_utc, order_idx from slots where tournament_guid = ? and status in ('scheduled', 'unknown')").all(guid) as unknown as { key: string; date: string; planned_utc: string | null; order_idx: number }[];
+  const rank = (s: { key: string; planned_utc: string | null; order_idx: number }) => `${starts[s.key] ?? s.planned_utc ?? '9999'}|${s.planned_utc ?? '9999'}|${String(s.order_idx).padStart(6, '0')}`;
+  const byKey = new Map(slots.map((s) => [s.key, s]));
+  for (const m of pending) {
+    const me = byKey.get(m.id);
+    if (!me) continue;
+    const mine = rank(me);
+    m.ahead = slots.filter((s) => s.date === me.date && s.key !== me.key && rank(s) < mine).length;
+  }
+}
+
 export function buildPublicState(db: Db, now = new Date()): PublicState {
   const players = listPlayers(db);
   const publicPlayers = new Map(players.filter((p) => p.public).map((p) => [p.id, p]));
@@ -297,6 +317,7 @@ export function buildPublicState(db: Db, now = new Date()): PublicState {
       .sort((a, b) => `${a.date ?? ''} ${a.time ?? ''}`.localeCompare(`${b.date ?? ''} ${b.time ?? ''}`));
 
     if (linked.length === 0 && matches.length === 0) continue;
+    addAhead(db, t.guid, matches, est?.starts ?? {});
 
     const dayOks = (db.prepare("select v from kv where k like ?").all(`ok:day:${t.guid}:%`) as unknown as { v: string }[]).map((r) => (JSON.parse(r.v) as { at: string }).at);
     const checkedAt = [t.info_ok_at, t.draws_ok_at, ...dayOks].filter((x): x is string => !!x).sort().at(-1);

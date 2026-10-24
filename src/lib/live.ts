@@ -1,4 +1,4 @@
-import type { LiveState, Tournament, UvaMatch } from '../types';
+import type { LiveProgress, LiveState, Tournament, UvaMatch } from '../types';
 
 const norm = (s: string) =>
   s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\(.*?\)/g, ' ').replace(/[^a-z0-9]+/g, ' ').trim();
@@ -87,3 +87,36 @@ export const clockSec = (iso: string | Date) => fmtSec.format(typeof iso === 'st
 /** Minutos de diferencia entre la hora estimada y la programada (+ = más tarde). */
 export const lateness = (m: UvaMatch): number | undefined =>
   m.estimatedStart && m.plannedStart ? Math.round((Date.parse(m.estimatedStart) - Date.parse(m.plannedStart)) / 60_000) : undefined;
+
+export interface NextInfo {
+  /** Partidos por empezar que van antes que este. */
+  ahead?: number;
+  /** Partidos que se están jugando ahora en el torneo. */
+  inPlay?: number;
+  /** Partidos que quedan por jugar hoy en el torneo (los que se juegan ahora incluidos). */
+  remaining?: number;
+  /** Minutos hasta que empiece (por la hora estimada; si no la hay, por la programada). */
+  minutes?: number;
+  plannedAt?: string;
+  estimatedAt?: string;
+  /** Minutos de diferencia entre la estimada y la oficial (+ = más tarde). */
+  delay?: number;
+}
+
+/** Lo que se muestra del siguiente partido de la UVa: cuántos faltan, cuánto falta y las horas oficial y estimada. */
+export function nextInfo(m: UvaMatch, p: LiveProgress | undefined, now: Date): NextInfo {
+  const target = m.estimatedStart ?? m.plannedStart;
+  const sameDay = !!p && !p.done && (!m.date || p.date === m.date);
+  return {
+    ahead: m.ahead,
+    inPlay: sameDay ? p.live : undefined,
+    remaining: sameDay ? p.remaining + p.live : undefined,
+    minutes: target ? Math.max(0, Math.round((Date.parse(target) - now.getTime()) / 60_000)) : undefined,
+    plannedAt: m.plannedStart,
+    estimatedAt: m.estimatedStart,
+    delay: lateness(m),
+  };
+}
+
+/** «25 min», «1 h 05 min». */
+export const spanText = (min: number): string => (min < 60 ? `${min} min` : `${Math.floor(min / 60)} h ${String(min % 60).padStart(2, '0')} min`);

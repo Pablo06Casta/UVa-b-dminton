@@ -101,3 +101,24 @@ describe('lo que se publica', () => {
     expect(GUID).toBe(t.id);
   });
 });
+
+describe('cuántos partidos faltan antes del siguiente del club', () => {
+  it('cuenta los partidos del torneo que van antes (de cualquiera), sin W.O. ni los ya empezados o terminados', async () => {
+    const { db, src, engine } = setup();
+    createPlayer(db, { name: 'Ana Prueba', profile: PROFILE, public: true, ...consent });
+    const at = (r: ReturnType<typeof row>, i: number) => ({ ...r, orderIndex: i, plannedUtc: `2026-11-07T${String(8 + Math.floor(i / 2)).padStart(2, '0')}:${i % 2 ? '30' : '00'}:00.000Z` });
+    src.dayRows = [
+      row({ key: 'a', clock: '09:00', status: 'finished', winner: 2, sets: [[10, 21], [10, 21]], names1: [['Otra Persona', 8]], names2: [['Rival Dos', 3]] }),
+      row({ key: 'b', clock: '09:30', status: 'on_court', court: '2', names1: [['Persona Tres', 9]], names2: [['Rival Tres', 4]] }),
+      row({ key: 'c', clock: '10:00', court: '3', names1: [['Persona Cuatro', 10]], names2: [['Rival Cuatro', 5]] }),
+      row({ key: 'd', clock: '10:30', court: '4', names1: [['Persona Cinco', 11]], names2: [['Rival Cinco', 6]] }),
+      row({ key: 'm1', clock: '11:00', court: '1' }), // el partido de Ana
+      row({ key: 'f', clock: '11:30', court: '2', names1: [['Persona Seis', 12]], names2: [['Rival Seis', 7]] }),
+    ].map(at);
+    await runAll(engine);
+    const ana = buildPublicState(db, NOW).tournaments[0].matches.find((m) => m.id === 'm1');
+    expect(ana?.state).toBe('scheduled');
+    expect(ana?.ahead).toBe(2); // c y d; no el terminado (a), ni el que está en pista (b), ni el posterior (f)
+  });
+});
+

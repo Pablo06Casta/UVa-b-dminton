@@ -3988,3 +3988,16 @@ abbr.est--big {
 .pmedal--gold { color: #4a3600; background: #f2c230; }
 .pmedal--silver { color: #26303f; background: #dfe5ee; }
 .pmedal--bronze { color: #3a1d06; background: #e39a58; }
+
+/* ---------- Directo: siguiente partido de la UVa ---------- */
+.nextm { margin: 20px 0; padding: 16px 18px; background: var(--violet-softer); border-left: 5px solid var(--violet); }
+.nextm h3 { margin: 0 0 6px; font-family: var(--font-sport); font-size: 1.35rem; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; color: var(--uva-ink); }
+.nextm__who { margin: 0 0 12px; color: var(--text); }
+.nextm__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 0; }
+.nextm__grid > div { padding: 10px 12px; background: var(--white); border: 1px solid var(--gray-200); }
+.nextm__grid > div.is-est { border-color: var(--violet); }
+.nextm__grid dt { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+.nextm__grid dd { margin: 2px 0; font-family: var(--font-sport); font-size: 2rem; font-weight: 800; line-height: 1.1; color: var(--uva-ink); font-variant-numeric: tabular-nums; }
+.nextm__grid small { font-size: 0.8rem; color: var(--muted); }
+.nextm__rest { margin: 12px 0 0; }
+.nextm__note { margin: 8px 0 0; font-size: 0.8rem; color: var(--muted); }

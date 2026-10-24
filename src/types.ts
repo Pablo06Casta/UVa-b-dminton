@@ -175,6 +175,8 @@ export interface UvaMatch {
   /** Hora programada y hora estimada de inicio según el ritmo real del torneo (ISO). */
   plannedStart?: string;
   estimatedStart?: string;
+  /** Partidos del torneo (de cualquiera) que aún no han empezado y van antes que este. */
+  ahead?: number;
 }
 
 /** Balance de la UVa en un torneo (lo calcula el servidor con los cuadros). */

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { LiveState, Tournament, UvaMatch } from '../types';
-import { boardOf, lateness, mergeLive, pickActive } from './live';
+import { boardOf, lateness, mergeLive, nextInfo, pickActive, spanText } from './live';
 
 const t = (id: string, startDate: string, city: string, extra: Partial<Tournament> = {}): Tournament => ({ id, name: id, startDate, city, ...extra });
 const m = (id: string, state: UvaMatch['state'], plannedStart?: string, estimatedStart?: string): UvaMatch => ({ id, state, players: ['A'], plannedStart, estimatedStart });
@@ -57,5 +57,25 @@ describe('panel en directo', () => {
     expect(pickActive(l, '2026-11-07')?.id).toBe('hoy');
     expect(pickActive(l, '2026-11-20')?.id).toBe('futuro');
     expect(pickActive(l, '2027-02-01')?.id).toBe('futuro');
+  });
+});
+
+describe('nextInfo', () => {
+  const NOW = new Date('2026-10-24T08:00:00Z');
+  const progress = { date: '2026-10-24', asOf: NOW.toISOString(), total: 40, finished: 10, live: 3, remaining: 27, courts: 3, basis: 'observed', done: false } as const;
+  it('junta cuántos faltan, el tiempo hasta empezar y las horas oficial y estimada', () => {
+    const match = { ...m('x', 'scheduled', '2026-10-24T08:30:00Z', '2026-10-24T08:50:00Z'), date: '2026-10-24', ahead: 5 };
+    expect(nextInfo(match, progress, NOW)).toMatchObject({ ahead: 5, inPlay: 3, remaining: 30, minutes: 50, delay: 20 });
+  });
+  it('sin estimación usa la hora oficial, y no mezcla el progreso de otro día', () => {
+    const match = { ...m('x', 'scheduled', '2026-10-25T08:30:00Z'), date: '2026-10-25' };
+    const i = nextInfo(match, progress, NOW);
+    expect(i.remaining).toBeUndefined();
+    expect(i.minutes).toBe(24 * 60 + 30);
+    expect(i.delay).toBeUndefined();
+  });
+  it('spanText', () => {
+    expect(spanText(25)).toBe('25 min');
+    expect(spanText(65)).toBe('1 h 05 min');
   });
 });

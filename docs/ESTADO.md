@@ -158,6 +158,9 @@ badminton.es no avisa cuando publica algo, así que el servidor lo detecta con l
 - `/api/public/accuracy` incluye `learning`: nº de patrones, jornadas y partidos de los que aprende, valores de fábrica frente a aprendidos, y el patrón de cada jornada en orden cronológico. El informe del **Agente Estadístico** (sáb/dom 21:00) añade una sección de seguimiento: tabla por jornada, si el error baja con los torneos, qué ha cambiado en los valores de partida, estado del margen y patrones repetidos.
 - Con menos de 3 jornadas guardadas todo queda como antes (valores de fábrica, sin corrección).
 
+## Directo: panel «Siguiente partido de la UVa»
+- Arriba de Directo (`src/components/live/NextMatch.tsx`): partidos que van antes (`ahead`, de cualquiera, sin W.O. ni los ya empezados; lo calcula el servidor en `publicView.ts › addAhead` con el orden estimado), tiempo estimado hasta que empiece (se actualiza cada 30 s), hora oficial, hora estimada con su diferencia, y partidos que quedan por jugar hoy en el torneo. Las horas estimadas salen del modelo estadístico, que se mide y se corrige solo (ver «Patrones de seguimiento»).
+
 ## Cambio de nombre de la cuenta de GitHub (22/10/2026)
 - La cuenta pasó de `Pablo06Casta` a `badmiton-uva`: la web está ahora en https://badmiton-uva.github.io/UVa-b-dminton/ (la dirección antigua da 404) y Web-cerca en https://badmiton-uva.github.io/PABLO-APP/.
 - El servidor autoriza siempre las dos direcciones (`CLUB_ORIGINS` en `server/src/config.ts`); antes solo la antigua y por eso la web nueva no recibía noticias ni datos en vivo.

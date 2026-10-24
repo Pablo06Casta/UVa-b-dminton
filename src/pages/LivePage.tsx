@@ -6,6 +6,7 @@ import { ShareMenu } from '../components/live/ShareMenu';
 import { EntriesList } from '../components/tournaments/EntriesList';
 import { EndEstimate } from '../components/live/EndEstimate';
 import { MatchCard } from '../components/live/MatchCard';
+import { NextMatch } from '../components/live/NextMatch';
 import { NotifyPanel } from '../components/live/NotifyPanel';
 import { TrajectoryChart } from '../components/live/TrajectoryChart';
 import { Notice, PageHeader } from '../components/ui';
@@ -99,6 +100,8 @@ export function LivePage() {
                   </Notice>
                 )}
               </header>
+
+              {board.next[0] && <NextMatch match={board.next[0].match} progress={active.progress} now={now} />}
 
               <section className="livenow" aria-labelledby="b-live">
                 <h3 id="b-live">
