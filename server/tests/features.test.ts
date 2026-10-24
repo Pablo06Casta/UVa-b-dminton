@@ -109,6 +109,45 @@ describe('partidos fantasma: el torneo acaba aunque la fuente deje de publicar p
   });
 });
 
+describe('todos los torneos acaban: ni partidos del club fantasma ni días sin cerrar', () => {
+  const mk = (src: FakeSource) => (i: number, status: 'finished' | 'scheduled', ana = false) =>
+    ({ ...row({ key: `h${i}`, status, court: String((i % 2) + 1), names1: ana ? [['Ana Prueba', 1]] : [['Otro Uno', 20 + i]], names2: [['Otro Dos', 40 + i]] }), plannedUtc: new Date(NOW.getTime() + (i * 10 - 90) * 60_000).toISOString(), durationMin: status === 'finished' ? 30 : undefined, orderIndex: i }) as ReturnType<typeof row>;
+
+  it('un partido del club que la fuente deja de publicar no sigue como «siguiente partido»', async () => {
+    const db = memDb();
+    const src = new FakeSource();
+    createPlayer(db, { name: 'Ana Prueba', profile: PROFILE, public: true, ...consent });
+    const at = mk(src);
+    src.dayRows = [at(0, 'finished', true), at(1, 'scheduled', true), at(2, 'scheduled')];
+    const engine = new SyncEngine(db, src, () => NOW);
+    let t = 0;
+    const pump = async (min: number) => { for (const end = t + min; t < end; t++) await engine.tick(new Date(NOW.getTime() + t * 60_000)); };
+    await pump(12);
+    expect(buildPublicState(db, NOW).tournaments[0].matches.map((m) => m.state).sort()).toEqual(['finished', 'scheduled']);
+    src.dayRows = [at(0, 'finished', true), at(2, 'scheduled')];
+    await pump(40);
+    expect(buildPublicState(db, new Date(NOW.getTime() + t * 60_000)).tournaments[0].matches.map((m) => m.state)).toEqual(['finished']);
+  });
+
+  it('un día anterior que quedó «por jugar» se publica como terminado, con la hora del último partido', async () => {
+    const db = memDb();
+    const src = new FakeSource();
+    createPlayer(db, { name: 'Ana Prueba', profile: PROFILE, public: true, ...consent });
+    const at = mk(src);
+    src.dayRows = [at(0, 'finished', true), at(1, 'finished'), at(2, 'scheduled'), at(3, 'scheduled')];
+    const engine = new SyncEngine(db, src, () => NOW);
+    for (let t = 0; t < 12; t++) await engine.tick(new Date(NOW.getTime() + t * 60_000));
+    expect(buildPublicState(db, NOW).tournaments[0].progress).toMatchObject({ done: false, remaining: 2 });
+    // Dos días después: el torneo ya pasó, no hay lecturas nuevas de ese día y los pendientes nunca se jugaron.
+    const later = new Date(NOW.getTime() + 48 * 3600_000);
+    await engine.tick(later);
+    const p = buildPublicState(db, later).tournaments[0].progress!;
+    expect(p).toMatchObject({ done: true, remaining: 0, live: 0 });
+    expect(p.total).toBe(p.finished);
+    expect(p.estimatedEnd).toBeDefined();
+  });
+});
+
 describe('calendario oficial automático', () => {
   it('guarda el calendario y no lo sustituye si la fuente devuelve vacío', async () => {
     const db = memDb();

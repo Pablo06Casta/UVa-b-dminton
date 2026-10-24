@@ -194,7 +194,7 @@ export function estimate(slots: Slot[], now: Date, cfg: EstimateConfig = default
 
   const result: Estimate = {
     asOf: now.toISOString(),
-    total: slots.length,
+    total: abandoned ? finished.length : slots.length,
     finished: finished.length,
     live: live.length,
     remaining: abandoned ? 0 : pending.length,

@@ -283,6 +283,16 @@ interface EntrantRaw {
   placeholder?: string;
 }
 
+/**
+ * Una estimación de un día anterior que seguía «por jugar» (la fuente dejó de publicar esos partidos y ya no hay lecturas de ese día)
+ * se da por terminada: ese día ya pasó. La hora de fin es la del último partido visto terminar.
+ */
+function closeIfOver(db: Db, guid: string, e: Estimate & { date: string }, today: string): Estimate & { date: string } {
+  if (e.done || e.date >= today) return e;
+  const last = db.prepare('select max(finished_seen_at) f from slots where tournament_guid = ? and date = ?').get(guid, e.date) as unknown as { f: string | null };
+  return { ...e, done: true, live: 0, remaining: 0, total: e.finished, estimatedEnd: last.f ?? e.asOf, estimatedEndLow: undefined, estimatedEndHigh: undefined };
+}
+
 function toProgress(e: Estimate & { date: string }): PublicProgress {
   const { starts: _starts, ...rest } = e; // las horas por partido solo se usan para los partidos públicos
   void _starts;
@@ -361,7 +371,7 @@ export function buildPublicState(db: Db, now = new Date()): PublicState {
       manual: !!t.manual,
       uvaPlayers: [...new Set([...linked.map((p) => p.name), ...matches.flatMap((m) => m.players)])].sort((a, b) => a.localeCompare(b, 'es')),
       matches,
-      progress: est ? toProgress(est) : undefined,
+      progress: est ? toProgress(closeIfOver(db, t.guid, est, today)) : undefined,
       draws,
       results,
       ...(record ? { record } : {}),

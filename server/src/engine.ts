@@ -278,11 +278,12 @@ export class SyncEngine {
         this.enforceHidden();
         this.relinkEntrants();
         // Las estimaciones guardadas pueden venir de una versión anterior: se recalculan con lo ya guardado (sin peticiones).
-        for (const r of this.db.prepare('select distinct tournament_guid g, date d from slots').all() as unknown as { g: string; d: string }[]) this.recomputeEstimate(r.g, r.d, now);
+        for (const r of this.db.prepare('select distinct tournament_guid g, date d from slots order by date').all() as unknown as { g: string; d: string }[]) this.recomputeEstimate(r.g, r.d, now); // por fecha: la guardada de cada torneo es la del último día
       } catch (e) {
         console.error('relinkEntrants', e);
       }
     }
+    this.sweepEstimates(now);
     const job = this.plan(now)[0];
     if (!job) return undefined;
     this.kicked.delete(job.key);
@@ -633,6 +634,8 @@ export class SyncEngine {
       const iso = now.toISOString();
       this.db.prepare("delete from slots where tournament_guid = ? and date = ? and updated_at < ? and status in ('scheduled', 'unknown')").run(guid, job.date!, iso);
       this.db.prepare("delete from slots where tournament_guid = ? and date = ? and updated_at < ? and status = 'on_court'").run(guid, job.date!, new Date(now.getTime() - 30 * 60_000).toISOString());
+      // Lo mismo con los partidos del club que aún no se han jugado: si la fuente ya no los publica, no pueden seguir como «siguiente partido».
+      this.db.prepare("delete from matches where tournament_guid = ? and date = ? and state = 'scheduled' and last_seen_at < ?").run(guid, job.date!, iso);
     }
     // Partidos que acaban de terminar: los cuadros y las clasificaciones cambian con ellos, así que se leen ya (no a su hora).
     if (finishedNow > 0) this.kick(`draws:${guid}`, now);
@@ -663,6 +666,25 @@ export class SyncEngine {
       )
       .run(r.key, guid, date, r.plannedUtc ?? null, r.orderIndex ?? 0, r.court ?? null, r.eventCode ?? null, r.status, r.durationMin ?? row?.duration_min ?? null, started, prev ?? null, finishedAt, iso);
     return done && !row?.finished_seen_at;
+  }
+
+  private lastSweep = 0;
+  /**
+   * Cada 5 minutos recalcula, con lo ya guardado (sin peticiones), la estimación del último día de cada torneo que aún no figura como
+   * terminado: así una jornada que se queda sin partidos que jugar se cierra aunque ya no haya lecturas nuevas de ese día.
+   */
+  private sweepEstimates(now: Date) {
+    if (now.getTime() - this.lastSweep < 5 * 60_000) return;
+    this.lastSweep = now.getTime();
+    try {
+      for (const r of this.db.prepare('select tournament_guid g, max(date) d from slots group by tournament_guid').all() as unknown as { g: string; d: string }[]) {
+        const est = kvGet<{ date: string; done?: boolean }>(this.db, `estimate:${r.g}`);
+        if (est && est.date === r.d && est.done) continue;
+        this.recomputeEstimate(r.g, r.d, now);
+      }
+    } catch (e) {
+      console.error('sweepEstimates', e);
+    }
   }
 
   /** Recalcula la estimación del día y la guarda: hora de fin probable, ritmo, retraso y hora estimada de cada partido. */
